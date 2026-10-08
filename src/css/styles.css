@@ -1,0 +1,4395 @@
+/* ==================================================================
+   AETERNUM — hoja de estilos única
+   ================================================================== */
+
+:root {
+  --fondo: #0b0d17;
+  --fondo-alto: #12162a;
+  --fondo-panel: rgba(255, 255, 255, 0.035);
+  --borde: rgba(255, 255, 255, 0.09);
+  --borde-fuerte: rgba(255, 255, 255, 0.18);
+  --texto: #e8ecf5;
+  --texto-suave: #9aa3bd;
+  --texto-tenue: #626b85;
+  --acento: #c9a959;
+  --error: #f07070;
+  --ok: #6fd99a;
+
+  --raza-primario: var(--acento);
+  --raza-secundario: #333;
+
+  --radio: 10px;
+  --radio-s: 6px;
+  --transicion: 160ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, #1b2242 0%, transparent 60%),
+    var(--fondo);
+  color: var(--texto);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.fade-in {
+  animation: fadeIn 260ms ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------ Botones ------------------------------ */
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn-primario {
+  padding: 11px 26px;
+  border-radius: var(--radio-s);
+  background: linear-gradient(180deg, var(--acento), #a88b3f);
+  color: #1a1508;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  transition: filter var(--transicion), transform var(--transicion);
+}
+
+.btn-primario:hover:not(:disabled) {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.btn-secundario {
+  padding: 11px 22px;
+  border-radius: var(--radio-s);
+  border: 1px solid var(--borde-fuerte);
+  color: var(--texto-suave);
+  transition: all var(--transicion);
+}
+
+.btn-secundario:hover {
+  color: var(--texto);
+  border-color: var(--acento);
+}
+
+.btn-volver {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--texto-tenue);
+  font-size: 14px;
+  padding: 6px 2px;
+  transition: color var(--transicion);
+}
+
+.btn-volver:hover {
+  color: var(--texto);
+}
+
+/* ------------------- Fondo de ambiente de la estirpe ------------------- */
+
+/* Ocupa la ventana entera y se difumina por los cuatro bordes, igual que el
+   vídeo del menú. `fixed` en vez de `absolute` para que no dependa de la
+   pantalla que lo hospeda ni la desplace: es puramente decorativo y va por
+   debajo de todo (`.pantalla` sube a z-index 1).
+
+   La imagen la pone cada pantalla en su `style` en línea, junto con la clase
+   `con-imagen`. NO la pases por una variable CSS que se consuma desde aquí:
+   un `url()` dentro de una custom property se resuelve contra la hoja de
+   estilos, no contra el documento, así que `assets/...` acabaría buscándose
+   en `src/css/assets/...` y no cargaría nada —sin error en consola. */
+.fondo-estirpe {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: none;
+  background-size: cover;
+  background-position: center;
+  /* Ojo al componer con el velo de abajo: la opacidad de la capa y el alfa
+     del velo se multiplican. Con 0.5 aquí y un velo de 0.83 el bosque queda
+     al 8% y no se ve nada, aunque la imagen esté cargada. */
+  opacity: 0.65;
+  /* Solo la opacidad: `background-image` no es animable, ponerla aquí
+     engañaría al lector haciéndole creer que hay fundido cruzado. */
+  transition: opacity 420ms ease;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 20%, #000 80%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* El fondo en bucle. Va DENTRO de `.fondo-estirpe` para heredar su opacidad,
+   su máscara de bordes difuminados y su velo: si fuera un hermano habría que
+   duplicar los tres, y se desincronizarían al primer ajuste.
+
+   `object-fit: cover` hace con el vídeo lo que `background-size: cover` con la
+   imagen, así que el encuadre no cambia respecto al fondo fijo. La imagen sigue
+   debajo como `poster` y como respaldo mientras carga el primer fotograma. */
+.fondo-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Por debajo del velo de `::after`, que se pinta encima. */
+  z-index: 0;
+}
+
+/* Vela el fondo para que el texto de la interfaz no compita con el bosque. */
+.fondo-estirpe::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Explícito por el vídeo: sin declararlo dependería del orden del árbol, que
+     funciona pero no se lee. El velo va SIEMPRE encima del ambiente. */
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 13, 23, 0.34),
+    rgba(11, 13, 23, 0.52)
+  );
+}
+
+/* Sin imagen asignada no debe verse el velo flotando sobre la nada. */
+.fondo-estirpe.con-imagen {
+  display: block;
+}
+
+/* El contenido siempre por encima del ambiente. */
+.pantalla {
+  position: relative;
+  z-index: 1;
+}
+
+/* --------------------------- Menú principal --------------------------- */
+
+.menu-principal {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 46px;
+  padding: 40px;
+}
+
+.menu-marca {
+  text-align: center;
+}
+
+.menu-supra {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.menu-titulo {
+  margin: 2px 0 0;
+  font-size: 76px;
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  background: linear-gradient(180deg, #fff 20%, var(--acento) 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.menu-filete {
+  width: 190px;
+  height: 1px;
+  margin: 16px auto;
+  background: linear-gradient(90deg, transparent, var(--acento), transparent);
+}
+
+.menu-lema {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--texto-suave);
+}
+
+.menu-opciones {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(430px, 100%);
+}
+
+/* Vídeo de fondo tras los tres botones. Desborda la lista por los cuatro
+   lados para que el degradado de los bordes se apague sobre el fondo de la
+   página y no sobre los botones. Al ir en posición absoluta queda fuera del
+   flujo, así que no altera el `gap` de la columna. */
+.menu-fondo {
+  position: absolute;
+  inset: -110px -230px;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  pointer-events: none;
+  /* Dos degradados cruzados en vez de una elipse: así el desvanecido llega a
+     transparente en los cuatro bordes y se conserva más imagen en el centro.
+     Con una elipse de radios mayores que el medio ancho de la caja el
+     degradado no terminaba dentro y el vídeo se cortaba con un canto duro. */
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 24%, #000 76%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 22%, #000 78%, transparent 100%);
+  mask-composite: intersect;
+}
+
+.menu-fondo video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+}
+
+/* Vela el vídeo para que el texto de los botones no compita con la imagen. */
+.menu-fondo-velo {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 62% 56% at 50% 50%,
+      rgba(11, 13, 23, 0.5),
+      transparent 72%
+    ),
+    linear-gradient(180deg, rgba(11, 13, 23, 0.32), rgba(11, 13, 23, 0.48));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-fondo {
+    display: none;
+  }
+}
+
+.menu-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 17px 22px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  /* Algo de cuerpo, no `--fondo-panel`: el vídeo pasa por detrás y el texto
+     tiene que seguir leyéndose sobre cualquier fotograma. */
+  background: rgba(11, 13, 23, 0.5);
+  backdrop-filter: blur(3px);
+  text-align: left;
+  transition: all var(--transicion);
+}
+
+.menu-btn:hover {
+  border-color: var(--acento);
+  background: rgba(46, 38, 18, 0.62);
+  transform: translateX(5px);
+}
+
+/* El de la web va marcado como salida: borde discontinuo y la flecha de
+   «esto abre otra cosa». No compite con las tres opciones del juego. */
+.menu-btn-externo {
+  border-style: dashed;
+}
+
+.menu-btn-fuera {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--texto-tenue);
+  transition: color var(--transicion), transform var(--transicion);
+}
+
+.menu-btn-externo:hover .menu-btn-fuera {
+  color: var(--acento);
+  transform: translate(2px, -2px);
+}
+
+.menu-btn-error {
+  border-style: solid;
+  border-color: var(--error);
+}
+
+.menu-btn-error .menu-btn-sub {
+  color: var(--error);
+}
+
+.menu-btn-sigil {
+  font-size: 22px;
+  color: var(--acento);
+  width: 26px;
+  text-align: center;
+}
+
+.menu-btn-cuerpo {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-btn-titulo {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.menu-btn-sub {
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+}
+
+.menu-pie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+}
+
+.menu-pie-sep {
+  opacity: 0.5;
+}
+
+.menu-salir {
+  color: var(--texto-tenue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.menu-salir:hover {
+  color: var(--error);
+}
+
+/* --------------------------- Pantalla base --------------------------- */
+
+.pantalla {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 34px 46px 26px;
+  overflow: hidden;
+}
+
+.pantalla-cabecera {
+  position: relative;
+  padding-top: 26px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.pantalla-titulo {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+}
+
+.pantalla-titulo.tinte {
+  color: var(--raza-primario);
+}
+
+.pantalla-sub {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  color: var(--texto-tenue);
+  max-width: 620px;
+}
+
+.pantalla-pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 18px;
+  margin-top: auto;
+  border-top: 1px solid var(--borde);
+  flex-shrink: 0;
+}
+
+.nota {
+  margin: 0;
+  margin-right: auto;
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+}
+
+.seccion-titulo {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* -------------------------- Selección de raza ------------------------- */
+
+.raza-rejilla {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.raza-tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--raza-secundario) 30%, transparent),
+    transparent
+  );
+  transition: all var(--transicion);
+}
+
+.raza-tarjeta:hover {
+  border-color: var(--raza-primario);
+  transform: translateY(-3px);
+}
+
+.raza-tarjeta.activa {
+  border-color: var(--raza-primario);
+  box-shadow: 0 0 0 1px var(--raza-primario), 0 8px 30px -12px var(--raza-primario);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--raza-primario) 18%, transparent),
+    transparent
+  );
+}
+
+/* --- Orden de campaña y estirpes aún cerradas --- */
+
+.raza-orden {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--borde-fuerte);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-tenue);
+}
+
+/* Se puede mirar su ficha, pero no elegirla. */
+.raza-tarjeta.bloqueada {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.raza-tarjeta.bloqueada:hover {
+  border-color: var(--borde);
+  transform: none;
+}
+
+.raza-tarjeta.bloqueada .raza-progreso {
+  color: var(--acento);
+}
+
+.raza-tarjeta.completada .raza-orden {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.raza-tarjeta.completada .raza-progreso {
+  color: var(--ok);
+}
+
+.raza-sigil {
+  font-size: 32px;
+  color: var(--raza-primario);
+}
+
+.raza-nombre {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.raza-lema {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--texto-tenue);
+  text-align: center;
+  min-height: 32px;
+}
+
+.raza-progreso {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--raza-primario);
+  opacity: 0.75;
+}
+
+.raza-detalle {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 32px;
+  /* Ajustado a mano: esta pantalla no se desplaza y la ficha es lo único
+     flexible, así que su propio aire es alto que se le quita al contenido.
+     Con la vitrina de cristales completa, estos 30 px son la diferencia entre
+     leerla entera y tener que desplazar dentro del panel. */
+  margin-top: 14px;
+  padding: 18px 22px;
+  border: 1px solid var(--borde);
+  border-left: 2px solid var(--raza-primario);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  overflow-y: auto;
+}
+
+.raza-detalle-vacio {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--texto-tenue);
+  text-align: center;
+  font-size: 13.5px;
+}
+
+.detalle-nombre {
+  margin: 0 0 10px;
+  font-size: 21px;
+  font-weight: 500;
+  color: var(--raza-primario);
+}
+
+.detalle-desc {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--texto-suave);
+}
+
+.detalle-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.etiqueta {
+  padding: 3px 10px;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--texto-suave);
+}
+
+.detalle-pasiva {
+  padding: 13px 15px;
+  border-radius: var(--radio-s);
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 14px;
+}
+
+.detalle-etiqueta-titulo {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  margin-bottom: 3px;
+}
+
+.detalle-pasiva strong {
+  color: var(--raza-primario);
+  font-size: 14.5px;
+}
+
+.detalle-pasiva p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--texto-suave);
+}
+
+/* Curva de coste: un escalón por cada valor de sangre. */
+.detalle-curva {
+  display: flex;
+  gap: 7px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.detalle-curva li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-radius: var(--radio-s);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.detalle-curva li span {
+  font-size: 10px;
+  color: var(--texto-tenue);
+}
+
+.detalle-curva li strong {
+  font-size: 16px;
+  color: var(--raza-primario);
+}
+
+.detalle-curva li.vacio {
+  opacity: 0.4;
+}
+
+.detalle-curva li.vacio strong {
+  color: var(--texto-tenue);
+}
+
+.detalle-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.detalle-stats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--borde);
+  font-size: 13px;
+}
+
+.detalle-stats span {
+  color: var(--texto-tenue);
+}
+
+/* ------------------------------ Capítulos ----------------------------- */
+
+.capitulo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.capitulo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 22px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  text-align: left;
+  transition: all var(--transicion);
+}
+
+.capitulo:not(.bloqueado):hover {
+  border-color: var(--raza-primario);
+  transform: translateX(5px);
+}
+
+.capitulo.bloqueado {
+  opacity: 0.35;
+}
+
+.capitulo.completado .capitulo-estado {
+  color: var(--ok);
+}
+
+.capitulo-num {
+  font-size: 24px;
+  font-weight: 200;
+  color: var(--raza-primario);
+  min-width: 38px;
+}
+
+.capitulo-cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.capitulo-cuerpo strong {
+  font-size: 16px;
+  font-weight: 550;
+}
+
+.capitulo-cuerpo span {
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+}
+
+.capitulo-estado {
+  font-size: 17px;
+  color: var(--raza-primario);
+}
+
+/* ------------------------------ Modo solo ----------------------------- */
+
+.solo-enfrentamiento {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 46px;
+}
+
+.solo-lado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.solo-versus {
+  font-size: 22px;
+  font-weight: 200;
+  letter-spacing: 0.14em;
+  color: var(--texto-tenue);
+}
+
+.solo-tarjeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 230px;
+  padding: 30px 22px;
+  border: 1px solid var(--raza-primario);
+  border-radius: var(--radio);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--raza-secundario) 42%, transparent),
+    transparent
+  );
+}
+
+.solo-etiqueta {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.solo-sigil {
+  font-size: 44px;
+  color: var(--raza-primario);
+}
+
+.solo-nombre {
+  font-size: 19px;
+  font-weight: 550;
+}
+
+.solo-sangre {
+  font-size: 12.5px;
+  color: #f08a8a;
+}
+
+.solo-equipo {
+  margin-top: 3px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--borde-fuerte);
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+
+.solo-equipo.sin-equipo {
+  color: var(--texto-tenue);
+  font-style: italic;
+}
+
+/* --- Equipos guardados en el constructor --- */
+
+.guardados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.guardado-fila {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  font-size: 12px;
+}
+
+.guardado-fila.en-uso {
+  border-color: rgba(90, 200, 140, 0.55);
+  background: rgba(90, 200, 140, 0.08);
+}
+
+.guardado-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guardado-marca {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ok);
+}
+
+.guardado-cargar,
+.guardado-borrar {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  border: 1px solid var(--borde);
+  font-size: 11px;
+  color: var(--texto-suave);
+  transition: all var(--transicion);
+}
+
+.guardado-cargar:hover {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.guardado-borrar:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+/* -------------------- Panel de herramientas manuales ------------------- */
+
+.lateral-pestanas {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.pestana {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  transition: all var(--transicion);
+}
+
+.pestana.activa {
+  border-color: var(--acento);
+  color: var(--acento);
+  background: rgba(201, 169, 89, 0.1);
+}
+
+.lateral-panel {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.lateral-panel.oculto {
+  display: none;
+}
+
+.herr-intro {
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--texto-tenue);
+}
+
+.herr-bloque {
+  margin-bottom: 13px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.herr-bloque:last-child {
+  border-bottom: none;
+}
+
+.herr-bloque h5 {
+  margin: 0 0 7px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.herr-select {
+  width: 100%;
+  padding: 4px 7px;
+  margin-bottom: 6px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--fondo-alto);
+  color: var(--texto);
+  font-size: 11.5px;
+  font-family: inherit;
+}
+
+.herr-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 5px;
+  align-items: center;
+}
+
+.herr-fila button {
+  padding: 4px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  font-size: 11px;
+  color: var(--texto-suave);
+  transition: all var(--transicion);
+}
+
+.herr-fila button:hover {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.herr-fila button.activo {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.herr-etiqueta {
+  min-width: 34px;
+  font-size: 10.5px;
+  color: var(--texto-tenue);
+}
+
+.herr-resultado {
+  padding: 6px;
+  text-align: center;
+  border-radius: var(--radio-s);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 17px;
+  color: var(--acento);
+}
+
+.herr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.chip-bloqueo {
+  padding: 2px 7px;
+  border: 1px solid rgba(200, 140, 90, 0.5);
+  border-radius: 999px;
+  font-size: 10px;
+  color: #e0b48a;
+}
+
+/* ----------------------------- Calabozo -------------------------------- */
+
+.calabozo-cuerpo {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  overflow: hidden;
+}
+
+.etapa-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.calabozo-lateral {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--borde);
+  padding-left: 20px;
+  overflow-y: auto;
+}
+
+/* ------------------------- Mapa de avance ------------------------------ */
+
+/* El sendero se genera en `screens/storyMode.js`; aquí solo se tiñe. Los
+   colores salen de --raza-primario, que la pantalla fija por estirpe. */
+
+.mapa-calabozo {
+  flex: 0 0 auto;
+  margin-bottom: 4px;
+}
+
+.mapa-calabozo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Antes no tenía tope de alto: con el sendero SVG genérico (pequeño) daba
+     igual, pero el mapa de imagen real puede llegar a 450+ px y empujaba a la
+     lupa hasta comprimirla contra su `min-height` Y solaparse con ella (35 px
+     medidos). El navegador reescala manteniendo el aspect ratio del viewBox,
+     así que el mapa se ve completo, solo más compacto. */
+  max-height: 42vh;
+  overflow: visible;
+}
+
+.senda {
+  fill: none;
+  stroke: var(--borde-fuerte);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 7;
+}
+
+.senda.hecha {
+  stroke: var(--raza-primario);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 0.75;
+}
+
+/* Encima de la imagen del mapa, la senda necesita un poco más de margen: el
+   arte no es un fondo plano, y sin esto el trazo se pierde en los tramos
+   claros (el cielo, los cristales, la niebla). Un halo oscuro fino le da
+   contraste sin cambiar su color, así sigue leyéndose como el mismo sendero
+   que en el modo sin arte. */
+.senda.sobre-imagen {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.85));
+}
+
+.mapa-nodo.sobre-imagen .halo {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
+}
+
+.mapa-nodo {
+  cursor: pointer;
+}
+
+.mapa-nodo .disco {
+  fill: var(--fondo-alto);
+  stroke: var(--borde-fuerte);
+  stroke-width: 2;
+  transition: stroke var(--transicion), fill var(--transicion);
+}
+
+.mapa-nodo .halo,
+.mapa-nodo .aro {
+  fill: none;
+  stroke: none;
+}
+
+.mapa-nodo .marca {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--texto-suave);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  transition: fill var(--transicion);
+}
+
+.mapa-nodo .rotulo {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  fill: var(--texto-tenue);
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* Superada: disco relleno con el color de la estirpe. */
+.mapa-nodo.hecha .disco {
+  fill: var(--raza-primario);
+  stroke: var(--raza-primario);
+}
+
+.mapa-nodo.hecha .marca {
+  fill: var(--fondo);
+}
+
+/* La que toca ahora: borde encendido y un halo que late. */
+.mapa-nodo.actual .disco {
+  stroke: var(--raza-primario);
+  stroke-width: 3;
+}
+
+.mapa-nodo.actual .marca {
+  fill: var(--texto);
+}
+
+.mapa-nodo.actual .halo {
+  stroke: var(--raza-primario);
+  stroke-width: 2;
+  animation: mapa-latido 1.8s ease-out infinite;
+}
+
+@keyframes mapa-latido {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.9);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+/* El halo escala desde su propio centro, no desde el origen del SVG. */
+.mapa-nodo .halo {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mapa-nodo.cerrada .disco {
+  fill: rgba(255, 255, 255, 0.02);
+  stroke: var(--borde);
+  stroke-dasharray: 3 3;
+}
+
+.mapa-nodo.cerrada .marca {
+  fill: var(--texto-tenue);
+}
+
+/* El jefe lleva un aro extra para que se lea como final de recorrido. */
+.mapa-nodo.es-jefe .aro {
+  stroke: var(--borde-fuerte);
+  stroke-width: 1;
+}
+
+.mapa-nodo.es-jefe.hecha .aro,
+.mapa-nodo.es-jefe.actual .aro {
+  stroke: var(--raza-primario);
+  opacity: 0.55;
+}
+
+.mapa-nodo.es-jefe.actual .rotulo,
+.mapa-nodo.es-jefe.hecha .rotulo {
+  fill: var(--raza-primario);
+}
+
+.mapa-nodo:hover .disco,
+.mapa-nodo:focus-visible .disco {
+  stroke: var(--texto);
+}
+
+.mapa-nodo:focus {
+  outline: none;
+}
+
+.mapa-resumen {
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+/* Ya NO va `sticky`: con el sendero SVG pequeño de antes apenas se notaba,
+   pero con el mapa de imagen real (mucho más alto) la lupa se comprimía
+   contra su `min-height` y además quedaba clavada TAPANDO la cola del mapa —
+   35 px de solape medidos. Con el mapa acotado arriba (`max-height: 42vh`)
+   las dos caben en flujo normal; si en una ventana muy baja no cupieran,
+   `.calabozo-lateral` ya tiene `overflow-y: auto` como red de seguridad, sin
+   que nada tape nada. */
+.calabozo-lateral .lupa {
+  height: 280px;
+  max-height: 32vh;
+  margin-top: auto;
+  background-color: var(--fondo-alto);
+}
+
+/* Aterrizaje al pulsar un nodo del mapa. */
+.etapa.destacada {
+  border-color: var(--raza-primario);
+  box-shadow: 0 0 0 1px var(--raza-primario);
+}
+
+.etapa {
+  padding: 14px 17px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color var(--transicion);
+}
+
+.etapa.completada {
+  border-color: rgba(90, 200, 140, 0.45);
+}
+
+.etapa.es-jefe {
+  border-color: rgba(200, 120, 90, 0.55);
+  background: linear-gradient(
+    100deg,
+    rgba(120, 50, 30, 0.16),
+    rgba(255, 255, 255, 0.03)
+  );
+}
+
+.etapa.bloqueada {
+  opacity: 0.45;
+}
+
+.etapa-cab {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.etapa-num {
+  font-size: 21px;
+  font-weight: 300;
+  color: var(--raza-primario);
+  font-variant-numeric: tabular-nums;
+}
+
+.etapa-titulo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.etapa-titulo strong {
+  font-size: 15px;
+}
+
+.etapa-meta {
+  font-size: 11.5px;
+  color: var(--texto-tenue);
+}
+
+.etapa-estado {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.etapa-narracion {
+  margin: 9px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--texto-suave);
+}
+
+.etapa-narracion.oculta-texto {
+  font-style: italic;
+  color: var(--texto-tenue);
+}
+
+.etapa-criaturas {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.etapa-criatura {
+  width: 52px;
+  aspect-ratio: 1191 / 1646;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--borde-fuerte);
+  cursor: pointer;
+  transition: transform var(--transicion), border-color var(--transicion);
+}
+
+.etapa-criatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.etapa-criatura:hover {
+  transform: translateY(-3px) scale(1.06);
+  border-color: var(--acento);
+}
+
+.etapa-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 11px;
+}
+
+.calabozo-pendiente {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+/* Recompensa al cerrar una etapa */
+
+.fin-narracion {
+  max-width: 460px;
+  margin: 0 auto 14px !important;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.fin-recompensa {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fin-recompensa .mini-carta {
+  width: 92px;
+}
+
+/* ----------------------------- Tutorial -------------------------------- */
+
+/* La zona explicada se levanta por encima del velo y se rodea de luz. */
+.tutorial-foco {
+  position: relative;
+  z-index: 46;
+  border-radius: var(--radio-s);
+  box-shadow:
+    0 0 0 2px var(--acento),
+    0 0 0 9999px rgba(4, 5, 11, 0.72);
+  transition: box-shadow var(--transicion);
+}
+
+.tutorial-burbuja {
+  position: fixed;
+  z-index: 48;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px 16px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+  box-shadow: 0 16px 40px -14px rgba(0, 0, 0, 0.95);
+  animation: burbujaEntra 200ms ease both;
+}
+
+@keyframes burbujaEntra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.tutorial-burbuja h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--acento);
+}
+
+.tutorial-burbuja p {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--texto-suave);
+}
+
+.tutorial-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Cuántas burbujas quedan del recorrido: dieciséis seguidas sin saber cuántas
+   faltan se sienten interminables. */
+.tutorial-cuenta {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.tutorial-burbuja strong {
+  color: var(--texto);
+}
+
+.tutorial-saltar {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--texto-tenue);
+  text-decoration: underline;
+}
+
+.tutorial-saltar:hover {
+  color: var(--texto-suave);
+}
+
+.tutorial-pie .btn-primario {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+/* El vacío: como el Hades pero más apagado, que está un paso más lejos. */
+.hades.es-vacio {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
+.hades.es-vacio .hades-titulo {
+  color: var(--texto-tenue);
+}
+
+.herr-nota {
+  margin: 0 0 7px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--texto-tenue);
+}
+
+/* ------------------------------ Gemas ---------------------------------- */
+
+/* En la ficha de fin de partida: no es una carta, es constancia. */
+.fin-gema {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  background: rgba(201, 169, 89, 0.08);
+  text-align: left;
+}
+
+.fin-gema-sigil {
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--acento);
+}
+
+.fin-gema.nueva .fin-gema-sigil {
+  animation: gemaLate 2s ease-in-out infinite;
+}
+
+@keyframes gemaLate {
+  0%,
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(201, 169, 89, 0.7);
+  }
+  50% {
+    opacity: 0.6;
+    text-shadow: none;
+  }
+}
+
+.fin-gema-cuerpo strong {
+  display: block;
+  font-size: 13px;
+  color: var(--acento);
+}
+
+.fin-gema-cuerpo p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--texto-suave);
+}
+
+/* Marca en la tarjeta de estirpe. */
+.raza-gema {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 15px;
+  color: var(--acento);
+  text-shadow: 0 0 8px rgba(201, 169, 89, 0.55);
+}
+
+/* La vitrina de las cuatro. */
+.gemas {
+  margin: 14px 0 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(11, 13, 23, 0.5);
+}
+
+.gemas-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* La versión trofeo: una línea, para no robarle alto a la ficha. */
+.gemas.es-completa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 5px 14px;
+}
+
+.gemas.es-completa .gema-sigil {
+  font-size: 13px;
+}
+
+.gemas.es-completa strong {
+  font-size: 12.5px;
+  color: var(--acento);
+}
+
+.gemas.es-completa .nota {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+}
+
+.gemas-sigilos {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.gemas-releer {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--acento);
+  white-space: nowrap;
+}
+
+.gemas-releer:hover {
+  background: rgba(201, 169, 89, 0.14);
+}
+
+.gemas-cab strong {
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+}
+
+.gemas-fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.gema {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s, 6px);
+}
+
+.gema.conseguida {
+  border-color: var(--raza-primario);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.gema.pendiente {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.gema-sigil {
+  font-size: 16px;
+  color: var(--raza-primario);
+}
+
+.gema.pendiente .gema-sigil {
+  color: var(--texto-tenue);
+}
+
+.gema-nombre {
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--texto-suave);
+}
+
+.gemas-pie {
+  margin: 10px 0 0;
+  font-size: 11px;
+}
+
+/* Con los cuatro cristales: la historia secreta, con su botón de verdad. */
+.gemas-final {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--acento);
+}
+
+.gemas-final strong {
+  font-size: 12.5px;
+  color: var(--acento);
+}
+
+.gemas-final .nota {
+  margin: 2px 0 0;
+  font-size: 11px;
+}
+
+.gemas-final .btn-primario {
+  flex: 0 0 auto;
+  padding: 7px 16px;
+  font-size: 12px;
+}
+
+/* La recompensa ya cobrada: los mercenarios y los dos modos. */
+.gemas-recompensa {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--borde);
+}
+
+.gemas-recompensa-titulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.gemas-recompensa-cartas {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.gemas-recompensa-cartas .mini-carta {
+  flex: 0 0 52px;
+  width: 52px;
+}
+
+.gemas-recompensa .nota {
+  margin: 0;
+  font-size: 11px;
+}
+
+.gemas-recompensa strong {
+  color: var(--texto);
+}
+
+.gemas-recompensa .btn-primario {
+  margin-top: 9px;
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+/* ---------------------------- Mezclador -------------------------------- */
+
+/* Por encima de todo lo demás, burbujas incluidas: es un diálogo. */
+.mez-capa {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 5, 10, 0.72);
+  animation: burbujaEntra 160ms ease both;
+}
+
+.mez-panel {
+  width: min(430px, 100%);
+  padding: 20px 22px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.95);
+}
+
+.mez-titulo {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: var(--acento);
+}
+
+.mez-intro {
+  margin: 0 0 16px;
+}
+
+.mez-fila {
+  display: grid;
+  grid-template-columns: 1fr 130px 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--borde);
+}
+
+.mez-etiqueta strong {
+  display: block;
+  font-size: 13px;
+}
+
+.mez-etiqueta .nota {
+  font-size: 10.5px;
+}
+
+.mez-valor {
+  font-size: 12px;
+  text-align: right;
+  color: var(--acento);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Deslizador propio: el nativo de Chromium desentona con el resto. */
+.mez-mando {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--borde-fuerte);
+  cursor: pointer;
+}
+
+.mez-mando::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid var(--acento);
+  background: var(--fondo-alto);
+  transition: transform var(--transicion);
+}
+
+.mez-mando:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+  background: var(--acento);
+}
+
+.mez-mando:focus-visible {
+  outline: 1px solid var(--acento);
+  outline-offset: 4px;
+}
+
+.mez-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.mez-restablecer {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--texto-tenue);
+  text-decoration: underline;
+}
+
+.mez-restablecer:hover {
+  color: var(--texto-suave);
+}
+
+/* Acceso desde la mesa, junto a «Abandonar». */
+.mesa-sonido {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.75;
+  transition: all var(--transicion);
+}
+
+.mesa-sonido:hover {
+  border-color: var(--acento);
+  opacity: 1;
+}
+
+/* -------------------------- Recordatorios ------------------------------ */
+
+/* La burbuja copia la del tutorial —misma colocación, misma entrada— pero en
+   ámbar, para que se distinga de «esto se aprende» un «esto te toca hacer». */
+.recordatorio-burbuja {
+  position: fixed;
+  z-index: 47;
+  width: min(320px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+  box-shadow: 0 16px 40px -14px rgba(0, 0, 0, 0.95);
+  animation: burbujaEntra 200ms ease both;
+}
+
+.recordatorio-burbuja h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.recordatorio-burbuja p {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--texto-suave);
+}
+
+.recordatorio-nota {
+  font-style: italic;
+  color: var(--texto-tenue) !important;
+}
+
+.recordatorio-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.recordatorio-luego {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--texto-tenue);
+  text-decoration: underline;
+}
+
+.recordatorio-luego:hover {
+  color: var(--texto-suave);
+}
+
+.recordatorio-pie .btn-primario {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+/* Distintivo en la carta: queda mientras el efecto siga sin aplicar. */
+.recordatorio-marca {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 3;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(10, 8, 4, 0.85);
+  border: 1px solid var(--acento);
+  font-size: 10px;
+  line-height: 1.4;
+  animation: latidoMarca 1.8s ease-in-out infinite;
+}
+
+@keyframes latidoMarca {
+  0%,
+  100% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.pestana.con-pendientes {
+  color: var(--acento);
+}
+
+/* El lateral es corto —la lupa se queda con casi todo el alto—, así que la
+   ficha va apretada para que un recordatorio suelto entre sin desplazar. */
+#recordatorios .recordatorio {
+  display: flex;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+#recordatorios .recordatorio:last-child {
+  border-bottom: 0;
+}
+
+#recordatorios .mini-carta {
+  flex: 0 0 36px;
+  width: 36px;
+  align-self: flex-start;
+}
+
+.recordatorio-cuerpo {
+  min-width: 0;
+}
+
+.recordatorio-cuerpo strong {
+  display: block;
+  font-size: 12.5px;
+}
+
+.recordatorio-timing {
+  display: inline-block;
+  margin: 2px 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.recordatorio-cuerpo p {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+.recordatorio-hecho {
+  margin-top: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--acento);
+}
+
+.recordatorio-hecho:hover {
+  background: rgba(201, 169, 89, 0.14);
+}
+
+/* Bloque de respuesta dentro de la ventana del ataque: lo que puedes aplicar
+   sin irte a buscar otra pestaña mientras el golpe espera. */
+.ap-respuesta {
+  /* `.ataque-pendiente` es flex con wrap: así el bloque ocupa su propia fila. */
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: clamp(3px, 0.7vh, 8px);
+  padding-top: clamp(3px, 0.7vh, 8px);
+  border-top: 1px solid var(--borde);
+  /* Acotado: los controles son la fila `auto` de la rejilla de `.mesa`, así
+     que lo que crezca aquí se lo come el tablero, que pasa a desplazarse — y
+     quedarte sin ver a tu propio defensor mientras decides si te defiendes es
+     justo lo contrario de lo que se busca. */
+  max-height: 66px;
+  overflow-y: auto;
+}
+
+.ap-respuesta-titulo {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+/* Una tira de una línea: nombre, cuándo toca y el botón. El texto impreso va
+   en el `title`, en la burbuja y en la pestaña; aquí manda no robar alto. */
+.ap-respuesta-carta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 4px 3px 9px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  background: rgba(201, 169, 89, 0.07);
+}
+
+.ap-respuesta-carta strong {
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.ap-respuesta-carta .recordatorio-timing {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.ap-respuesta-carta .recordatorio-hecho {
+  margin: 0;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.ap-abrir-herramientas {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--acento);
+  text-decoration: underline;
+}
+
+.ap-abrir-herramientas:hover {
+  color: var(--texto);
+}
+
+/* ------------------------ Opciones bloqueadas -------------------------- */
+
+.menu-btn.bloqueado {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.menu-btn.bloqueado:hover {
+  border-color: var(--borde);
+  transform: none;
+}
+
+.menu-btn-candado {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: var(--acento);
+}
+
+.candado-avance {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border: 1px solid rgba(201, 169, 89, 0.45);
+  border-radius: 999px;
+  font-size: 10px;
+  color: var(--texto-suave);
+}
+
+.menu-btn.sacudir {
+  animation: sacudida 340ms ease;
+}
+
+@keyframes sacudida {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* --- Pantalla que no se pudo abrir --- */
+
+.pantalla-fallo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.pantalla-fallo h2 {
+  margin: 0;
+  font-weight: 300;
+  font-size: 26px;
+  color: var(--error);
+}
+
+.solo-selector {
+  display: flex;
+  gap: 7px;
+}
+
+.solo-selector button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  font-size: 17px;
+  color: var(--texto-tenue);
+  transition: all var(--transicion);
+}
+
+.solo-selector button:hover,
+.solo-selector button.activa {
+  border-color: var(--raza-primario);
+  color: var(--raza-primario);
+}
+
+/* ---------------------------- Constructor ----------------------------- */
+
+.constructor-razas {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.constructor-razas button {
+  padding: 7px 15px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+  transition: all var(--transicion);
+}
+
+.constructor-razas button:hover,
+.constructor-razas button.activa {
+  border-color: var(--raza-primario);
+  color: var(--raza-primario);
+}
+
+.constructor-cuerpo {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 24px;
+  overflow: hidden;
+}
+
+.constructor-pool,
+.constructor-mazo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pool-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  padding: 4px 8px 4px 2px;
+  align-content: start;
+}
+
+.carta {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 13px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--fondo-panel);
+  cursor: pointer;
+  transition: all var(--transicion);
+}
+
+.carta:hover {
+  border-color: var(--acento);
+  transform: translateY(-2px);
+}
+
+.carta.llena {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.carta.rareza-rara {
+  border-left: 2px solid #6aa8f0;
+}
+
+.carta.rareza-legendaria {
+  border-left: 2px solid var(--acento);
+}
+
+.carta-cab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.carta-coste {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(120, 160, 255, 0.16);
+  border: 1px solid rgba(120, 160, 255, 0.4);
+  font-size: 12.5px;
+  font-weight: 650;
+  flex-shrink: 0;
+}
+
+.carta-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.carta-texto {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--texto-suave);
+  flex: 1;
+  min-height: 30px;
+}
+
+.carta-pie {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  color: var(--texto-tenue);
+}
+
+.carta-tipo {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.carta-stats {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.carta-copias {
+  margin-left: auto;
+}
+
+.constructor-mazo {
+  border-left: 1px solid var(--borde);
+  padding-left: 22px;
+  overflow-y: auto;
+}
+
+.mazo-errores .aviso {
+  margin: 4px 0 0;
+  color: var(--acento);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.curva {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 62px;
+  margin-bottom: 14px;
+}
+
+.curva-barra {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+  gap: 3px;
+}
+
+.curva-relleno {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--acento), rgba(201, 169, 89, 0.25));
+  transition: height var(--transicion);
+}
+
+.curva-barra span {
+  font-size: 9.5px;
+  color: var(--texto-tenue);
+}
+
+.mazo-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.mazo-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 9px;
+  border-radius: var(--radio-s);
+  cursor: pointer;
+  font-size: 12.5px;
+  transition: background var(--transicion);
+}
+
+.mazo-fila:hover {
+  background: rgba(240, 112, 112, 0.12);
+}
+
+.mazo-coste {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(120, 160, 255, 0.16);
+  font-size: 11px;
+  font-weight: 650;
+  flex-shrink: 0;
+}
+
+.mazo-nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mazo-copias {
+  color: var(--texto-tenue);
+}
+
+.mazo-errores {
+  padding: 9px 0;
+  font-size: 11.5px;
+}
+
+.mazo-errores .error {
+  margin: 2px 0;
+  color: var(--error);
+}
+
+.mazo-errores .ok {
+  margin: 2px 0;
+  color: var(--ok);
+}
+
+.mazo-acciones {
+  display: flex;
+  gap: 9px;
+}
+
+.mazo-acciones button {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+/* --------------------------- Cartas reales ---------------------------- */
+
+/* Proporción de las cartas originales: 1191x1646 ≈ 0.723 */
+.carta-mini,
+.mini-carta,
+.opcion-carta {
+  position: relative;
+  aspect-ratio: 1191 / 1646;
+  border-radius: 7px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  border: 2px solid transparent;
+  background: #05060c;
+  transition: transform var(--transicion), border-color var(--transicion),
+    box-shadow var(--transicion);
+}
+
+.carta-mini img,
+.mini-carta img,
+.opcion-carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carta-mini:hover,
+.opcion-carta:hover {
+  transform: translateY(-4px);
+  border-color: var(--acento);
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+}
+
+.carta-mini.elegida {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 1px var(--ok), 0 0 18px -8px var(--ok);
+}
+
+/* Acciones atadas a otra raza: elegibles pero inertes. */
+.carta-mini.inerte img,
+.opcion-carta.inerte img {
+  filter: grayscale(0.7) brightness(0.72);
+}
+
+.opcion-carta.inasequible img {
+  filter: grayscale(0.85) brightness(0.5);
+}
+
+.opcion-carta.inasequible {
+  cursor: not-allowed;
+}
+
+/* --- Distintivos sobre la miniatura --- */
+
+.mini-coste,
+.opcion-coste {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  min-width: 19px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(6, 8, 16, 0.9);
+  border: 1px solid rgba(240, 90, 90, 0.85);
+  color: #ffb0b0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.mini-stats,
+.opcion-stats {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(6, 8, 16, 0.9);
+  font-size: 10px;
+  letter-spacing: -0.02em;
+  color: var(--texto-suave);
+}
+
+.mini-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #04140c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mini-merc {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(216, 210, 196, 0.92);
+  color: #2a2620;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mini-tipo,
+.opcion-tipo {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #05060c;
+}
+
+.mini-tipo.tipo-ofensiva,
+.opcion-tipo.tipo-ofensiva {
+  background: #f07a5a;
+}
+
+.mini-tipo.tipo-defensiva,
+.opcion-tipo.tipo-defensiva {
+  background: #5a9cf0;
+}
+
+.mini-tipo.tipo-neutral,
+.opcion-tipo.tipo-neutral {
+  background: #c9c3b4;
+}
+
+/* ------------------------------- Lupa --------------------------------- */
+
+/* Altura explícita en vez de aspect-ratio: así la caja nunca puede quedar
+   más corta de lo que la imagen necesita, y el lateral no desborda. */
+.lupa {
+  position: relative;
+  width: 100%;
+  height: 430px;
+  max-height: 52vh;
+  min-height: 165px;
+  flex: 0 1 auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: zoom-in;
+}
+
+/* Anclada a las cuatro esquinas: así la caja es siempre definida y `contain`
+   encaja la carta entera. Con height:100% dentro de la rejilla el porcentaje
+   no resolvía y la imagen se salía por abajo. */
+.lupa img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.lupa-pista {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 0;
+  text-align: center;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  background: rgba(6, 8, 16, 0.78);
+  opacity: 0;
+  transition: opacity var(--transicion);
+}
+
+.lupa:hover .lupa-pista {
+  opacity: 1;
+}
+
+.lupa-vacia {
+  padding: 16px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--texto-tenue);
+  line-height: 1.5;
+}
+
+/* --- Visor a pantalla completa: aquí sí se lee el texto impreso --- */
+
+.lupa-grande {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 5, 11, 0.9);
+  cursor: zoom-out;
+}
+
+.lupa-grande.oculto {
+  display: none;
+}
+
+.lupa-grande-caja {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  max-height: 100%;
+}
+
+.lupa-grande-caja img {
+  max-height: calc(100vh - 70px);
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.9);
+}
+
+.lupa-grande-caja figcaption {
+  font-size: 12.5px;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.lupa-grande-caja figcaption span {
+  color: var(--texto-tenue);
+}
+
+/* ------------------- Constructor: acciones y equipo -------------------- */
+
+.pool-acciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding: 4px 8px 4px 2px;
+  overflow-y: auto;
+}
+
+.stat-atq {
+  color: #f0a07a;
+}
+
+.stat-def {
+  color: #7ec0f0;
+}
+
+.accion-tipo-punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--texto-tenue);
+}
+
+.tipo-ofensiva .accion-tipo-punto {
+  background: #f07a5a;
+}
+
+.tipo-defensiva .accion-tipo-punto {
+  background: #5a9cf0;
+}
+
+.tipo-neutral .accion-tipo-punto {
+  background: #9aa3bd;
+}
+
+.equipo-lista {
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.equipo-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 9px;
+  border-radius: var(--radio-s);
+  cursor: pointer;
+  font-size: 12.5px;
+  transition: background var(--transicion);
+}
+
+.equipo-fila:hover {
+  background: rgba(240, 112, 112, 0.12);
+}
+
+.equipo-stats {
+  color: var(--texto-tenue);
+  font-size: 11.5px;
+}
+
+.equipo-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+.ficha-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 999px;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all var(--transicion);
+}
+
+.ficha-accion.tipo-ofensiva {
+  border-color: rgba(240, 122, 90, 0.6);
+  color: #f0a07a;
+}
+
+.ficha-accion.tipo-defensiva {
+  border-color: rgba(90, 156, 240, 0.6);
+  color: #7eb4f0;
+}
+
+.ficha-accion.tipo-neutral {
+  border-color: var(--borde-fuerte);
+  color: var(--texto-suave);
+}
+
+/* ------------------------------- Mesa -------------------------------- */
+
+.mesa {
+  display: grid;
+  /* Lateral ancho: la lupa es donde se lee la carta, y a 260 px el texto
+     impreso quedaba ilegible. */
+  grid-template-columns: 1fr 310px;
+  grid-template-rows: auto 1fr auto;
+  /* En ventanas bajas se recuperan los márgenes antes que encoger las cartas. */
+  gap: clamp(8px, 1.6vh, 18px);
+  padding-top: clamp(16px, 3vh, 34px);
+  padding-bottom: clamp(10px, 2vh, 26px);
+}
+
+.mesa-cabecera {
+  grid-column: 1 / -1;
+  position: relative;
+  padding-top: clamp(14px, 2.6vh, 26px);
+  display: flex;
+  justify-content: center;
+}
+
+.mesa-fase {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.mesa-fase-nombre {
+  padding: 3px 13px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--acento);
+}
+
+.mesa-tablero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* `safe` evita el recorte por los dos extremos: cuando el contenido no
+     cabe, deja de centrar y se alinea al principio, de modo que siempre se
+     puede llegar a todo con el scroll. */
+  justify-content: safe center;
+  gap: clamp(5px, 1.1vh, 14px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* --- Retratos flotantes de quien está en posición --- */
+
+/* Capa decorativa sobre el tablero. `pointer-events: none` es obligatorio:
+   cubre las cartas y sin eso se comería los clics de la mesa. Va por debajo
+   del aviso del jefe (z-index 15), que sí debe taparlo.
+
+   Por encima del panel (que no llega a 7) para que el personaje se lea como
+   una presencia sobre la mesa y no como una figura recortada por detrás. Lo
+   que hace que eso no esconda la vida ni las cartas es la opacidad de la
+   imagen, más abajo. */
+.mesa-flotantes {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+/* Desplazado a la derecha para no quedar clavado sobre la carta del activo,
+   que va por delante: así el retrato se ve entero en vez de partido. */
+.flotantes-lado {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding-left: clamp(0px, 11vw, 150px);
+  gap: 2%;
+}
+
+/* Los dos lados se encuentran en la línea central: el rival cae hacia ella
+   desde arriba y el jugador sube hacia ella desde abajo. */
+.flotantes-lado.rival {
+  align-items: flex-end;
+}
+
+.flotantes-lado.jugador {
+  align-items: flex-start;
+}
+
+/* El retrato pasa por encima del panel, así que lo que garantiza que se sigan
+   leyendo la vida, la carta y sus estadísticas es su opacidad (0.55), no el
+   orden de pintado. Si algún día se sube esa opacidad, hay que devolver el
+   panel por delante o los números volverán a perderse.
+
+   La sombra del pie es doblemente necesaria ahora: ese texto es tenue y le
+   caen encima tanto el retrato como el fondo del calabozo. */
+.sangre-pie {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.flotante {
+  margin: 0;
+  /* Proporcional a la pantalla, con tope para que no domine la mesa. */
+  height: clamp(130px, 29vh, 310px);
+  animation:
+    flotante-entrar 460ms ease-out both,
+    flotar 5.2s ease-in-out 460ms infinite;
+}
+
+/* Desfasado respecto al rival para que los dos no suban y bajen a la vez. */
+.flotantes-lado.jugador .flotante {
+  animation-delay: 0ms, 900ms;
+  animation-duration: 460ms, 6.1s;
+}
+
+/* La translucidez va en la IMAGEN, no en `.flotante`: la animación de entrada
+   termina en `opacity: 1` y, con `animation-fill-mode: both`, pisaría
+   cualquier opacidad que se pusiera en el elemento animado. */
+.flotante img {
+  height: 100%;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  opacity: 0.65;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.65));
+}
+
+.flotante.saliendo {
+  animation: flotante-salir 400ms ease-in both;
+}
+
+@keyframes flotar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-11px);
+  }
+}
+
+@keyframes flotante-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes flotante-salir {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+/* Movimiento reducido: el retrato se queda, pero quieto. */
+@media (prefers-reduced-motion: reduce) {
+  .flotante,
+  .flotantes-lado.jugador .flotante {
+    animation: flotante-entrar 460ms ease-out both;
+  }
+}
+
+/* --- Aviso de habilidades del jefe --- */
+
+/* Cubre solo el tablero: el panel de Herramientas del lateral debe seguir
+   siendo utilizable mientras el aviso está abierto. */
+.aviso-jefe {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(6, 8, 16, 0.93);
+  border-radius: var(--radio);
+}
+
+.aviso-jefe.oculto {
+  display: none;
+}
+
+.aviso-jefe-caja {
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px 20px;
+  border: 1px solid rgba(200, 120, 90, 0.5);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+}
+
+.aviso-jefe-caja h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 400;
+  color: #f0a07a;
+}
+
+.aviso-jefe-caja > .nota {
+  margin: 0 0 12px;
+}
+
+.aviso-jefe-carta {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.aviso-jefe-carta .mini-carta {
+  width: 92px;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.aviso-jefe-lista {
+  flex: 1;
+  min-width: 0;
+}
+
+.aviso-jefe-lista > strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.habilidad {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 7px;
+}
+
+/* La que acaba de lanzar el jefe: destacada sobre el texto impreso. */
+.habilidad.lanzada {
+  padding: 9px 11px;
+  border: 1px solid rgba(240, 145, 58, 0.45);
+  border-radius: var(--radio-s);
+  background: rgba(240, 145, 58, 0.07);
+}
+
+/* Lo que ha hecho de verdad, frente al texto de la carta. */
+.habilidad-efecto {
+  margin-top: 6px !important;
+  color: #f0b98a !important;
+  font-weight: 600;
+}
+
+.habilidad-num {
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 120, 90, 0.6);
+  font-size: 10.5px;
+  color: #f0a07a;
+}
+
+.habilidad strong {
+  font-size: 12px;
+}
+
+.habilidad p {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+.habilidad-aviso {
+  color: var(--acento) !important;
+  font-style: italic;
+}
+
+.aviso-jefe-caja .btn-primario {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.mesa-centro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Indicador de fase: P → A → C → F. Va en la franja central, a la izquierda,
+   y se genera desde `Game.FASES` para que no pueda desincronizarse del
+   motor. Por delante del retrato flotante, como el resto de la información. */
+.fases {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-shrink: 0;
+}
+
+.fase-punto {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--borde-fuerte);
+  background: rgba(11, 13, 23, 0.72);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--texto-tenue);
+  transition:
+    color var(--transicion),
+    border-color var(--transicion),
+    background var(--transicion),
+    box-shadow var(--transicion);
+}
+
+/* Las que ya pasaron en este turno: apagadas pero legibles. */
+.fase-punto.cumplida {
+  color: var(--texto-suave);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* La fase en curso: relleno con el color de la estirpe y un halo suave. */
+.fase-punto.activa {
+  background: var(--raza-primario, var(--acento));
+  border-color: var(--raza-primario, var(--acento));
+  color: var(--fondo);
+  box-shadow: 0 0 0 3px rgba(240, 145, 58, 0.18);
+}
+
+.fase-letra {
+  pointer-events: none;
+}
+
+.mesa-linea {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--borde-fuerte), transparent);
+}
+
+.mesa-veredicto {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.veredicto-bien {
+  color: var(--ok);
+}
+
+.veredicto-duda {
+  color: var(--acento);
+}
+
+.veredicto-nulo {
+  color: var(--texto-tenue);
+}
+
+/* El aviso de que su escudo te va a reflejar el golpe: en rojo, porque es una
+   advertencia de sangrar tú, no una previsión neutral. */
+.veredicto-mal {
+  color: var(--error);
+}
+
+/* Lo que la IA acaba de acoplar, en el mismo hueco que la previsión de ataque:
+   una es de tu turno y la otra del suyo, así que nunca coinciden.
+   `.mesa-veredicto` es `nowrap` para que la previsión quepa de una línea; esto
+   puede ocupar dos y lo desactiva. */
+.veredicto-efecto-ia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 8px;
+  white-space: normal;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+.vei-titulo {
+  color: var(--acento);
+  font-weight: 650;
+}
+
+/* --- Lado de un jugador --- */
+
+.mesa-lado {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: clamp(5px, 1.1vh, 10px);
+  padding: clamp(8px, 1.6vh, 14px) 18px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--raza-secundario) 30%, transparent),
+    transparent
+  );
+}
+
+.mesa-lado.es-rival {
+  flex-direction: column-reverse;
+}
+
+.lado-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mesa-sigil {
+  font-size: 28px;
+  color: var(--raza-primario);
+}
+
+.lado-info strong {
+  display: block;
+  font-size: 15px;
+}
+
+.mesa-raza {
+  font-size: 11.5px;
+  color: var(--texto-tenue);
+}
+
+/* --- Sangre: vida y energía a la vez --- */
+
+.sangre {
+  margin-left: auto;
+  min-width: 300px;
+}
+
+/* --- Los tres marcadores, grandes y etiquetados --- */
+
+.sangre-marcadores {
+  display: flex;
+  gap: 8px;
+  margin-bottom: clamp(3px, 0.8vh, 7px);
+}
+
+.sm {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(2px, 0.6vh, 5px) 4px clamp(2px, 0.5vh, 4px);
+  border-radius: var(--radio-s);
+  border: 1px solid var(--borde);
+  background: rgba(255, 255, 255, 0.04);
+  line-height: 1.05;
+}
+
+/* Flechas que mueven sangre, en el hueco ENTRE dos pilas: así el gesto dice
+   de dónde sale y a dónde va sin tener que leer el verbo. Columna estrecha y
+   sin `flex: 1`, para que no le robe ancho a los marcadores. */
+.sg-flechas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+
+.sg-flecha {
+  width: 18px;
+  height: 15px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(201, 169, 89, 0.5);
+  border-radius: 4px;
+  background: rgba(12, 16, 26, 0.9);
+  color: var(--acento);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.sg-flecha:hover:not(:disabled) {
+  border-color: var(--acento);
+  background: rgba(201, 169, 89, 0.25);
+  color: var(--texto);
+}
+
+.sg-flecha:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Apagada cuando no hay de dónde sacar: el motor lo rechazaría igual, y un
+   botón que no responde confunde más que uno claramente inactivo. */
+.sg-flecha:disabled {
+  border-color: var(--borde);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--texto-tenue);
+  cursor: default;
+}
+
+.sm-num {
+  font-size: clamp(17px, 3vh, 25px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-lbl {
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  margin-top: 3px;
+}
+
+.sm-vida {
+  border-color: rgba(200, 70, 80, 0.5);
+  background: rgba(200, 70, 80, 0.1);
+}
+
+.sm-vida .sm-num {
+  color: #ff9a9a;
+}
+
+.sm-energia {
+  border-color: rgba(90, 150, 230, 0.5);
+  background: rgba(90, 150, 230, 0.1);
+}
+
+.sm-energia .sm-num {
+  color: #8fbcff;
+}
+
+.sm-fuera {
+  border-color: rgba(150, 110, 180, 0.45);
+  background: rgba(150, 110, 180, 0.08);
+}
+
+.sm-fuera .sm-num {
+  color: #c3a0dc;
+}
+
+/* Sin sangre pagada el marcador se apaga, pero no desaparece: así la fila
+   no cambia de tamaño a mitad de partida. */
+.sm-fuera.vacio {
+  opacity: 0.35;
+}
+
+/* --- Barra de las tres pilas, que siempre suman 30 --- */
+
+.sangre-barra {
+  display: flex;
+  height: 9px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.seg {
+  height: 100%;
+  transition: width 260ms ease;
+}
+
+.seg-vida {
+  background: linear-gradient(90deg, #8c1c28, #d4444f);
+}
+
+.seg-gasto {
+  background: linear-gradient(90deg, #2c4d80, #4d84cc);
+}
+
+.seg-fuera {
+  background: repeating-linear-gradient(
+    45deg,
+    #6a4d80,
+    #6a4d80 3px,
+    #543f66 3px,
+    #543f66 6px
+  );
+}
+
+.sangre-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--texto-tenue);
+}
+
+.sangre-zonas {
+  display: flex;
+  gap: 11px;
+}
+
+/* --- Personaje en campo --- */
+
+/* Una sola fila que se desplaza en horizontal. Si envolviera, una banda de 5
+   apilaría filas de cartas y el tablero se iría de alto. */
+.lado-campo {
+  display: flex;
+  justify-content: safe center;
+  flex-wrap: nowrap;
+  gap: clamp(7px, 1.5vh, 14px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.slot-vacio {
+  padding: 30px 26px;
+  border: 1px dashed var(--borde-fuerte);
+  border-radius: var(--radio-s);
+  font-size: 12.5px;
+  color: var(--texto-tenue);
+}
+
+/* Personaje activo y su acción acoplada, lado a lado. */
+.campo-par {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: clamp(6px, 1.3vh, 12px);
+}
+
+/* Las cartas se encogen en ventanas bajas: son lo que más alto ocupa. */
+.campo-par .mini-carta {
+  width: clamp(62px, 9.5vh, 84px);
+}
+
+.campo-par .mini-carta.personaje {
+  width: clamp(76px, 11.5vh, 104px);
+}
+
+/* Atajos de ⚔ y 🛡 pegados a la carta. Columna estrecha dentro de la fila de
+   `.campo-par`: crecen a lo ancho, que es la dimensión que sobra —el alto ya
+   lo pelean las cartas—. Tenues de base para no competir con el arte; se
+   encienden al pasar por encima. */
+/* POR ENCIMA de la capa de retratos (z-index 7). El retrato de tu propio lado
+   va desplazado a la derecha para no taparle la carta al activo, y cae justo
+   donde viven estos atajos: medido, cubría el 100% de ellos. Se podían pulsar
+   —la capa es `pointer-events: none`— pero no se veían, que para el jugador es
+   lo mismo que no estar. Es la misma cura que pide la nota del ⚡: subir el
+   control, nunca bajar el retrato. */
+.campo-atajos {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ct-fila {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ct-icono {
+  width: 16px;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* 20x17 y no menos: son para pulsarlos varias veces seguidas. La carta mide
+   ~104px de alto y esta columna ~40, así que agrandarlos no le cuesta nada al
+   tablero —`.campo-par` es una fila, esto crece a lo ancho—. */
+.ct-btn {
+  width: 20px;
+  height: 17px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(201, 169, 89, 0.55);
+  border-radius: 4px;
+  background: rgba(12, 16, 26, 0.92);
+  color: var(--acento);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.ct-btn:hover:not(:disabled) {
+  border-color: var(--acento);
+  background: rgba(201, 169, 89, 0.18);
+  color: var(--texto);
+}
+
+.ct-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Apagado cuando no hay modificadores que quitar, igual que las flechas de
+   sangre: un botón que no responde confunde más que uno claramente inactivo. */
+.ct-btn:disabled {
+  border-color: var(--borde);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--texto-tenue);
+  cursor: default;
+}
+
+/* El deshacer ocupa la fila entera bajo ⚔ y 🛡: no es un tercer valor que
+   ajustar, es la salida de los otros dos. */
+.ct-fila-limpiar {
+  justify-content: flex-end;
+}
+
+.ct-limpiar {
+  width: 43px;
+  font-size: 10px;
+}
+
+/* El dado de la mesa, al final de la banda central. */
+.mesa-dado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mesa-dado-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 15px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.mesa-dado-btn:hover {
+  border-color: var(--acento);
+  background: rgba(201, 169, 89, 0.18);
+}
+
+/* El tumbo. La duración la manda el JS por `--dado-giro` (ver `MS_DADO` en
+   `Screens.partida`): escrita en los dos sitios se desincroniza a la primera.
+   El respaldo del `var()` es solo por si la propiedad no llegara. */
+.mesa-dado-btn.girando {
+  animation: dado-rueda var(--dado-giro, 420ms) cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+@keyframes dado-rueda {
+  0% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(190deg) scale(1.2); }
+  65% { transform: rotate(330deg) scale(1.22); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* El valor anterior se apaga mientras rueda: si se quedara a la vista, el
+   dado parecería estar girando para nada. */
+.mesa-dado-valor.girando {
+  opacity: 0.2;
+}
+
+.mesa-dado-valor.nuevo {
+  animation: dado-resultado 240ms ease-out;
+}
+
+@keyframes dado-resultado {
+  0% { transform: scale(0.55); opacity: 0; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Quien pide menos movimiento se queda con el resultado y sin tumbo. El JS
+   además se salta la espera, para que el número no tarde 420 ms en aparecer
+   con la animación desactivada. */
+@media (prefers-reduced-motion: reduce) {
+  .mesa-dado-btn.girando,
+  .mesa-dado-valor.nuevo {
+    animation: none;
+  }
+}
+
+/* --- Impacto de un ataque ---------------------------------------------- */
+
+/* La carta que encaja el golpe. La duración la manda el JS por `--impacto`
+   (ver `MS_IMPACTO`), y el `animation-delay` lo pone también el JS, NEGATIVO,
+   para retomar la animación donde iba cuando un repintado rehace la carta. */
+.mini-carta.encaja-golpe {
+  animation: encaja-golpe var(--impacto, 380ms) ease-out;
+}
+
+@keyframes encaja-golpe {
+  0% { transform: translateX(0); box-shadow: none; }
+  18% {
+    transform: translateX(-7px) rotate(-2deg);
+    box-shadow: 0 0 16px 3px rgba(240, 90, 90, 0.8);
+  }
+  38% { transform: translateX(7px) rotate(2deg); }
+  58% {
+    transform: translateX(-4px) rotate(-1deg);
+    box-shadow: 0 0 10px 2px rgba(240, 90, 90, 0.45);
+  }
+  78% { transform: translateX(3px); }
+  100% { transform: translateX(0); box-shadow: none; }
+}
+
+/* La barra de sangre de quien sangró. Va aparte de la sacudida porque el
+   herido no siempre es el mismo: el reflejo del escudo sangra al atacante. */
+.sangre-barra.sangre-golpeada {
+  animation: sangre-golpeada var(--impacto, 380ms) ease-out;
+}
+
+@keyframes sangre-golpeada {
+  0% { box-shadow: none; filter: none; }
+  25% {
+    box-shadow: 0 0 14px 3px rgba(240, 90, 90, 0.85);
+    filter: brightness(1.5);
+  }
+  100% { box-shadow: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-carta.encaja-golpe,
+  .sangre-barra.sangre-golpeada {
+    animation: none;
+  }
+}
+
+.mesa-dado-valor {
+  min-width: 14px;
+  font-size: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--acento);
+}
+
+/* Oleada de calabozo: las criaturas mandan visualmente sobre tu banda. */
+.mesa-lado.es-oleada .campo-par {
+  gap: 16px;
+}
+
+.mesa-lado.es-oleada .campo-par .mini-carta {
+  width: clamp(66px, 11vh, 118px);
+}
+
+.mesa-lado.es-oleada .campo-par .mini-carta.personaje {
+  width: clamp(84px, 14.5vh, 152px);
+}
+
+.mesa-lado.es-oleada .lado-campo {
+  gap: clamp(9px, 2vh, 18px);
+}
+
+.mesa-lado.es-oleada .mini-carta .mini-stats {
+  font-size: 12px;
+}
+
+.mini-carta.postura-ofensiva {
+  border-color: rgba(240, 122, 90, 0.9);
+  box-shadow: 0 0 20px -8px #f07a5a;
+}
+
+.mini-carta.postura-defensiva {
+  border-color: rgba(90, 156, 240, 0.9);
+  box-shadow: 0 0 20px -8px #5a9cf0;
+}
+
+.mini-carta.dorso,
+.mini-carta.vacia {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--borde-fuerte);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--texto-tenue);
+  font-size: 20px;
+  cursor: default;
+}
+
+.mini-carta.dorso {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.05) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
+.mini-carta .mini-stats {
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.mini-carta .mini-stats .stat-atq,
+.mini-carta .mini-stats .stat-def {
+  opacity: 0.4;
+}
+
+.mini-carta .mini-stats .stat-atq.activo,
+.mini-carta .mini-stats .stat-def.activo {
+  opacity: 1;
+}
+
+.revelados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.revelados-titulo {
+  color: var(--texto-tenue);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.revelado {
+  padding: 2px 8px;
+  border: 1px dashed var(--borde-fuerte);
+  border-radius: 999px;
+  color: var(--texto-suave);
+}
+
+/* --- Oleada en espera: quién sale cuando caiga el de turno --- */
+
+.espera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* La tira de espera va al lado del campo, no debajo: mostrar una criatura
+   en vez de tres liberó ancho de sobra, y apilarla comía alto del tablero. */
+.lado-fila {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vh, 22px);
+  min-width: 0;
+}
+
+.lado-fila .lado-campo {
+  flex: 0 1 auto;
+}
+
+.lado-fila .espera {
+  flex: 0 1 auto;
+}
+
+/* En vertical la tira se apila en columna, para ocupar poco a lo ancho. */
+.lado-fila .espera-cartas {
+  flex-wrap: wrap;
+  max-width: clamp(90px, 22vw, 200px);
+}
+
+.espera-titulo {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 217, 74, 0.45);
+  background: rgba(44, 74, 18, 0.28);
+  color: #b8e08a;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.espera-cartas {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.espera-carta {
+  position: relative;
+  flex-shrink: 0;
+  width: clamp(26px, 4vh, 36px);
+  aspect-ratio: 1191 / 1646;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 217, 74, 0.4);
+  cursor: pointer;
+  transition: transform var(--transicion), border-color var(--transicion);
+}
+
+.espera-carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.7) saturate(0.75);
+}
+
+.espera-carta:hover {
+  transform: translateY(-3px) scale(1.1);
+  border-color: #8fd94a;
+  z-index: 3;
+}
+
+.espera-carta:hover img {
+  filter: none;
+}
+
+/* Sin energía para salir todavía. */
+.espera-carta.cara {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.espera-stats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 0;
+  text-align: center;
+  font-size: 7.5px;
+  letter-spacing: -0.03em;
+  color: var(--texto-suave);
+  background: rgba(6, 8, 16, 0.82);
+}
+
+/* --- Hades: zona abierta, siempre a la vista de ambos --- */
+
+.hades {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.hades-titulo {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(160, 120, 200, 0.5);
+  background: rgba(74, 32, 96, 0.3);
+  color: #c9a8e0;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hades-cartas {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.hades-carta {
+  position: relative;
+  flex-shrink: 0;
+  width: clamp(22px, 3.4vh, 30px);
+  aspect-ratio: 1191 / 1646;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(160, 120, 200, 0.45);
+  cursor: pointer;
+  transition: transform var(--transicion), border-color var(--transicion);
+}
+
+.hades-carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(0.55) brightness(0.82);
+}
+
+.hades-carta:hover {
+  transform: translateY(-3px) scale(1.12);
+  border-color: #c9a8e0;
+  z-index: 3;
+}
+
+.hades-carta:hover img {
+  filter: none;
+}
+
+/* --- Lateral y controles --- */
+
+.mesa-lateral {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--borde);
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.mesa-lateral #registro-lista {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mesa-lateral h4 {
+  flex-shrink: 0;
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.mesa-lateral p {
+  margin: 0 0 5px;
+  color: var(--texto-suave);
+}
+
+.mesa-lateral p span {
+  color: var(--texto-tenue);
+  margin-right: 5px;
+}
+
+.mesa-controles {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  /* Cada píxel de aquí sale del tablero, que es el `1fr` de la rejilla, así
+     que el relleno cede antes que el contenido. */
+  padding-top: clamp(7px, 1.4vh, 14px);
+  border-top: 1px solid var(--borde);
+  min-height: clamp(52px, 7.4vh, 74px);
+}
+
+.controles-cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.controles-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  /* Se recorta antes que las cartas en ventanas bajas. */
+  margin-bottom: clamp(2px, 0.7vh, 8px);
+}
+
+.controles-pista {
+  letter-spacing: 0;
+  text-transform: none;
+  color: #7ea8f0;
+}
+
+.controles-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opcion-carta {
+  width: 62px;
+  flex-shrink: 0;
+}
+
+/* En ventanas bajas se encogen: el pie le roba altura al tablero, y estas
+   miniaturas son lo que más ocupa de él. No se pierde nada legible porque la
+   carta se lee en la LUPA al pasar el ratón, no aquí. */
+.controles-opciones .opcion-carta {
+  width: clamp(46px, 6.4vh, 62px);
+}
+
+/* En ventanas bajas de verdad (la mínima permitida son 700 px de alto) el
+   tablero todavía se pasaba por unos pocos píxeles en la fase de acción, que
+   es cuando hay carta Y acción acopladas en los dos lados. Se aprieta AQUÍ y
+   no en los `clamp` generales para no encoger nada en la ventana por defecto,
+   donde ya cabía todo. Medido: 1024x700 pasa de desbordar 15 px a 0. */
+@media (max-height: 760px) {
+  .campo-par .mini-carta.personaje {
+    width: clamp(66px, 10.2vh, 104px);
+  }
+
+  .campo-par .mini-carta {
+    width: clamp(54px, 8.4vh, 84px);
+  }
+
+  .sm-num {
+    font-size: clamp(15px, 2.6vh, 25px);
+  }
+}
+
+/* --- Combate en dos pasos --- */
+
+.ataque-selectores {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ataque-selectores label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.ataque-selectores select {
+  padding: 5px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--fondo-alto);
+  color: var(--texto);
+  font-size: 12.5px;
+  font-family: inherit;
+  max-width: 260px;
+}
+
+.ataque-flecha {
+  padding-bottom: 6px;
+  color: var(--texto-tenue);
+  font-size: 13px;
+}
+
+.ataque-pendiente {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  /* Se aprieta en ventanas bajas: este bloque es el que más alto le quita al
+     tablero, y sin ceder aquí el tablero se desplaza justo cuando más falta
+     hace verlo entero. */
+  gap: clamp(6px, 1vh, 14px);
+  padding: clamp(5px, 0.9vh, 9px) 14px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio-s);
+  background: rgba(201, 169, 89, 0.08);
+}
+
+/* La tira de respuesta va LA ÚLTIMA aunque en el HTML esté antes que los
+   botones. Como toma fila propia (`flex: 1 1 100%`), estando en medio empujaba
+   los botones a una TERCERA fila: 47 px más de pie, que salen del tablero.
+   Con esto el bloque son dos filas —situación + botones, y debajo lo que aún
+   puedes aplicar— en vez de tres. */
+.ap-respuesta {
+  order: 1;
+}
+
+/* Al final de su fila, para que no aprieten al veredicto. */
+.ap-botones {
+  margin-left: auto;
+}
+
+/* Más bajos que los botones generales: aquí el alto es lo escaso. */
+.ap-botones button {
+  padding-top: clamp(5px, 0.9vh, 9px);
+  padding-bottom: clamp(5px, 0.9vh, 9px);
+}
+
+/* El rótulo, dentro del bloque y no en una fila propia encima. */
+.ap-rotulo {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  line-height: 1.25;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.ap-rotulo em {
+  font-style: normal;
+  letter-spacing: 0.04em;
+  color: var(--texto-tenue);
+}
+
+/* En LÍNEA, no apilados: el nombre y su número dicen lo mismo uno al lado del
+   otro y ocupan la mitad de alto. Cada píxel de este bloque sale del tablero. */
+.ap-lado {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ap-lado strong {
+  font-size: 12.5px;
+}
+
+.ap-valor {
+  font-size: 17px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.ap-valor.atk {
+  color: #f0a07a;
+}
+
+.ap-valor.def {
+  color: #7ec0f0;
+}
+
+.ap-veredicto {
+  flex: 1;
+  /* Más estrecho en ventanas angostas: con 150 px fijos los botones no cabían
+     en la fila y saltaban a una propia, que son 40 px más de pie. */
+  min-width: clamp(112px, 12vw, 150px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.ap-veredicto.bien {
+  color: var(--ok);
+}
+
+.ap-veredicto.mal {
+  color: var(--error);
+}
+
+.ap-veredicto.duda {
+  color: var(--acento);
+}
+
+.ap-dano {
+  font-size: 11px;
+  color: #f08a8a;
+}
+
+/* El reflejo va contra el atacante, al revés que el resto del daño: se marca
+   con su propio color para que no se lea del lado equivocado. */
+.ap-dano.es-reflejo {
+  padding: 1px 7px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  color: var(--acento);
+}
+
+/* Qué activó la IA para este ataque, siempre visible aunque la pestaña de
+   Registro esté tapada. `flex-basis: 100%` la manda a su propia línea dentro
+   de `.ataque-pendiente`, que es flex-wrap. */
+.ap-efecto-ia {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border: 1px dashed var(--acento);
+  border-radius: var(--radio-s);
+  background: rgba(201, 169, 89, 0.06);
+  font-size: 11.5px;
+  color: var(--texto-suave);
+}
+
+.ap-efecto-ia-titulo {
+  color: var(--acento);
+  font-weight: 650;
+}
+
+.ap-botones {
+  display: flex;
+  gap: 7px;
+}
+
+/* --- Fin de duelo --- */
+
+.mesa-fin {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 16, 0.86);
+  z-index: 20;
+}
+
+.mesa-fin.oculto {
+  display: none;
+}
+
+.fin-caja {
+  text-align: center;
+  padding: 40px 56px;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+}
+
+.fin-caja h2 {
+  margin: 0 0 6px;
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+}
+
+.fin-victoria {
+  color: var(--ok);
+}
+
+.fin-derrota {
+  color: var(--error);
+}
+
+.fin-caja p {
+  margin: 0 0 22px;
+  color: var(--texto-suave);
+  font-size: 13.5px;
+}
+
+.fin-motivo {
+  max-width: 420px;
+  margin: 0 auto 20px !important;
+  line-height: 1.55;
+}
+
+/* ----------------------------- Cinemáticas ----------------------------- */
+
+/* La capa la crea `core/cinematica.js` sobre el <body>, no dentro de #app: el
+   Router vacía #app al cambiar de pantalla y se llevaría la cinemática a
+   medio fundido. De ahí el z-index alto y el `position: fixed`. */
+.cinematica {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 42px;
+  padding: 8vh 10vw;
+  background: #000;
+  cursor: pointer;
+  outline: none;
+
+  /* Estado inicial y de salida: transparente. `visible` lo lleva a 1. */
+  opacity: 0;
+  transition: opacity var(--cine-entrada, 900ms) ease;
+}
+
+.cinematica.visible {
+  opacity: 1;
+}
+
+.cinematica.saliendo {
+  /* El corte por salto acelera el fundido; lo fija el JS por propiedad. */
+  transition: opacity var(--cine-salida, 700ms) ease;
+}
+
+/* La variante de vídeo: sin el relleno generoso del texto, que ahí sobra —el
+   vídeo quiere el hueco entero— y con el aviso de saltar abajo, flotando. */
+.cinematica.es-video {
+  gap: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+.cinematica-video {
+  /* `width/height` al 100%, no `max-*`: un máximo solo LIMITA, no escala, así
+     que el vídeo se quedaba a su tamaño intrínseco —medido: 854x480 en una
+     ventana de 1280x816, un 67% del ancho— con un marco negro enorme
+     alrededor. Con el 100% y `contain` sí crece hasta llenar el hueco.
+
+     `contain` y no `cover`: el intro viene a 854x480 y recortarlo para tapar
+     una ventana más ancha se comería parte del encuadre. Las barras que deja
+     se funden con el negro de la capa, así que no se notan. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cinematica.es-video .cinematica-saltar {
+  position: absolute;
+  bottom: 6vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.cinematica-texto {
+  margin: 0;
+  max-width: 44ch;
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(19px, 2.4vw, 30px);
+  line-height: 1.72;
+  letter-spacing: 0.4px;
+  /* El dorado es un degradado recortado al texto, no un color plano: así las
+     letras tienen el brillo de metal que pide la escena. El `color` de reserva
+     va antes, para que se lea igual si el recorte no llega a aplicarse. */
+  color: #e3c57e;
+  background: linear-gradient(180deg, #f6e4b0 0%, #d8ab4e 52%, #a87a2c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* La sombra no puede ir en el mismo elemento que el recorte: el relleno
+     transparente la dejaría ver a través de las letras. Va en el filtro. */
+  filter: drop-shadow(0 0 26px rgba(201, 169, 89, 0.32));
+
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity var(--cine-aparicion, 900ms) ease var(--cine-entrada, 900ms),
+    transform var(--cine-aparicion, 900ms) ease var(--cine-entrada, 900ms);
+}
+
+.cinematica.visible .cinematica-texto {
+  opacity: 1;
+  transform: none;
+}
+
+/* Al salir, el texto se va con la capa y sin retardo: si mantuviera el de
+   entrada, se quedaría encendido mientras el negro ya se ha ido. */
+.cinematica.saliendo .cinematica-texto {
+  transition: none;
+}
+
+.cinematica-saltar {
+  font-size: 11.5px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(201, 169, 89, 0.42);
+  opacity: 0;
+  /* Aparece tarde y despacio: es una ayuda, no parte de la escena. */
+  transition: opacity 1200ms ease 2200ms;
+}
+
+.cinematica.visible .cinematica-saltar {
+  opacity: 1;
+}
+
+.cinematica.saliendo .cinematica-saltar {
+  transition: none;
+  opacity: 0;
+}
+
+/* --------------------------- Barras de scroll -------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--borde-fuerte);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--texto-tenue);
+}
+
+/* ---------------------- Confirmación genérica --------------------------- */
+
+/* Por encima del mezclador (z-index 60): una confirmación puede lanzarse
+   desde encima de cualquier otra capa suelta. */
+.confirmar-capa {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 5, 10, 0.78);
+  animation: burbujaEntra 160ms ease both;
+}
+
+.confirmar-caja {
+  width: min(420px, 100%);
+  padding: 22px 24px;
+  border: 1px solid var(--error);
+  border-radius: var(--radio);
+  background: var(--fondo-alto);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.95);
+}
+
+.confirmar-caja h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: var(--error);
+}
+
+.confirmar-caja p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--texto-suave);
+}
+
+.confirmar-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Variante roja del botón primario: solo para la acción que de verdad borra
+   algo. El botón de cancelar es el secundario de siempre, sin tocar. */
+.confirmar-peligro {
+  background: var(--error);
+  border-color: var(--error);
+}
+
+.confirmar-peligro:hover {
+  background: #ff8a8a;
+  border-color: #ff8a8a;
+}

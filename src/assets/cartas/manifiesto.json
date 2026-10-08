@@ -1,0 +1,452 @@
+[
+  {
+    "original": "Área de descanso.png",
+    "imagen": "area-de-descanso.jpg",
+    "origen": "1646x1191",
+    "salida": "620x449"
+  },
+  {
+    "original": "Calabozo1A.png",
+    "imagen": "calabozo1a.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo1B.png",
+    "imagen": "calabozo1b.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo1C.png",
+    "imagen": "calabozo1c.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo2A.png",
+    "imagen": "calabozo2a.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Calabozo2B.png",
+    "imagen": "calabozo2b.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo2C.png",
+    "imagen": "calabozo2c.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo3A.png",
+    "imagen": "calabozo3a.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Calabozo3B.png",
+    "imagen": "calabozo3b.jpg",
+    "origen": "1191x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo3C.png",
+    "imagen": "calabozo3c.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo3D.png",
+    "imagen": "calabozo3d.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo4A.png",
+    "imagen": "calabozo4a.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Calabozo4B.png",
+    "imagen": "calabozo4b.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Calabozo4C.png",
+    "imagen": "calabozo4c.jpg",
+    "origen": "1191x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-acrobático2.png",
+    "imagen": "d-acrobatico2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-Biomecánica.png",
+    "imagen": "d-biomecanica.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-Bloquear2.png",
+    "imagen": "d-bloquear2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-Campo Caótico.png",
+    "imagen": "d-campo-caotico.jpg",
+    "origen": "1192x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-Encadenar.png",
+    "imagen": "d-encadenar.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "D-Escape2.png",
+    "imagen": "d-escape2.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Desterrado Annia.png",
+    "imagen": "desterrado-annia.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Desterrado Auram.png",
+    "imagen": "desterrado-auram.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Desterrado Axel.png",
+    "imagen": "desterrado-axel.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Desterrado Erem.png",
+    "imagen": "desterrado-erem.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Desterrado Lydia.png",
+    "imagen": "desterrado-lydia.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Desterrado Thiana.png",
+    "imagen": "desterrado-thiana.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Esbirro de las catacumbas.png",
+    "imagen": "esbirro-de-las-catacumbas.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Esbirro de las forjas.png",
+    "imagen": "esbirro-de-las-forjas.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Esbirro del bosque nocturno.png",
+    "imagen": "esbirro-del-bosque-nocturno.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Esbirro del oasis.png",
+    "imagen": "esbirro-del-oasis.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Eternal de las catacumbas.png",
+    "imagen": "eternal-de-las-catacumbas.jpg",
+    "origen": "1754x2425",
+    "salida": "620x857"
+  },
+  {
+    "original": "Eternal de las forjas.png",
+    "imagen": "eternal-de-las-forjas.jpg",
+    "origen": "1754x2425",
+    "salida": "620x857"
+  },
+  {
+    "original": "Eternal de los oasis.png",
+    "imagen": "eternal-de-los-oasis.jpg",
+    "origen": "1754x2425",
+    "salida": "620x857"
+  },
+  {
+    "original": "Eternal del bosque nocturno.png",
+    "imagen": "eternal-del-bosque-nocturno.jpg",
+    "origen": "1754x2425",
+    "salida": "620x857"
+  },
+  {
+    "original": "Lunaria Acompañantes.png",
+    "imagen": "lunaria-acompanantes.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Lunaria Delem.png",
+    "imagen": "lunaria-delem.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Lunaria Fälum.png",
+    "imagen": "lunaria-falum.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Lunaria Lirym.png",
+    "imagen": "lunaria-lirym.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Lunaria Sadash.png",
+    "imagen": "lunaria-sadash.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Lunaria Seluah.png",
+    "imagen": "lunaria-seluah.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Mercenario 1.png",
+    "imagen": "mercenario-1.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Mercenario 2.png",
+    "imagen": "mercenario-2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Mercenario 3.png",
+    "imagen": "mercenario-3.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Mercenario 4.png",
+    "imagen": "mercenario-4.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Comodin2.png",
+    "imagen": "n-comodin2.jpg",
+    "origen": "1191x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Devoción.png",
+    "imagen": "n-devocion.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Diplomático2.png",
+    "imagen": "n-diplomatico2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Investigar2.png",
+    "imagen": "n-investigar2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Llamada.png",
+    "imagen": "n-llamada.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Ocultamiento.png",
+    "imagen": "n-ocultamiento.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "N-Ruego al eterno.png",
+    "imagen": "n-ruego-al-eterno.jpg",
+    "origen": "1191x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-Captura.png",
+    "imagen": "o-captura.jpg",
+    "origen": "1191x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-convocar luna sangrienta.png",
+    "imagen": "o-convocar-luna-sangrienta.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-Finta2.png",
+    "imagen": "o-finta2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-Inmolación2.png",
+    "imagen": "o-inmolacion2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-Rompescudos2.png",
+    "imagen": "o-rompescudos2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "O-Sabotaje.png",
+    "imagen": "o-sabotaje.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxirtron Kratox.png",
+    "imagen": "oxirtron-kratox.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxitron Brawl.png",
+    "imagen": "oxitron-brawl.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxitron Kaw.png",
+    "imagen": "oxitron-kaw.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxitron Krag.png",
+    "imagen": "oxitron-krag.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxitron Krox.png",
+    "imagen": "oxitron-krox.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Oxitrón Pip.png",
+    "imagen": "oxitron-pip.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Reanimado Ejército.png",
+    "imagen": "reanimado-ejercito.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Reanimado Gurh.png",
+    "imagen": "reanimado-gurh.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Reanimado Luh.png",
+    "imagen": "reanimado-luh.jpg",
+    "origen": "1192x1646",
+    "salida": "620x856"
+  },
+  {
+    "original": "Reanimado Thila.png",
+    "imagen": "reanimado-thila.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Reanimado Vyla.png",
+    "imagen": "reanimado-vyla.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Reanimado Zabar.png",
+    "imagen": "reanimado-zabar.jpg",
+    "origen": "1192x1647",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre Corrupta.png",
+    "imagen": "sangre-corrupta.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre especial 1.png",
+    "imagen": "sangre-especial-1.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre especial 2.png",
+    "imagen": "sangre-especial-2.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre especial 3.png",
+    "imagen": "sangre-especial-3.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre especial 4.png",
+    "imagen": "sangre-especial-4.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  },
+  {
+    "original": "Sangre Universal.png",
+    "imagen": "sangre-universal.jpg",
+    "origen": "1191x1646",
+    "salida": "620x857"
+  }
+]

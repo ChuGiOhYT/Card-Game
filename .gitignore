@@ -1,0 +1,16 @@
+# Dependencias: se reinstalan con `npm install`. 355 MB que no aportan nada.
+node_modules/
+
+# Compilados: los .exe pesan 526 MB y se regeneran con `construir_todo.bat`.
+dist/
+
+# Basura del sistema y de los editores.
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
+npm-debug.log*
+
+# La partida guardada NO vive aquí (va en %APPDATA%\aeternum\savegame.json),
+# pero por si alguna prueba deja una copia suelta en el proyecto.
+savegame.json
