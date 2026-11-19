@@ -17,6 +17,9 @@ npm run mapa       # regenera MAPA.md
 npm run simular    # banco de duelos: mide la IA y el equilibrio entre razas
 npm run simular -- --torneo   # compara variantes de la heurística
 npm run dist       # compila los .exe (instalador + portable) en dist/
+python tools/fondos2d/bosque.py   # repinta las capas del escenario 2D del Bosque
+python tools/fondos2d/oasis.py    # … y las del Oasis
+python tools/fondos2d/tapetes.py  # repinta los tapetes de la mesa (uno por estirpe)
 ```
 
 Para compilar sin acordarse de nada, **doble clic en `construir_todo.bat`**:
@@ -165,6 +168,17 @@ mal, se corrige ahí y se regenera.
   regalara la partida. Quitarla le quita al jugador esas victorias gratis. Para
   aflojar de verdad una etapa temprana el sitio es `etapa.criaturas`, no esta
   lista.
+- **Y el jugador usa ese mismo código: «Aplicar» en el recordatorio.**
+  `AccionesIA.aplicarManual()` aplica la carta del jugador con los mismos
+  efectos que usa la IA (las de `SIN_AUTOMATIZAR` siguen yendo a mano). El
+  registro dice «(lo aplicas tú)» y los efectos firman «(tú)» en vez de «(IA)»
+  porque `aplicar()` fija `_quien` y cada efecto firma con `this._q()`. El botón
+  solo se ofrece cuando tiene sentido (`instParaAplicar` en `match.js`): una
+  defensiva de combate solo si te están atacando a ESA carta, una ofensiva de
+  combate solo en tu fase de ataque; fuera de eso, se gastaría sin hacer nada.
+  Al aplicarla se descarta el recordatorio, así un doble clic no la aplica dos
+  veces. Inmolación del jugador se cobra en `siguienteFase()` al cerrar la fase
+  de ataque —antes solo la cobraba la IA en su turno—.
 - **El jefe se esconde tras sus esbirros, y el esbirro cuenta esté donde esté.**
   Con cualquier esbirro en pie —en posición **o esperando en la zona de la
   oleada**—, un golpe dirigido al Eternal lo encaja el esbirro: se interpone,
@@ -285,7 +299,541 @@ mal, se corrige ahí y se regenera.
   las dos por hechas. Los cuatro calabozos siguen acabando en 6 personajes y
   8 acciones.
 
+## Lecturas de cartas fijadas por Oscar (para automatizarlas todas)
+
+Respuestas suyas a lo que las cartas no cierran. Mandan sobre cualquier
+interpretación propia:
+
+- **Sangrado xN = derramar N.** Sadash, al retirarse: el oponente derrama 1 por
+  cada lunaria revelado.
+- **«Revelados» cuenta TODO lo revelado de los dos bandos, en campo y manos**
+  (así un espejo lunaria contra lunaria escala para los dos). Vale para
+  Lydia, Auram, Acompañantes, Fälum y compañía.
+- **Yrving:** si el rival no tiene ninguna acción del tipo declarado, no aplica.
+- **Duraciones en turnos** (Pip, Kaw, Kratox, Diplomático…): cuentan los turnos
+  de LOS DOS jugadores. «Este y el siguiente» = el turno del jugador activo y
+  el siguiente del rival.
+- **Comodín** no puede encadenar otro Comodín.
+- **Tilos y Biomecánica:** una u otra, nunca las dos a la vez en el mismo
+  personaje.
+- **Una carta queda revelada desde que se USA** (sale a posición, se acopla) y
+  sigue revelada aunque vuelva a la mano; deja de estarlo SOLO al ir al Hades
+  o al destierro (vacío). `desplegar`/`equipar` revelan y `enviarAlHades`
+  borra de `revelados`.
+- **«Revelado:»** (Lydia, Acompañantes, Seluah, Tilos, Zhin) funciona solo con
+  la carta revelada en la mano; no en posición ni en el Hades.
+- **Sabotaje** actúa solo acoplada a tu personaje en posición, sobre cualquier
+  dado del rival. **Yun** solo toca los dados de cartas de ACCIÓN, y pregunta.
+- **Elecciones en el turno del rival** (Zhin, Campo caótico) paran el juego y
+  esperan, sin cuenta atrás. Y **la fase de Personaje nunca avanza sola**.
+- **Si una carta da opción («o», «puedes»), se PREGUNTA** al jugador; la IA
+  elige con su regla. Hoy Annia/Axel/Thiana/Erem toman el aumento sin
+  preguntar: es provisional hasta que exista el sistema de elecciones.
+
+## La base para automatizar todas las cartas (tanda 1)
+
+- **Elecciones** (`motor.elegir({ jugador, titulo, opciones, ia, alElegir })`):
+  si elige la IA, su regla `ia(opciones)` decide al instante (una regla que
+  revienta cae a la primera opción); si elige un humano, queda
+  `motor.eleccionPendiente` y el turno ESPERA —`siguienteFase`, `desplegar`,
+  `equipar` y `declararAtaque` se niegan, `AI.jugarFase` se para, y la mesa
+  no corre ninguna cuenta atrás— hasta `resolverEleccion(id)`. Con una sola
+  opción no se pregunta. La pantalla la enseña como una placa sobre la mesa
+  (`pintarEleccion`, `#eleccion`), sin cuenta atrás (Oscar). El simulador y
+  el banco no la ven nunca: allí juegan dos IA.
+- **Estados con duración** (`ponerEstado`, `tieneEstado`, `estadosDe`):
+  `inmune` (no se le puede atacar; con todos los de enfrente intocables no
+  hay ataque, ni a la sangre), `sinAtaques` (nadie declara) y
+  `personajeBloqueado` (no se despliega y sus efectos se niegan, `negado()`).
+  Cuentan los turnos de LOS DOS, incluido el turno en que se ponen, y caducan
+  en `finalizarTurno`. En la carta, pastillas «⛨ 2» / «⛓ 3»
+  (`chipsEstado`); «nadie puede atacar» va en la banda.
+- **Código muerto destapado:** los bloqueos de acciones (`motor.bloqueos`, de
+  Herramientas) se guardaban y se pintaban pero `accionesDisponibles` no los
+  leía: una acción bloqueada se acoplaba igual. Ahora no.
+- **Ganchos nuevos** en `EfectosPersonaje`, vacíos hasta que llegue su carta:
+  `alRetirarse` (desde `retirar`), `antesDeDestruir` (desde `motor.destruir`,
+  que usa el combate; devolver true lo evita) y `alFinDeTurno`.
+- **Annia, Axel, Thiana y Erem PREGUNTAN** «aumento o revelar». Revelar
+  pregunta CUÁL, una a una (Oscar: el jefe del Bosque escala con lo revelado,
+  así que el jugador tiene que poder elegir): opciones por posición («Acción
+  oculta 2», boca abajo no se sabe cuál es cuál, marcadas `revelar: true`) y,
+  tras la primera, «Terminar» («hasta N»). En pantalla los reversos elegibles
+  de la mano rival laten y se pinchan (`[data-revelar]`), y lo revelado se pinta
+  BOCA ARRIBA en esa mano (`pintarManoRival`; antes seguía todo de reverso y
+  no se veía qué se había revelado). La IA elige al azar. Sin nada oculto, no hay pregunta: aumento. La IA revela si
+  lleva Lydia o Auram; si no, el aumento.
+
+Probado: `probar-base.js` (18 casos) y `probar-pasivos.js` (13) en el
+scratchpad, 4.800 duelos IA contra IA sin cuelgues ni tablas, y en pantalla.
+
+## Tanda 3: dado y estados
+
+- **`Manual.tirar(motor, { jugador, motivo, deAccion, valor }, alTener)`** es la
+  tirada de los EFECTOS (el botón del dado de la mesa sigue con `dado()`: es
+  herramienta, no carta). Aplica Sabotaje (−2 si el RIVAL lo tiene acoplado a
+  su personaje en posición) y Yun (±1 solo en dados de ACCIÓN de su dueño, si
+  está en posición o revelado en la mano). Yun PREGUNTA al humano, así que el
+  resultado llega en `alTener` y no de vuelta: Finta, Bloquear y Acrobático
+  pasaron a continuación (`_bloquear`, `_acrobatico` en `EFECTOS`, llamados con
+  `.call(this, …)` porque `this` es `AccionesIA`, no `EFECTOS`). La IA elige el
+  ±1 con `valor(n)` de cada carta (Bloquear prefiere 1 y 6).
+- **Pip** (1-3: intocable tantos turnos), **Brawl** (≥3: devuelve la acción
+  acoplada del rival a su zona), **Kaw** (eliges acción del rival, bloqueada
+  N turnos) y **Kratox** (eliges personaje de su reserva, bloqueado y negado N
+  turnos) van en `EfectosPersonaje.CON_DADO`. Al elegir cartas del rival, las
+  ocultas salen como «Acción oculta N»: no se sabe cuál es cuál. La IA bloquea
+  la ofensiva revelada, o una al azar; Kratox, el revelado más caro.
+- **Diplomático** paga 2 y pone «sin ataques» 2 turnos (este y el siguiente);
+  sin 2 de energía no hace nada. **Sabotaje** no hace nada al acoplarse: es
+  pasiva y la lee `tirar`.
+- Kratox niega también los PASIVOS del bloqueado (Lydia en la mano, etc.).
+
+Probado: `probar-tanda3.js` (19 casos, con el dado fijado), más las baterías
+anteriores; 4.800 duelos sin cuelgues; pastillas y aviso en pantalla.
+
+## Tanda 4: objetivos y cartas entre zonas
+
+- **Lirhym**: eliges una acción del rival y queda bloqueada MIENTRAS Lirhym
+  siga en posición (`Manual.bloquearMientras`: bloqueo con `mientras: uid`;
+  `estaBloqueada` lo ignora si esa instancia ya no está en posición y
+  `finalizarTurno` lo limpia).
+- **Vyla**: manda un Reanimado de tu zona de equipo al Hades (obligatorio si
+  hay). La IA prefiere Ejército, luego Gurh, luego el más barato.
+- **Luh**: opcional; Luh va al Hades y un Reanimado REVELADO de tu reserva
+  entra en posición sin pagar (y dispara su propio «En posición»).
+- **Lyla**: opcional; recupera del Hades un personaje de coste ≤5 pagando su
+  coste (solo se ofrecen los que puedes pagar).
+- **Yrving**: declaras un tipo entre los que el rival TIENE disponibles (si no
+  tiene de ese tipo, no aplica). Estado `tipoForzado` con `valor` (nuevo campo
+  de `ponerEstado`) 2 turnos: `accionesDisponibles` le deja solo ese tipo, y
+  el estado se cumple y se va al acoplar una de ese tipo.
+- **Errante** («Acción equipada», va en `alEquipar`): ofensiva → un personaje
+  del Hades (de cualquier bando) al vacío; defensiva → uno del vacío al Hades;
+  neutra → recupera 1 sangre.
+- **Sadash** (`alRetirarse`, solo al volver a la reserva, no al morir): el
+  rival derrama 1 por cada lunaria revelado en los DOS bandos.
+- **Seluah** revelada en la mano: al declararse un ataque donde tu activo es
+  lunaria, ofrece mantener o cambiar su acción por otra disponible. La IA
+  prueba cada opción con `Combat.resolver`.
+- **Zhin** revelado en la mano: en el golpe normal, `resolverAtaque` PREGUNTA
+  («Sacrificar a Zhin» / «Dejar caer») y la segunda mitad del golpe vive en
+  `_cobrarGolpe`, que espera la respuesta. Si dices que no, `destruir(…,
+  { yaDecidido: true })` para que `antesDeDestruir` no lo vuelva a ofrecer.
+  Otras destrucciones (jefe, Inmolación) no pueden esperar: Zhin se sacrifica
+  solo. La IA siempre sacrifica.
+- **Candados**: `resolverAtaque` devuelve null con una elección pendiente (el
+  golpe espera a Seluah), y el auto-resolver de la mesa y `autoAplicar` no
+  arrancan mientras haya una.
+
+Probado: `probar-tanda4.js` (21 casos), más las baterías anteriores; 4.800
+duelos sin cuelgues ni tablas (los reanimados siguen en 15–30 % frente al
+resto, igual que antes de la tanda).
+
+## Tanda 5: las acciones que faltaban y Tilos
+
+Con esto TODAS las cartas tienen efecto automático (`SIN_AUTOMATIZAR` vacío).
+
+- **Defensivas de combate (Escape, Campo caótico, Biomecánica)** solo actúan
+  cuando te han declarado el ataque a ti (`_meAtacan`); fuera de eso no hacen
+  nada. Por eso `autoAplicar` ya no aplica tus defensivas hasta que el rival
+  declara (antes Bloquear se tiraba en cuanto empezaba su fase de ataque).
+  - **Escape** (opcional): entra uno de coste ≤ y el golpe pasa a apuntarle;
+    Escape vuelve a la zona, así que el que entra llega sin acción (neutral:
+    el golpe le atraviesa a la sangre). La IA escapa si la iban a tumbar y la
+    sangre aguanta.
+  - **Campo caótico**: «Con la defensa» o «Ataque directo a la sangre»
+    (`defensorUid = null`).
+  - **Biomecánica** (opcional): el elegido de tu reserva suma ataque y
+    defensa (temporal); al final del turno va al Hades y la carta vuelve a la
+    zona. LECTURA MÍA: la carta sigue acoplada hasta el final del turno, porque
+    si volviera a la zona en el acto el defensor quedaría neutral y el golpe le
+    atravesaría. Tilos no puede ser el elegido (una u otra).
+    Los pendientes de fin de turno van en `motor.pendientesFinTurno`.
+- **Encadenar** (con un Oxitrón en posición): pagas 1 y el RIVAL elige quién
+  de sus revelados entra; el que sale queda bloqueado 2 turnos (LECTURA MÍA de
+  «un turno»: el del rival, contando los dos como manda Oscar).
+- **Devoción**: tu activo al Hades, recuperas su coste (lo que haya en gasto).
+  La IA solo la acopla con 4 o menos de vida, gasto suficiente y reserva.
+- **Llamada**: un Reanimado de tu Hades vuelve pagando su coste.
+- **Investigar**: revela a ciegas una acción o personaje oculto del rival.
+- **Ocultamiento** (con un Desterrado en posición): hasta dos acciones
+  reveladas de las ZONAS de acciones (de los dos, no las acopladas) vuelven a
+  ocultas. Pregunta dos veces; `elegir` lleva ahora un contador propio
+  (`_nEleccion`) para que la segunda placa se repinte.
+- **Comodín** («Cualquier fase», se dispara al acoplar): opcional; vuelve a la
+  zona y acopla otra acción tuya REVELADA, que se activa si es de «Acción
+  equipada» o «Cualquier fase». Nunca otro Comodín.
+- **Tilos** (revelado en la mano): al entrar en tu fase de acción pregunta
+  «No / Ofensiva +4 / Defensiva +4». Va en `inst.tilos = { tipo, carta }`,
+  ocupa el puesto de la acción (`Combat._accion`) y sale de la reserva; si
+  luego acoplas una acción, Tilos vuelve a la mano. Se destruye al final del
+  turno del OPONENTE, o en cuanto su anfitrión deja la posición. La IA solo lo
+  usa si no le queda ofensiva.
+
+Probado: `probar-tanda5.js` (26 casos), más las cuatro baterías anteriores;
+4.800 duelos sin cuelgues ni tablas.
+
+## Tanda 6: la IA valora en contexto, pruebas en el repo y equilibrio
+
+- **`AI.valorEnCampo(motor, yo, inst)`**: lo impreso + los pasivos que le
+  tocarían EN POSICIÓN (los suyos y los de sus aliados desde mano o Hades) −
+  lo que le quita al rival (Thila), y +3 a Vyla si tiene otro Reanimado que
+  mandar al Hades. Se calcula poniéndolo un instante en `activos` y llamando a
+  `PASIVOS` (que solo leen). Lo usan `candidatos` (orden de despliegue) y
+  `relevarSiConviene`; `superaA` mira `ataqueEnCampo`. `puntuarAccion` estima
+  la respuesta del rival con su pasivo y modificadores, no con lo impreso.
+- **Pruebas en el repo**: `node tools/probar-efectos.js` corre las cinco
+  baterías de `tools/pruebas/` (97 casos: base, pasivos, dados y estados,
+  objetivos y zonas, acciones y Tilos). `--todo` enseña cada caso. Al tocar
+  un efecto, añadir su caso a la batería que toque.
+- **`npm run simular -- --sin-mercenarios`**: equipos de una sola raza, como
+  los de la IA del juego.
+
+Equilibrio medido (300 duelos por cruce, % que gana la fila):
+
+| | con mercenarios | sin mercenarios |
+|---|---|---|
+| Reanimados contra el resto | 13-31 % | 17-31 % |
+| espejo Reanimado | ~59 % / 41 % | ~50 % |
+
+La IA nueva sube a los Reanimados unos 4-5 puntos, pero el hueco es de
+cartas: media impresa 2,3/4,5 frente a 4-5,7 de ataque del resto, y su motor
+(llenar el Hades) llega tarde. No se ha tocado ninguna carta: es decisión de
+Oscar (ya descartó tocar números impresos de las criaturas).
+
+## Narración y bocadillos
+
+- **`docs/BIBLIA.md` es la referencia del mundo**: cosmología, estirpes,
+  Eternales, personajes, tono. La campaña es la PRECUELA del libro de Oscar
+  (`Aeternum - Historia - 08-07-26.docx`); nada de la campaña puede impedir
+  el libro. Un Eternal por Eterno: Iskar (Orden, Bosque), Brahma (Muerte,
+  Oasis), A’tar (Caos, Forjas), Tarh Akh (Vida, Catacumbas). **Iskar se
+  llamaba Üldar**; el id sigue siendo `cri_uldar` (no lo cambies: lo usan
+  arte, habilidades y guardados). Zhin está detrás de las ratas del Bosque y
+  es SECRETO: nunca nombrarlo en el calabozo.
+- **Los textos de los cuatro calabozos se reescribieron** desde la biblia
+  (las cinemáticas de Oscar conservan sus hechos: Aj’Khul, la voz nueva que
+  ordena a los Persecutores…). Todas las etapas tienen ahora `dialogo`,
+  `cineEntrada` y `cineVictoria`.
+- **Bocadillos** (`ui/bocadillos.js` + `data/frases.js`): en los duelos de
+  CAMPAÑA los personajes hablan al entrar en posición, al tumbar a alguien,
+  al caer y con poca sangre; los jefes al aparecer, al empezar alguno de sus
+  turnos, al bajar de la mitad y al caer. Una frase a la vez, en cola; lo que
+  espera más de 3,5 s se tira. Con tutorial, nadie habla. En Catacumbas y
+  Forjas (sin escenario 2D) el `dialogo` de la etapa se dice en bocadillos al
+  empezar el duelo. Ganchos: `iniciar` en `render`, `revisar` en
+  `reaccionarASucesos`, `parar` en `destruir`. Trampa ya pisada: no limpies
+  `temporizador` para arrancar la cola, que es también el que retira el
+  bocadillo visible (se quedaba colgado para siempre).
+
+## Primer turno sin ataque y mazos por estirpe
+
+- **Quien abre no ataca en su primer turno** (Oscar): `numeroTurno === 1`
+  vacía `atacantesDisponibles` y hace fallar `declararAtaque` (también una
+  intención remota). La mesa lo avisa («Primer turno: todavía no se puede
+  atacar»). Vale en todos los modos, calabozo incluido (sin medir su efecto en
+  las etapas). Las baterías de pruebas arrancan sus mesas en el turno 2.
+- **`Team.MAZOS_BASE`**: el mazo por defecto de cada estirpe, con identidad
+  (IA del modo solo, «Autocompletar», duelo remoto sin equipo elegido; la
+  campaña no). Medido IA contra IA (1800 duelos, `mazos.js` en el
+  scratchpad): desterrado 80 %, lunaria 45 %, oxitrón 45 %, reanimado 30 %.
+  Lo que decide los cruces son las cartas de coste 10: Kratox solo cambia a
+  los Oxitrones de 100 % a 0 %, y Auram a los Desterrados de ~85 % a ~24 %.
+  Antes (los 5 más baratos + acciones genéricas): lunaria 98 %, reanimado 5 %.
+
+## Hades y destierro en la mesa (`zonaFuera` en match.js)
+
+Dos zonas de verdad junto al personaje en posición, en los dos lados y
+siempre a la vista (antes: una pastilla con miniaturas de ~25 px y el vacío
+solo cuando tenía algo, debajo de todo). Un hueco del tamaño de una carta con
+las últimas 5 en abanico (`CARTAS_EN_ZONA`; la de arriba, la más reciente), el
+total en una pastilla y un ícono cuando está vacío. Hades: brasa morada y
+roja, ☠. Destierro (= el vacío): frío, punteado, cartas apagadas en azul, ✧.
+Tocar una carta la lleva a la lupa. Conservan las clases viejas (`hades`,
+`casilla-hades`) porque se anclan ahí el tutorial y los recordatorios.
+
+**Van a la IZQUIERDA de la carta y fuera del reparto de la fila**
+(`.zonas-fuera` absoluta dentro de `.lado-campo`): el retrato flotante está
+corrido a la derecha de la carta (`.flotantes-lado`), y a la derecha las
+tapaba (Oscar); metidas en la fila, recentraban el conjunto y dejaban la CARTA
+bajo el retrato. Así la carta queda donde siempre. Orden: Hades pegado a la
+carta, destierro más afuera. En tu lado suben un poco (`translateY(-40%)`)
+para no rozar la caja de tu mano. Medido en 1194×728 y 915×412: 0 de cruce
+con el retrato y con la mano.
+
+## Voces «pipipi» (`ui/voces.js`)
+
+Al hablar, cada letra suena con un pitido cuadrado corto generado con WebAudio
+(sin archivos), una letra de cada dos, nunca en espacios ni signos, con 55 ms
+mínimos entre pitidos. Tono por personaje (hash del id; `cri_…`/Eternals más
+graves). Mando: «Efectos de batalla». Lo usan el diálogo del escenario 2D
+(ya se escribía letra a letra; un clic que salta no suelta ráfaga) y los
+bocadillos del duelo, que ahora se ESCRIBEN letra a letra (38/s) con el tamaño
+fijado al del texto entero para que no crezcan; las acotaciones «(…)» salen
+enteras y mudas.
+
+## Narrador (voz «mayor»)
+
+- **Las cinemáticas de la campaña pueden leerse en voz alta** con la voz
+  «mayor» de Oscar (Chatterbox local en `Documents\combo-shorts`, la misma
+  de los shorts). Sonido → «Voz del narrador»: Apagado (por defecto) /
+  Normal / Suave (= emoción «calma»), con su propio mando de volumen
+  (`Audio.GRUPOS.narrador`). Preferencia en `perfil.narrador`.
+- **Se generan aparte, no en el juego**: `GENERAR_NARRACION.bat` (o
+  `node tools/narrador/generar-narracion.mjs`, con `--listar`, `--solo
+  <raza>` y `--limite N`). Narra la cinemática de cada calabozo y la entrada
+  y la victoria de cada etapa (52 textos × 2 tonos). Deja Opus mono en
+  `src/assets/narracion/<tono>/` (~70 KB cada uno) y el índice
+  `assets/narracion/narracion.js` (generado, no editar). Solo rehace lo que
+  cambió y borra los audios huérfanos.
+- **Se busca por el hash del TEXTO** (FNV-1a, el mismo en la herramienta y
+  en `ui/narrador.js`): `Cinematica.mostrar(texto)` pregunta si hay voz para
+  ese texto exacto. Si editas un texto y no regeneras, no suena (nunca una
+  voz equivocada). La escena dura lo que la voz si es más larga que la
+  lectura, y saltarla calla la voz.
+- **Pronunciación**: `tools/narrador/pronunciacion.txt` («escrito = dicho»),
+  solo para la voz. Cambiarla rehace los textos afectados.
+- Usa la tarjeta gráfica: 104 audios tardan del orden de 15-20 minutos.
+- **Tono «anciano»: Gemini TTS en línea** (`gemini-3.8-flash-tts`, voz
+  Algenib, elegida por Oscar entre 8 muestras de `tools/narrador/muestras`).
+  Clave: `clave_gemini.txt` de edu_gear (`gemini-tts.mjs` la lee; nunca se
+  escribe en nada generado). **El plan gratuito da 10 peticiones al día por
+  modelo** (cuota `GenerateRequestsPerDayPerProjectPerModel-FreeTier`; solo
+  se distingue en `error.details`, no en el mensaje). Por eso se piden hasta
+  6 escenas por petición y `alinear.py` (Whisper de combo-shorts) las corta y
+  valida: descarta las que se oyen a medias, las demasiado largas y las
+  REPETIDAS. Trampa: con `word_timestamps` Whisper se salta a veces un tramo
+  entero (justo la repetición), así que las repeticiones se cuentan con una
+  segunda escucha sin tiempos por palabra. Lo malo o lo que no cabe en el
+  cupo queda para el día siguiente: el índice se guarda tras cada petición.
+- Trampa de Gemini TTS: una instrucción de estilo EN ESPAÑOL delante del
+  texto se lee en voz alta. La forma que no la lee es inglés con «Say in the
+  voice of …: <texto>».
+
+## Duelo remoto 1 contra 1 (en tandas)
+
+Plan: 1) conexión ✔ · 2) motor en red ✔ · 3) mesa ✔ · 4) cierre ✔ (el anfitrión manda: corre el motor,
+el invitado solo envía intenciones y recibe la mesa; el azar sale solo del
+anfitrión) · 3) mesa para dos humanos (`match.js` hoy asume jugador 0 humano
+y 1 IA; reverso oficial `reverso.webp` en la mano rival) · 4) equipos del
+constructor, desconexión, abandono, reconectar.
+
+**Tanda 1 — `core/red.js` + `screens/remoto.js`** (carta «Duelo remoto» del
+menú, abierta siempre; «Juega online» sigue llevando a TCG Arena):
+
+- WebRTC de PC a PC (canal de datos `aeternum`, JSON). Para presentarse se usa
+  el servidor público gratuito de PeerJS (`wss://0.peerjs.com`), hablándole
+  **a mano**, sin la librería (OPEN / OFFER / ANSWER / CANDIDATE / EXPIRE /
+  HEARTBEAT cada 5 s). En cuanto abre el canal se cierra el servidor: la
+  partida no pasa por él. STUN de Google; **sin TURN** todavía (las redes que
+  no permiten conexión directa fallan con un aviso claro).
+- Sala = id `aeternum-duelo-<CÓDIGO>` del anfitrión; código de 6 sin letras
+  confundibles, enseñado `K7Q-2MX`. Invitado: id aleatorio. Una sala es para
+  dos: al tercero se le contesta «ocupada» (por CANDIDATE, ver trampa).
+- **Trampa: el servidor de PeerJS CIERRA el WebSocket de quien manda un
+  OFFER o ANSWER sin la forma de su librería** (`connectionId`, `label`,
+  `reliable`, `serialization`, `browser`). Sin eso la oferta no llegaba nunca
+  y el invitado se quedaba 25 s esperando. `_carga()` la pone siempre.
+- La CSP de `index.html` lleva `connect-src` con `wss://0.peerjs.com` (sin
+  eso el WebSocket se bloquea en silencio).
+- Mensajes internos: `hola` (nombre, `PROTOCOLO`), `ping`/`pong` cada 2 s,
+  `adios`; los de la partida van como `{ t: 'app', d }` → evento `mensaje`.
+  `Red.enviar(datos)`. La pantalla tiene un chat de prueba.
+- `screens/remoto.js` cierra la conexión en `destruir()` salvo `mantener`
+  (para cuando navegue a la partida en la tanda 3). Nombre en
+  `perfil.nombreRemoto`.
+- Prueba: `medir-remoto.js` en el scratchpad (dos ventanas en el mismo PC:
+  conectan en ~1,3 s, chat, sala ocupada, código inexistente, rival que sale).
+
+**Tanda 2 — el motor en red (`core/sincro.js` + `core/dueloRed.js`)**, sin
+pantalla todavía:
+
+- **El anfitrión manda.** Corre el TurnEngine real con dos humanos
+  (`jugadores[0]` anfitrión, `[1]` invitado). `DueloRed.anfitrion({ motor,
+  red })` envuelve `alCambiar` y manda una FOTO tras cada cambio (varias
+  notificaciones seguidas salen en una, por microtarea). El azar sale solo de
+  ahí, así que no hay semillas que sincronizar.
+- **El invitado juega con un MOTOR ESPEJO** (`DueloRed.invitado({ red,
+  alCambiar })`): prototipo del TurnEngine, así que las consultas
+  (`LECTURA`: accionesDisponibles, energiaDe, atacantesDisponibles…) van
+  igual; todo lo demás (desplegar, equipar, siguienteFase, resolverEleccion,
+  derramar…) se convierte en INTENCIÓN y devuelve una PROMESA `{ ok, motivo }`
+  (no el booleano de siempre: ojo en la tanda 3). `previsionAtaque` no
+  recalcula pasivos (vienen en la foto). `espejo.intento(op, …)` para lo que
+  no es un método del motor: `modificar`, `limpiarModificadores`, `dado`,
+  `aplicar` (tus acciones automatizadas: lo que `autoAplicar` hace en tu PC lo
+  aplica el anfitrión, una vez por carta y momento). El espejo es SIEMPRE el
+  mismo objeto (la pantalla compara `this.motor === m`), y los campos que no
+  cambian conservan su objeto (un ataque pendiente no parece nuevo en cada
+  foto).
+- **Validación** (`INTENCIONES`): solo en su turno, o en SU pregunta; solo
+  sus cartas y su sangre; nada que empiece por `_`; terminado, nada. Lo que
+  no está en la tabla (Hades/vacío de Herramientas, por ahora) se rechaza con
+  motivo, sin tocar la partida.
+- **Lo oculto no viaja** (`Sincro.vistaPara`): las acciones libres, la reserva
+  y el equipo del otro que no estén revelados van como `?1`, `?2`… según su
+  sitio; las opciones de una elección que apunten a ellas llevan la misma
+  marca y el anfitrión la traduce (`sesion.marcas`). La pregunta del OTRO
+  llega sin texto de opciones (pueden nombrar su mano). Revelar una carta la
+  hace aparecer con su id en la siguiente foto.
+- La foto es genérica (campos del motor sin saber cuáles, referencias `$r`,
+  `Set`, `Infinity`), con el registro recortado a 80 líneas: ~6 KB de media.
+- Prueba: `tools/pruebas/7-red.js` (dentro de `probar-efectos`): canal falso
+  asíncrono con JSON, rechazos, ocultos, Annia revelando por marca y un duelo
+  entero de 25 turnos sin un desfase.
+
+**Tanda 3 — la mesa para dos humanos** (`match.js` + sala en `remoto.js`):
+
+- **Tú ya no eres siempre `jugadores[0]`.** `this.yoIdx` (0 contra la IA, en el
+  calabozo y como anfitrión; 1 como invitado), `this.tu()` y `this.suyo()`. Se
+  cambiaron TODOS los `jugadores[0]/[1]` y `jugadorIdx === 0` de la mesa, y
+  `placaDe`/paneles por `yoIdx`. `m.jugadorActivo.esIA` queda SOLO para la
+  cadena de la IA (`pintar`, `pasoIA`); «es el turno del otro» es
+  `m.jugadorActivo !== this.tu()`. Las flechas de sangre llevan el índice real
+  del jugador (`data-jugador`), no 0/1 por lado.
+  `Recordatorios.yoIdx` dice cuál de los dos humanos eres (la mesa lo pone y
+  lo quita).
+- **Modo `remoto`** (`params.modo === 'remoto'`, `rol`): el anfitrión crea los
+  dos jugadores con los equipos que acordó la sala y pone
+  `DueloRed.anfitrion`; el invitado usa `DueloRed.invitado` como `this.motor`
+  y no pinta hasta la primera foto (`m.listo`). **Saludo `listo`**: el espejo
+  lo manda al crearse y el anfitrión le reenvía la foto (la primera sale antes
+  de que exista la mesa del invitado).
+- En remoto **no hay Herramientas** (ni pestaña), los ± y las flechas de
+  sangre solo en lo tuyo, y en el invitado los atajos, el dado y «aplicar» van
+  por `m.intento(...)`. **Solo resuelve sola el golpe quien ataca**; quien
+  encaja tiene «Encajar» (si no, los dos PC lo mandarían). La placa de
+  elección del invitado se esconde al responder hasta la foto siguiente
+  (`responder()`, `eleccionEnviada`): un doble clic contestaría también la
+  pregunta que viene detrás (revelar 2 de 2).
+- **Anuncios por su `n`**, no por la longitud del array: al invitado le llegan
+  recortados y la longitud deja de crecer.
+- La mano del rival usa el **reverso oficial** (`.dorso-oficial`,
+  `reverso.webp`), como pidió Oscar para las partidas contra personas.
+- Si se corta o el rival sale a media partida: «Duelo interrumpido»
+  (`rivalDesconectado`). Al salir de la mesa se suelta todo y se cierra la sala.
+- **Sala de espera** (`remoto.js`): al conectar, cada uno elige estirpe; se
+  manda `{ tipo: 'lobby', raza, equipo }` con su último equipo guardado de esa
+  estirpe (`Screens.partida.equipoPara`). El anfitrión lo valida
+  (`equipoValido`, si no, el predeterminado) y su «Comenzar duelo» manda
+  `empezar`; los dos navegan con `mantener = true` para no cerrar la sala.
+  Abre siempre el anfitrión.
+- Prueba: `medir-duelo-remoto.js` en el scratchpad: dos ventanas juegan a
+  clics hasta el final (6 turnos, 0 desfases) y una desconexión a mitad. Las
+  capturas fuera de pantalla, con el evento `paint` (`capturePage` daba
+  fotos viejas o negras).
+
+**Tanda 4 — revancha, reconexión, relé y equipos:**
+
+- **Reconexión** (`red.js`): un canal que se cae SIN `adios` (o 8 s sin
+  ninguna noticia del otro: `MS_SIN_RESPUESTA`, vigilado en el intervalo del
+  ping) pasa a `reconectando`. El anfitrión reabre la MISMA sala y solo admite
+  de vuelta al mismo rival (`_rivalSenal`); el invitado vuelve con su MISMO id
+  y reintenta cada 2,5 s (EXPIRE / ID-TAKEN mientras el otro no ha vuelto)
+  hasta `MS_RECONEXION` (60 s); si no, `error`. La partida no se pierde: el
+  anfitrión la conserva y el espejo pide la foto (`listo`) al volver a
+  `conectado`; las intenciones en el aire se resuelven `{ ok: false }`. La
+  mesa pone un velo (`.aviso-red`) mientras tanto. Medido con un corte brusco
+  (`pc.close()` en el invitado): reconectados en ~5,6 s, con lo ocurrido
+  durante el corte ya en la mesa.
+- **El `adios` sale antes de cerrar** (`cerrar()` cierra el canal 250 ms
+  después): si no, el otro lo tomaba por un corte y se ponía a reconectar.
+- **Revancha** sin cerrar la sala: los dos la piden (`revancha`), el
+  anfitrión arranca otra con `abre` alternado (`motor.turnoDe = 1` antes de
+  `iniciar()`) y manda `empezar`; la mesa del invitado lo escucha. **Volver a
+  la sala** (`sala`) lleva a los dos a la sala con la conexión viva; la sala,
+  al abrirse conectada, manda su elección con `pide: true` y el otro contesta
+  (si no, el que llega primero no recibiría nada). `mantenerRed` evita que
+  `destruir()` cierre la sala en esos viajes. La sala recuerda estirpe y
+  equipo elegidos.
+- **Equipo**: en la sala, un desplegable con los equipos guardados de esa
+  estirpe (por defecto el último, como contra la IA) y el predeterminado.
+- **Relé TURN opcional** («Opciones de conexión» de la sala, guardado en
+  `perfil.releRemoto`, `Red.ponerRele`): para las redes que no conectan
+  directo. NO viene ninguno de serie (no hay uno público y gratuito fiable);
+  el aviso de fallo sugiere relé o Radmin VPN / Tailscale.
+- Prueba: `medir-tanda4.js` en el scratchpad.
+
+## APK para Android (`movil/` + `COMPILAR_APK.bat`)
+
+- **El juego es el MISMO `src/`**: `movil/` solo es el envoltorio Capacitor 7
+  (la misma receta que la Enciclopedia Bíblica: android-35, JDK 21 de
+  `%USERPROFILE%\.jdks`, SDK en `%USERPROFILE%\Android\Sdk`). **No en
+  AppData**: lo que se ve en `%LOCALAPPDATA%\Android\Sdk` desde Claude está
+  virtualizado y el cmd de Oscar no lo ve (primer intento: «SDK location not
+  found»). El .bat escribe `local.properties` en cada compilación. Tiene su propio
+  `package.json` para no meter Capacitor en las dependencias del .exe
+  (electron-builder empaqueta las `dependencies`). `webDir` es `../src`.
+- **`COMPILAR_APK.bat`** (lo ejecuta Oscar): `npm install` la primera vez,
+  `cap sync android` (copia `src/` a `android/app/src/main/assets/public`),
+  `movil/preparar-web.js` y `gradlew assembleDebug` → `dist\AETERNUM.apk`
+  (de depuración: se instala a mano, no va a la Play Store; para eso habría
+  que firmar una versión release).
+- **`src/js/plataforma.js`**, el primer script de `index.html`: en el teléfono
+  (`Capacitor.isNativePlatform()`) pone un `window.gameAPI` equivalente al de
+  preload.js — guardado en `localStorage` del WebView (privado de la app; se
+  borra al desinstalar), salir con el plugin App, TCG Arena al navegador —, y
+  conecta el botón ATRÁS (cierra lupa grande/confirmación/mezclador, si no
+  pulsa el «←» de la pantalla; en el menú sale). En Electron no hace nada.
+- **Pantalla**: la mesa pide ≥1024×700 y un teléfono en horizontal tiene
+  ~915×412 CSS px. `MainActivity` activa el «viewport ancho» del WebView y
+  `plataforma.js` pone `<meta viewport width=N>` con N = el ancho que deja
+  720 px de alto con la forma de esa pantalla (1600 en un 20:9). El WebView
+  escala todo para que quepa. **Se diseña a 540 de alto** (`ALTO_MINIMO`;
+  ancho mínimo 1024): con 720 todo salía a ~0,57 y los textos eran ilegibles
+  (Oscar); con 540, ~0,76 y caben todas las pantallas gracias a una capa
+  `html.movil` en styles.css (al final): márgenes y cabeceras compactos,
+  entradilla a 2 líneas, el «Entrar» del calabozo pegado abajo (sticky), el
+  constructor desplazándose en una sola columna (sus rejillas encogidas
+  pisaban filas) y el lateral de la mesa SOLO con la carta (270 px, sin
+  registro ni pestañas: lo pidió Oscar). Medido emulando 915×412:
+  diseño 1200×541, sin desbordes. Va siempre en horizontal
+  (`sensorLandscape`), pantalla completa, sin apagarse, y con audio sin
+  esperar un toque.
+- **Vídeos**: Android pinta un cuadro negro con la flecha de «reproducir»
+  antes del primer fotograma. `MainActivity` pone su propio
+  `BridgeWebChromeClient` con `getDefaultVideoPoster()` = 1 px transparente.
+- **Táctil**: tocar = clic (y `mouseenter`, así que la lupa del lateral se
+  llena al tocar); **mantener pulsado** = `contextmenu` = lupa grande, que ya
+  existía para el clic derecho.
+- **CSP**: en WebViews viejos Capacitor inyecta su puente como `<script>` en
+  línea, que `script-src 'self'` bloquearía. `preparar-web.js` añade
+  `'unsafe-inline'` SOLO en la copia de la APK; el .exe sigue estricto.
+- Ícono y arranque: `python movil/iconos.py` (de `build/icon.ico`, la gota).
+- Probar en PC sin compilar: Electron con `Emulation.setDeviceMetricsOverride`
+  (`mobile: true`) DESPUÉS de cargar y recargando, más un `window.Capacitor`
+  falso en un preload con `contextIsolation: false`. Trampa:
+  `enableDeviceEmulation` o el debugger enganchado ANTES de la primera carga
+  tumban Electron sin ningún mensaje.
+
 ## Trampas ya pisadas
+
+**Un despliegue por turno** (`motor.desplegoEsteTurno`, se limpia al cambiar
+de turno). Sin tope se podía cambiar el personaje en posición sin fin, y cada
+cambio disparaba la Retirada de Sadash: victoria instantánea con los espíritus
+acompañantes (Oscar). Vale para sacar a alguien O cambiarlo, no las dos cosas.
+Los efectos que ponen a alguien en posición (Luh, Escape, Encadenar) y las
+llamadas con `saltarFase` no cuentan. La mano dice «ya desplegaste» y apaga
+tus personajes. Prueba: `tools/pruebas/6-reglas.js`.
+
+**Con una pregunta tuya en el aire, la mano se apaga.** El motor rechaza
+`desplegar`/`equipar` mientras haya `eleccionPendiente`, pero la mano seguía
+brillando: contra el jefe del Bosque, Erem preguntaba «+3 o revelar» al entrar
+en la fase de acción y la carta de acción «no se dejaba clicar» sin decir por
+qué (Oscar). Ahora `preguntaTuya` apaga las dos manos y pulsar una carta llama
+a `recordarEleccion()`: la placa se sacude y dice «Responde primero» DENTRO de
+ella (un emergente de la banda quedaba detrás de la placa).
+
+**Una partida que acaba sin `notificar()` deja la mesa congelada.** `derramar()`
+no notifica, y `finalizarTurno()` —el derrame de 1 de fin de turno— y
+`siguienteFase()` —el cobro de Inmolación— salían con `return` al ver la
+partida terminada, SIN avisar a la pantalla: la mesa se quedaba en «Fin de
+turno», con el duelo ya ganado, sin cartel y con un botón que no hacía nada.
+Con las oleadas a 30 de sangre casi no pasaba; con la etapa 1 del Bosque a 5,
+pasaba en el primer turno (Oscar: «no me deja finalizar el turno»). Las dos
+salidas notifican ahora. Si añades otra vía que pueda acabar la partida,
+que notifique.
 
 **El panel de vista previa sirve JavaScript cacheado.** Perdí un buen rato
 persiguiendo fallos que no existían. Para verificar cambios de JS, usa
@@ -497,6 +1045,290 @@ encima escondido detrás de otra pestaña. Ahora hay atajos:
 
   Ojo: ninguno de los tres notifica por su cuenta, de ahí el `notificar()` del
   manejador; y `derramar()` puede terminar la partida.
+
+**La mesa se ve en diagonal.** `.mesa-plano` envuelve los dos paneles, la
+banda central y la capa de retratos, y se inclina con
+`perspective(1300px) rotateX(20deg)` (variables `--mesa-perspectiva` y
+`--mesa-inclinacion`): el lado rival queda al fondo y más pequeño. Los
+retratos van DENTRO del plano a propósito: un transform crea su propio
+contexto de apilado, y con los retratos fuera (z 7) los atajos de la carta
+(z 8, dentro) quedaban otra vez debajo de ellos. Inclinados 20° se encogen un
+6%, no se nota. Los avisos (turno, jefe) siguen fuera y planos. Clics,
+burbujas y números de golpe usan getBoundingClientRect y siguen cayendo en su
+sitio; medido con elementFromPoint en 1280×800 y 1024×700, sin desborde.
+
+**La dificultad del calabozo se regula con la VITALIDAD de la oleada**, no con
+sus cartas: `etapa.sangre` en `data/dungeons.js` es la sangre con que empieza
+(30 si no se dice). `crearJugador` la recibe como `opciones.sangre` y la guarda
+en `j.sangreTotal`, que es lo que usan la barra y el «de N» del panel. Las
+criaturas conservan sus números impresos: Oscar descartó tocarlos.
+
+Los cuatro calabozos la tienen. Medido con la IA jugando por ti con el equipo
+de historia (200 duelos por etapa), % de victorias antes → ahora:
+
+| Calabozo | sangre por etapa | antes | ahora |
+|---|---|---|---|
+| Bosque | 5 · 8 · 10 · 15 · 20 · 30 | 1/5/0/4/100/72 | 80/79/100/81/100/64 |
+| Oasis | 12 · 15 · 12 · 12 · 12 · 8 | 48/65/0/0/32/11 | 91/97/100/93/94/68 |
+| Forjas | 3 · 5 · 10 · 12 · 5 · 8 | 0/15/0/0/0/12 | 70/90/100/84/89/66 |
+| Catacumbas | 10 · 15 · 12 · 8 · 10 · 8 | 0/45/0/0/0/0 | 100/94/92/100/76/58 |
+
+Objetivo usado: ≥80% en las etapas 1-2, ≥75% en la 3-5 y ~60-65% el jefe.
+Las curvas NO son crecientes a propósito: cada etapa lleva lo que necesita su
+cruce de equipo contra oleada. La etapa 1 de las Forjas va con 3 porque Pip
+(1/4) no hiere nunca a un Rocoso 4/4: se gana aguantando a que se desangre. El
+buscador vive en el scratchpad (`afinar-sangre.js`): prueba de mayor a menor y
+se queda con la primera sangre que llega al objetivo. Quitarle a la
+oleada el texto de sus acciones NO arreglaba la etapa 1 (7%) y la alargaba de 2
+a 7 rondas: Annia (3/2) no supera nunca a unas ratas 4/4, así que la salida es
+que se queden sin sangre antes.
+
+**Los atajos de la carta son ahora un abanico redondo.** Cada carta en
+posición lleva UN botón redondo (±, dorado si tiene modificadores); al pulsarlo
+salen en arco cinco pequeños: ⚔+ ⚔− ↺ 🛡+ 🛡−. Sigue abierto mientras ajustas
+(se recuerda en `atajoAbierto` por uid, así los repintados lo pintan ya
+abierto y sin repetir la animación: las transiciones no corren en elementos
+nuevos) y se cierra con otro clic, tocando fuera o con Esc. El ángulo va en el
+HTML como coseno/seno sin unidad y el radio en CSS (`--abanico-r`, menor bajo
+760 px de alto). **El sitio del abanico se reserva siempre** con `margin-right`:
+`.lado-campo` desplaza en horizontal y lo que sobresalía se recortaba —se veía
+el × pero ningún pequeño, y salía una barra de scroll—.
+
+Del mismo lote: dado, sonido y flechas de sangre redondos; Abandonar es un
+círculo «←» que se abre en cápsula al pasar el ratón; las pestañas del lateral
+son iconos redondos (📜 🛠 ⚡) y la activa se estira y dice su nombre; la
+cuenta de recordatorios es una pastilla (`.pestana-num`, ya no se reescribe el
+texto de la pestaña). Siguiente fase y los botones de la burbuja, en cápsula.
+
+**Aviso de cambio de turno** (`mostrarAvisoTurno`): «Tu turno» / «Turno de …»
+1,1 s en el centro del tablero, colgado de `turnoNuevo` en `detectarSucesos()`
+(y en el primer pintado, para anunciar quién abre). Vive en el esqueleto, no en
+los paneles, y no recibe clics: no para la cadena de la IA.
+
+**Números de golpe, sangre que baja y cartas que entran.** Todo colgado del
+mismo detector (`detectarSucesos`, que ahora también devuelve `nuevosActivos` y
+`nuevasAcciones`):
+
+- **`numerosDeGolpe()`**: «−5» rojo sobre quien encajó, «Destruido», el reflejo
+  en dorado sobre quien atacó y «Sin daño». Se cuelgan del `.mesa-tablero`
+  directamente —no de los paneles—, así que los repintados no los tocan.
+- **`animarBarras()`**: `.seg` ya tenía `transition: width`, pero NUNCA se veía,
+  porque `pintar()` crea la barra nueva directamente con su ancho final. La
+  cura: `medirBarras()` lee el ancho REAL en pantalla justo antes de rehacer
+  los paneles; después se pone la barra nueva en ese ancho y se la deja
+  transicionar al suyo. Al medir el ancho real, un repintado a mitad de camino
+  sigue desde donde iba. No hizo falta dejar de rehacer el panel.
+- **`pintarVivas()`**: destello al entrar en posición (`entra-campo`) y al
+  acoplarse una acción (`acopla-accion`), con el mismo retraso negativo que
+  `pintarGolpe()` para sobrevivir a los repintados.
+
+**Placa, mano en abanico y dado dibujado (ideas tomadas de Eterrion).**
+
+- **Placa** (`placa()`): avatar redondo con marco dorado —quien da la cara: el
+  personaje en posición, o el primero que espera; su busto flotante si lo
+  tiene, si no el arte de la carta—, el emblema de la estirpe en una pastilla y
+  el nombre. Brilla en dorado en el turno de ese lado. Sustituye al sigilo
+  suelto de `.lado-info`.
+- **Mano en abanico**: cada carta lleva `--giro` y `--alto` (los pone
+  `pintarControles` según su distancia al centro) y se solapan; al pasar el
+  ratón sube, se endereza y se pone delante. Las que puedes jugar AHORA
+  brillan y laten; las demás, apagadas.
+- **Dado dibujado** (`.dado[data-v]`, 3×3 huecos de puntos en CSS): rueda
+  cambiando de cara al azar y al caer deja un destello dorado (`.dorado`,
+  0,9 s). **Rueda con CUALQUIER tirada**, no solo la del botón:
+  `Manual.dado()` deja `motor.ultimaTirada = { n, resultado }` y
+  `rodarSiHuboTirada()` lo mira en cada `pintar()`. Así se ve el dado de Finta,
+  el de la IA y el de Krag/Krox. Se fue el número suelto `#mesa-dado-valor`.
+
+**La mesa es un tapete pintado, y las placas viven fuera de ella.**
+
+- **Tapete por estirpe** (`tools/fondos2d/tapetes.py` → `src/assets/tapetes/
+  <raza>.webp`, 30-90 KB): tierra y pasto (desterrados), placas de hierro con
+  grietas de fuego (oxitron), arena y cristal bajo la luna (lunaria), losas de
+  cripta con huesos y musgo (reanimados). Paletas MEDIDAS de `fondos/<raza>.jpg`
+  (oscuro, mediano, claro). Va de fondo de `.mesa-plano` (inclinado, así que
+  se ve como un suelo), elegido por la estirpe del jugador (`estiloTapete`),
+  con el url EN LÍNEA (en variable CSS no cargaría). Los paneles ya no tienen
+  fondo propio: son el tapete.
+- **Zonas encima, en CSS** (su sitio depende de la ventana): el **círculo de
+  runas** (`RUNAS`, un SVG con 16 runas, estirado en elipse: con la mesa
+  inclinada se lee como un círculo en el suelo) bajo el personaje en posición,
+  o solo con «Posición» si no hay nadie; se enciende en dorado cuando a ese
+  lado le toca elegir personaje (`zonaEncendida`). El **hueco de la acción**
+  (`.hueco-accion`, se enciende en la fase de acción) y la **casilla del
+  Hades**, que ahora está siempre (vacía y punteada si no hay nadie).
+  `.lado-campo` pasó a `overflow: visible` —un solo puesto por bando en todos
+  los modos—: recortaba la elipse y sacaba una barra de scroll falsa.
+- **Placas con la sangre dentro** (`placaConSangre`), en el esqueleto y planas:
+  `#placa-rival` encima de la mesa y `#placa-jugador` entre tus dos manos.
+  Llevan las MISMAS clases de antes (`sangre-barra`, `sm-energia`, flechas…),
+  así que solo cambiaron los selectores que las buscaban en el panel:
+  `medirBarras` (ids de placa), el destello de sangre y el embiste a la
+  sangre (`placaDe(idx)`), la red de los números de golpe y tres anclas del
+  tutorial. Compactas a propósito (~85 px): más altas, la tuya tapaba tus
+  cartas. Medido en 1024×700 y 1280×800: 0 de desborde y 0 px de solape con
+  tus cartas o con la mano de acciones.
+
+**La mesa ocupa todo el hueco** (pedido de Oscar con flechas sobre una
+captura): `.mesa-plano` con `flex: 1` y los dos lados repartidos
+(`space-between`), perspectiva más suave (2200px, 17°) e inclinada desde el
+borde de ARRIBA (`transform-origin: 50% 0%`), que queda pegado a la placa del
+rival —inclinada desde abajo, ese borde se hundía y dejaba una franja vacía—.
+Lateral más pegado (`column-gap: 10px`). La placa del rival asoma sobre el
+borde de arriba (margen negativo) y la tuya baja 12 px bajo las manos para no
+rozar tus cartas (medido: 0 px de solape en 1024×700, 1194×728 y 1280×800).
+`.mesa-tablero` pasó a `overflow: visible`: lo único que asomaba eran 8 px de
+las cartas giradas del abanico, y recortarlas era peor.
+
+**La mano del rival, oculta** (`pintarManoRival`): una fila de esqueleto
+arriba, espejo de la tuya —reversos de sus personajes en reserva a la
+izquierda, de sus acciones libres a la derecha, su placa en medio— y con la
+cuenta en el rótulo («Acciones 8»). El reverso es CSS (`.dorso-carta`: oscuro,
+marco dorado, el `RUNAS` y el emblema de su estirpe); no hay arte de reverso en
+los recursos. Cuelgan hacia la mesa (giro desde arriba). **El reverso oficial
+existe** (`src/assets/cartas/reverso.webp`, esquinas transparentes, 300×414)
+pero Oscar lo reserva para las partidas CONTRA JUGADORES: contra la IA y en el
+calabozo van estos dibujados. **Se fue el
+«Esperando» de la oleada**, que enseñaba sus criaturas boca arriba: lo pidió
+Oscar, ahora solo se sabe cuántas quedan. Las dos filas de manos son una
+rejilla `1fr auto 1fr` para que las placas queden centradas.
+
+**Foil y embiste.** Al pasar el ratón por la carta en juego (y por la de la
+lupa) se inclina hacia el cursor y la cruza un reflejo irisado (`.foil`,
+`--rx/--ry/--mx/--my`, oyente `pointermove` delegado: pintar() rehace las
+cartas y el siguiente movimiento engancha a la nueva). En cada golpe el
+atacante EMBISTE hacia su objetivo y vuelve (`.embiste`, dentro de
+`pintarGolpe` con el mismo retraso negativo); el rumbo se mide una vez en el
+primer pintado del golpe (`vivo.rumbo`), porque en los siguientes el defensor
+muerto ya no está, y si no hay defensor apunta a la placa rival.
+
+**La mano asoma sobre el borde inferior de tu lado** (`margin-top` negativo en
+`.mesa-manos`): con cartas en los dos lados el tablero se pasaba 30-37 px en
+1024×700, 1194×728 y 1280×800, y ahora 0. Y `.mesa-tablero` no enseña barra
+(`scrollbar-width: none`): el embiste y los emergentes la hacían parpadear.
+
+**Ya no hay barra inferior: todo se declara con mensajes emergentes.** El
+`<footer>` de la mesa desapareció y la rejilla es `auto 1fr`. Lo que hay que
+ELEGIR va en la **mano**, bajo la mesa y sin inclinar (`.mesa-manos`, en el
+esqueleto, hermana de `.mesa-plano`), como la dibujó Oscar: **personajes a la
+izquierda** (`#mesa-controles`, la reserva) y **acciones a la derecha**
+(`#mano-acciones`, las libres). Las dos siempre a la vista; cada lado brilla y
+se puede pulsar solo en su fase, el resto del tiempo va apagado (`.pasiva`). Los
+botones viven en la banda central: `#mesa-atacar` (⚔ Atacar, o Resolver /
+Retirar / Encajar con un ataque en el aire) y `#mesa-avanzar` (Siguiente fase).
+Lo que antes contaba el pie sale en `emergente(texto, { sobre, clase })`:
+
+- `fase` (oscuro): qué toca, una vez por fase y solo si la fase pide algo
+  (`avisarFase`; en Personaje espera 1,2 s a que se vaya «Tu turno»).
+- `combate` (rojo): el golpe declarado, tuyo o contra ti («⚔ 6 — 6 de daño»),
+  desde `revisarResolucion`. Se calcula DESPUÉS de los efectos automáticos:
+  mientras `aplicando`, `revisarAvanceAutomatico` no corre, o anunciaría el
+  golpe sin el bonus de Finta.
+- `efecto` (amarillo): lo aplicado solo, de personajes y de acciones
+  (`AccionesIA.aplicar` también anuncia, resumiendo sus líneas del registro).
+
+Los de la banda se relevan (el nuevo quita al anterior) y salen 26 px por
+encima de ella, o taparían Resolver. Los de carta se escalonan. Se fueron
+`cuerpoDeclararAtaque`, `cuerpoAtaquePendiente`, `bloqueRespuesta`,
+`efectoIAParaEsteAtaque` y `conectarRespuesta`: todo lo que se dice más abajo
+sobre «el pie» y su desborde es historia. Medido: 0 px de desborde con ataque
+pendiente y el turno completo sin clics sigue en ~7,5 s.
+
+**Los efectos ± de PERSONAJE también se aplican solos** (`core/efectosPersonaje.js`,
+mismo patrón que `accionesIA.js`, para los dos bandos). Hoy: Annia +1, Axel
++2, Thiana +2 (En posición, al desplegar; dura mientras siga en posición
+porque `retirar` pone los modificadores a cero), Erem +3 (en cada fase de
+acción suya, hasta fin de turno), Delem +2 daño o +2 defensa según el tipo de
+la acción acoplada (se recalcula al cambiarla, `inst.bonoPersonaje`), Krag y
+Krox +dado a defensa/daño en cada batalla (`enBatalla`, desde
+`declararAtaque`). Los modales («revela … o aumenta …») se quedan con el
+aumento; ↺ lo quita si prefieres revelar. Faltan los que escalan con revelados
+o Hades (Auram, Lydia, Fälum, Acompañantes, Gurh, Ejército, Thila, Zabar):
+ya están, como PASIVOS (`PASIVOS`, `recalcularPasivos` desde `notificar()`,
+en `inst.pasivo` que `Combat` suma aparte de `modificadores`, así nunca se
+acumulan). Dónde funciona cada uno: `DONDE_PASIVO` (mano revelada, posición o
+Hades). Fälum y Zabar eligen «ataque o defensa» según su postura hasta que
+exista el sistema de elecciones. Probado caso a caso (`probar-pasivos.js` en
+el scratchpad) y en 4.800 duelos IA contra IA sin cuelgues: los reanimados
+pasan de ganar 7–26% a 17–35% contra las otras estirpes.
+
+Cada uno deja un anuncio en `motor.anuncios` y la pantalla lo enseña como un
+rótulo AMARILLO sobre la carta que sube y se desvanece (`mostrarAnuncios`,
+`.anuncio-efecto`, 2,2 s). Lo automatizado ya no sale en Recordatorios.
+
+**Y destapó una trampa de la IA:** `relevarSiConviene` cambiaba al esbirro por
+el Eternal en cuanto el esbirro no podía con tu personaje. Con Annia a +1 eso
+pasaba siempre y la etapa 6 del Bosque cayó del 67% al 12%. Ahora el Eternal
+no releva mientras le queden esbirros (`eternalProtegido`), que es la regla
+de «se esconde tras sus esbirros». Consecuencia medida: los cuatro jefes se
+ganan al 100% (también con 30 de sangre): su dificultad venía de saltarse esa
+regla. Pendiente de decidir con Oscar cómo endurecerlos.
+
+**Duelo ágil: el juego ya no pregunta lo que puede hacer solo.**
+
+- **Tus acciones automatizadas se aplican solas** (`autoAplicar`, en
+  `pintar()` justo tras calcular los recordatorios): la ofensiva de combate al
+  DECLARAR tu ataque, la defensiva cuando te atacan a esa carta, la de «Acción
+  equipada» al acoplarla. Mismo código que la IA (`aplicarManual`). Trampa ya
+  pisada: el dado del efecto notifica al motor y repinta a media aplicación, y
+  ese repintado la volvía a aplicar en cadena (Finta ×4 y la oleada desangrada
+  en un clic). Por eso `aplicarRecordatorio` descarta ANTES de aplicar y hay
+  cerrojo (`aplicando`).
+- **La burbuja de recordatorio con botones ya no existe**: ahora es un aviso
+  de una línea arriba de la mesa (`.recordatorio-aviso`, 5 s, no detiene nada;
+  tocarlo abre la pestaña ⚡). Solo sale para lo que aplicas tú a mano; lo
+  automatizable ni avisa. `burbujaViva` queda siempre a null.
+- **Los ataques se resuelven solos** (`revisarResolucion`, 1,6 s con barra en
+  «Resolviendo…» / «Encajando…»), los tuyos y los de la IA contra ti. Tocar la
+  mesa la para (`ataqueManual`, por ataque, aparte de `faseManual`) y vuelven
+  Resolver/Retirar. Atacando tú, el bloque ya no repite «Por aplicar».
+- **El aviso del jefe se cierra solo** al ritmo de lectura (20 car/s, entre 4
+  y 12 s) con barra en «Continuar»; tocar el aviso lo deja quieto.
+
+Medido sin un solo clic después de ⚔ Atacar: tu golpe, Fin, el turno entero de
+la IA con su ataque contra ti y vuelta a tu fase de Personaje, en 7,8 s.
+
+**Flujo del turno (Oscar, sustituye a lo de abajo sobre personaje y
+acción):** desplegar o cambiar al personaje pasa SOLO a la fase de acción
+(450 ms, `AUTO_MS_RAPIDO`), y acoplar una acción (o Tilos) pasa sola al
+ataque. Si ya había alguien en posición, o la acción venía puesta del turno
+anterior, no hay cuenta atrás: el botón de avanzar dice «Mantener posición →» /
+«Mantener acción →» (`etiquetaAvanzar`) y se confirma con él. «Puesta en esta
+fase» se sabe comparando con la firma de acciones al entrar
+(`firmaAccionAlEntrar`). La ÚNICA fase que da tiempo —dados, efectos— es la de
+ataque; el fin de turno también pasa rápido. Las preguntas de carta (Annia,
+Erem…) siguen parando el paso hasta responderlas. Se quitó el oyente
+`pointerover` de la mano, que ya no tenía cuenta atrás que parar. Prueba:
+`medir-flujo.js` en el scratchpad.
+
+**Mirar tu mano para la cuenta atrás** (YA NO EXISTE, ver el párrafo
+anterior): con alguien ya en posición, la fase de personaje se pasaba
+sola en 1,4 s y no daba tiempo a decidir si cambiarlo («contra el jefe no me
+deja cambiar»). Y el rótulo de la mano dice tu energía en esa fase
+(«Personajes · energía 3»): el aviso vivía en el pie que se quitó, y sin él no
+se entendía por qué las cartas de coste alto salen apagadas.
+
+**Las fases avanzan solas cuando ya no piden nada** (`faseCumplida`,
+`revisarAvanceAutomatico`, llamada al FINAL de `pintar()`). Personaje: hay
+alguien en posición. Acción: todos los activos llevan acción (o no hay activos).
+Ataque: no queda atacante libre ni ataque pendiente. Fin: siempre. El botón de
+avanzar enseña «Pasando a …» con una barra que se llena (retraso negativo, como
+los golpes); 600 ms si acabas de jugar, 1400 ms si la fase empezó ya hecha.
+Pulsarlo avanza ya. **Tocar cualquier otra cosa de la mesa la cancela** para
+esa fase (oyente `pointerdown` en captura; elegir carta en el pie solo
+reprograma). No corre con tutorial abierto, burbuja de recordatorio o aviso del
+jefe, y el temporizador lo vuelve a comprobar al disparar: la burbuja sale
+DESPUÉS de programarlo.
+
+**«⚔ Atacar» vive en la banda central, a la derecha junto al dado**
+(`#mesa-atacar`, en el esqueleto; su contenido lo rehace `pintar()` y el clic va
+delegado). No en el centro: las burbujas de recordatorio se anclan a tu carta y
+lo tapaban. En 1 contra 1 el pie ya no muestra selectores; con elección real
+sigue el «Elige quién ataca y a quién» y el botón usa lo que digan. La burbuja
+de recordatorio también ofrece **Aplicar** (`botonAplicar`), no solo el panel.
+
+**Abandonar en historia vuelve al mapa del calabozo**, como ya hacía el botón
+del fin de partida; antes mandaba al menú principal.
 
 **El dado rueda antes de enseñar el número, y eso es SOLO adorno.** La tirada
 ocurre entera al pulsar —`Manual.dado()` la escribe en el registro al
@@ -909,6 +1741,55 @@ avance) ni `partidasJugadas` (estadística acumulada). El botón del menú solo
 se pinta cuando `hayAventuraQueReiniciar()` es cierto, para no ofrecérselo a
 un perfil que no tiene nada que perder.
 
+**Estética común (la «base») y menú nuevo.**
+
+- **Tokens** en `:root`: `--fuente-titulo` (serif; va a fuentes del sistema
+  —Palatino Linotype / Book Antiqua vienen en Windows— para que el .exe no
+  dependa de internet; Cinzel encabeza la lista por si algún día se incluye en
+  assets) y los oros `--oro-claro/medio/hondo`.
+- **Títulos de pantalla** (`.pantalla-titulo`) en esa letra con degradado
+  dorado; con `.tinte` manda el color de la estirpe. Botones dorados con brillo
+  de metal (`.btn-primario`).
+- **Esquinas doradas** en `::after` de `.raza-tarjeta`, `.raza-detalle`,
+  `.etapa`, `.capitulo` y `.solo-tarjeta` (ninguno usaba ya pseudo-elementos;
+  si uno nuevo los necesita, sacarlo de esa lista).
+- **Transición entre pantallas**: el `.fade-in` del Router es ahora fundido
+  con un leve acercamiento y desenfoque (360 ms). Acaba en `transform: none`,
+  así que no deja un contenedor transformado (que rompería los `fixed`).
+- **Menú**: logo AETERNUM dorado con un brillo que lo cruza cada 7 s; los
+  modos como CARTAS en abanico con arte (Historia: Annia sobre el bosque;
+  Solo: Üldar; Crea tu equipo: tres cartas reales; Online: el reverso oficial,
+  que es el de jugar contra personas). Las cerradas, apagadas con cadenas en X
+  y candado. Vídeo a pantalla completa, luciérnagas en un `<canvas>` y
+  profundidad con el ratón (`--px/--py`); todo se suelta en `destruir()`
+  (`pararAmbiente`) y se apaga con `prefers-reduced-motion`. El pie lleva
+  iconos redondos (sonido, reiniciar, salir) con los mismos ids de antes.
+
+**El calabozo: mapa protagonista y placa de etapa** (`Screens.historia`).
+Ya no hay lista de etapas: tres columnas —el mapa a toda la altura (el SVG
+lleva `aspect-ratio` en línea con las medidas de su arte; sin eso la columna
+`auto` y el mapa se esperaban y salía diminuto), la placa de la etapa elegida
+y la lupa—. Los nodos son medallones (radios en CSS, `r` es propiedad CSS en
+SVG) y pulsar uno la enseña en la placa (`elegirEtapa` → `pintarFicha`), con
+flechas ‹ › para la anterior y la siguiente. La placa trae número, título,
+narración, la oleada y la recompensa en abanico (velada si la etapa está
+cerrada) y un «Entrar»/«Repetir» grande (`entrar(n)`: cinemática, travesía y
+partida, igual que antes). La lupa arranca con la primera criatura. Se fue el
+botón «Avanzar →» del lateral: lo hace el «Entrar» de la etapa que toca, que
+es la elegida al abrir.
+
+**Estirpes: cartas altas y vitrina de gemas** (`Screens.seleccionRaza`).
+Cada estirpe es una carta con su tapete de fondo y el busto del líder (el
+primero con retrato de `personajesIniciales`); la elegida se levanta y brilla
+con su color; las cerradas, con el líder en SILUETA (`brightness(0)`) y
+candado. Los cristales son piedras talladas (`clip-path` octaedro) que laten
+con el color de su estirpe; las que faltan, huecos oscuros con «?». La vitrina
+va AL LADO de la ficha (`.raza-bajo`, rejilla de dos columnas), no encima: esta
+pantalla no se desplaza. Al estrecharse, la ficha se pasaba 94-131 px; se
+compactó (datos en dos columnas, sin la frase bajo la curva, cartas a 26vh) y
+medido queda en 0 de desborde, ficha y vitrina, en 1024×700, 1194×728 y
+1280×800. Si se añade algo fijo aquí, medir la ficha (`#raza-detalle`).
+
 ## Estado actual
 
 Jugable: menú, selección de raza, constructor de equipos, duelo contra la IA
@@ -999,6 +1880,83 @@ imagen— cuando el calabozo no trae `mapa` o su `nodos.length` no cuadra con el
 número de etapas. Es la red para un calabozo futuro sin arte todavía; no borres
 esa rama pensando que ya sobra.
 
+**Y el personaje RECORRE ese mapa (`ui/travesia.js`).** Al pulsar «Avanzar»
+(bajo el mapa) o «Entrar»/«Repetir» en una ficha: primero el texto de entrada de
+la etapa, luego el mapa se abre en grande y el retrato flotante del primer
+personaje del equipo camina por el tramo de sendero hasta el nodo de la etapa
+(rebota a cada paso, se balancea y mira hacia donde va); al llegar le salen al
+paso las criaturas —con su retrato flotante si lo tienen (los Eternals), si no
+su carta— y el duelo empieza directo. Un clic o una tecla lo saltan. Fuera de
+la travesía, el personaje queda de pie en el mapa del lateral, en la última
+etapa superada («estás aquí»). Detalles que importan:
+
+- `geometria()` y `tramo()` de `Screens.historia` son la ÚNICA fuente del
+  sendero: el mapa del lateral y la travesía dibujan y recorren la misma curva.
+- Antes de la etapa 1 se sale de `puntoDePartida()`, un punto que prolonga
+  hacia atrás el primer tramo.
+- El jefe suele estar en el borde superior del mapa: la figura nunca sube por
+  encima de su propia altura y los enemigos se ponen en fila FRENTE al
+  personaje, del lado del mapa con más sitio. Sin eso salían cortados.
+- Es una capa de `body`, como la cinemática: se espera su promesa y DESPUÉS se
+  navega. `viajando` impide lanzar dos travesías con un doble clic.
+
+**Escenario 2D (`ui/escenario2d.js` + `ui/temas2d.js`): el calabozo de LADO.**
+Si el calabozo trae `escenario2d: '<tema>'` en `data/dungeons.js`, la travesía
+no es sobre el mapa sino una escena horizontal: el personaje avanza de la etapa
+anterior a la siguiente (la etapa k está en x = k·PASO), la cámara lo sigue, le
+salen al paso los enemigos junto al poste de la etapa y empieza el duelo. El mapa
+del calabozo queda como minimapa en una esquina, con un punto que avanza. Hoy
+lo tienen el Bosque (`bosque`) y el Oasis (`oasis`: agujas de roca, árboles de
+copa redonda y cristales; el hito es una estela con un orbe en vez de farol); los
+demás usan la travesía sobre el mapa hasta que tengan su tema.
+
+- **Las capas están PINTADAS con Python** (`tools/fondos2d/`, numpy + PIL, el
+  mismo enfoque que los fondos de Dracoslayer pero en alta resolución y con
+  acabado pictórico): `python tools/fondos2d/bosque.py [capa ...]` deja tiras
+  WebP en `src/assets/escenario2d/<tema>/` (~700 KB el bosque entero). Cada tira
+  se repite en horizontal SIN COSTURA: lo que se pinta junto a un borde se pinta
+  también al otro lado (`Tira.pegar` envuelve) y el ruido que la cruza es
+  periódico. `pintura.py` trae las herramientas comunes: troncos con volumen
+  (forma analítica + luz lateral + vetas + musgo), ramas, follaje, halos.
+- **La paleta se MIDE del fondo pintado de la estirpe, no se inventa.** La
+  primera versión usó una bruma turquesa supuesta (`#7fb498`) y salieron postes
+  blancos y musgo de camuflaje; medida (mediana de zonas de `desterrado.jpg`),
+  la bruma es `#487750`, los troncos `#0f1306` y el suelo `#162712`, y con eso
+  las capas se funden con el fondo. Para un tema nuevo: medir primero.
+- **Lo que se anima va en vivo** (motor de «sellos» en `temas2d.js`): haces de
+  luz, niebla, luciérnagas, la luz del farol y el número de la etapa sobre el
+  poste pintado. El orden de todo lo dicta `tema.orden` (tipos `fondo`, `tira`,
+  `capa`, `niebla`, `hitos`, `actores`, `particulas`, `velo`).
+- **Profundidad**: lo lejano más claro, desenfocado y semitransparente (deja ver
+  el fondo pintado de la estirpe, que es la capa más lejana); lo cercano casi
+  negro y con luz lateral (`iluminar`, `source-atop`); el primer plano fuera de
+  foco. Entre capas, bandas de niebla.
+- **Los retratos flotantes son BUSTOS**, no cuerpos enteros: el personaje avanza
+  flotando con la base fundida (`fundirBase`) y una niebla baja pintada DELANTE
+  de los actores, para que no se vea el corte recto. `voltearFigura` del tema
+  es por si el retrato mira hacia atrás; el de Annia ya mira a la derecha.
+- Las cosas grandes del primer plano tapaban a la protagonista: las frondas solo
+  asoman por abajo (`base` > 1).
+- **Conversación al andar**: una etapa puede traer `dialogo: [{ quien, texto }]`
+  en `data/dungeons.js`. El líder (primer personaje con retrato) camina con un
+  acompañante —el primero que habla en el diálogo y está en el equipo— y cada
+  frase sale en un bocadillo sobre quien la dice, escribiéndose letra a letra.
+  Con diálogo, la marcha dura lo que la conversación (cada frase, lo que tarda
+  en leerse a 20 car/s, como las cinemáticas): llegan al terminar de hablar y
+  ENTONCES salen los enemigos. Clic = frase siguiente (los personajes aceleran
+  para no quedarse atrás: la posición persigue a un reloj «virtual» que el clic
+  adelanta, así nadie se teletransporta); Esc = saltar todo.
+  Los diálogos del Bosque y del Oasis son BORRADORES de Claude a partir de la
+  narración de cada etapa, marcados así en los datos: los textos son de Oscar.
+- **El bocadillo**: se mide ya escrito y se recoloca dentro del marco, con el
+  piquito desplazado (`--cola`) para seguir apuntando a quien habla. Ojo: el
+  `display: flex` de `.esc2d-globo` anulaba el atributo `hidden` —el CSS de
+  autor gana al del navegador— y el bocadillo se quedaba encima del encuentro;
+  por eso existe `.esc2d-globo[hidden] { display: none }`.
+- **Hacia dónde miran**: todos avanzan a la derecha; los retratos que miran a la
+  izquierda se listan en `Escenario2D.MIRAN_A_LA_IZQUIERDA` y se voltean.
+  Comprobar a ojo con una hoja de contacto al sumar personajes que caminen.
+
 Ojo con tres cosas si tocas esto:
 
 - **La campaña es lineal**, y probar el mapa de una raza tardía exige haber
@@ -1026,9 +1984,8 @@ Ojo con tres cosas si tocas esto:
 
 Pendiente:
 
-- La IA sigue siendo una heurística básica para DECIDIR, aunque ya aplique los
-  efectos de 8 de sus 12 cartas de acción y los jefes sus 16 habilidades.
-  Quedan 4 en `SIN_AUTOMATIZAR`, cada una con su motivo escrito.
+- La IA sigue siendo una heurística básica para DECIDIR, aunque ya aplica
+  todas las cartas (tandas 1-5) y valora con pasivos (tanda 6).
 - **El calabozo es ahora más duro, y está medido.** Con los efectos aplicados,
   los duelos contra oleada acaban en **6,6 turnos de media en vez de 8,1** (144
   duelos, las 6 etapas de los 4 calabozos): la oleada mata antes. En modo solo,
@@ -1036,5 +1993,5 @@ Pendiente:
   vuelve injusta, ese es el sitio, no la tabla de efectos.
 - Rompescudos no llega a equiparse en ninguno de los mazos actuales (0 veces en
   272 duelos), así que su negación solo está probada en unidad, no en juego.
-- Sin pruebas automatizadas persistentes: las comprobaciones de `accionesIA` y
-  el experimento con/sin viven en el scratchpad de la sesión, no en el repo.
+- **Los Reanimados son la estirpe floja** (ver tanda 6): es poder de carta,
+  no IA. Decisión de Oscar pendiente.

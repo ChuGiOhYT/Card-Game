@@ -25,84 +25,110 @@ window.Game.Screens.mainMenu = {
       ? ''
       : `<span class="menu-btn-candado">🔒 ${queFalta}</span>`;
 
+    // Cada modo es una CARTA con su arte, en abanico. Las cerradas llevan
+    // cadenas y el candado con lo que falta; el arte va en estilo en línea
+    // (un url en una variable CSS se resolvería contra la hoja y no cargaría).
+    const carta = ({ destino, titulo, sub, fondo, figura, extra = '', cerrada = false, clase = '' }) => `
+      <button class="menu-carta ${clase} ${cerrada ? 'bloqueado' : ''}" data-destino="${destino}"
+              ${cerrada ? 'aria-disabled="true"' : ''}>
+        <span class="mc-arte" ${fondo ? `style="background-image:url('${fondo}')"` : ''}></span>
+        ${figura ? `<img class="mc-figura" src="${figura}" alt="" draggable="false">` : ''}
+        ${extra}
+        <span class="mc-texto">
+          <span class="menu-btn-titulo">${titulo}</span>
+          <span class="menu-btn-sub">${sub}</span>
+          ${cerrada ? candado : ''}
+        </span>
+        ${cerrada ? '<span class="mc-cadenas" aria-hidden="true"></span><span class="mc-cadenas mc-cadenas-x" aria-hidden="true"></span><span class="mc-candado" aria-hidden="true">🔒</span>' : ''}
+      </button>`;
+
+    const cartas = [
+      carta({
+        destino: 'historia', titulo: 'Modo Historia', sub: 'Elige tu estirpe y recorre su caída',
+        fondo: 'assets/fondos/desterrado.jpg', figura: 'assets/personajes-flotantes/des_annia-flotante.png'
+      }),
+      carta({
+        destino: 'solo', titulo: 'Modo Solo', sub: 'Partida rápida contra la máquina',
+        fondo: 'assets/fondos/reanimado.jpg', figura: 'assets/personajes-flotantes/cri_uldar-flotante.png',
+        cerrada: !abierto
+      }),
+      carta({
+        destino: 'constructor', titulo: 'Crea tu Equipo', sub: '5 personajes y 8 acciones',
+        fondo: 'assets/fondos/lunaria.jpg', cerrada: !abierto,
+        extra: `<span class="mc-abanico" aria-hidden="true">
+          <img src="assets/cartas/desterrado-axel.jpg" alt="">
+          <img src="assets/cartas/lunaria-sadash.jpg" alt="">
+          <img src="assets/cartas/oxitron-krag.jpg" alt="">
+        </span>`
+      }),
+      // Duelo remoto 1 contra 1, de PC a PC (core/red.js). Abierto siempre:
+      // no depende de la campaña.
+      carta({
+        destino: 'remoto', titulo: 'Duelo remoto', sub: 'Uno contra uno con un amigo',
+        fondo: 'assets/fondos/oxitron.jpg', clase: 'menu-carta-remoto',
+        extra: `<span class="mc-abanico mc-duelo" aria-hidden="true">
+          <img src="assets/cartas/reverso.webp" alt="">
+          <img src="assets/cartas/reverso.webp" alt="">
+        </span>`
+      }),
+      // Fuera del juego: abre la web en el navegador del sistema. Nunca se
+      // bloquea, porque no depende del progreso de la campaña. Lleva el
+      // reverso oficial: es el de las partidas contra jugadores.
+      carta({
+        destino: 'online', titulo: 'Juega online', sub: 'TCG Arena · aeternumtcgchile.fun ↗',
+        fondo: 'assets/cartas/reverso.webp', clase: 'menu-carta-externa'
+      })
+    ];
+
     contenedor.innerHTML = `
       <div class="menu-principal">
+        <div class="menu-fondo" aria-hidden="true">
+          <video id="menu-video" autoplay muted loop playsinline
+                 preload="auto" disablepictureinpicture tabindex="-1">
+            <source src="assets/video/menu-background.mp4" type="video/mp4">
+          </video>
+          <div class="menu-fondo-velo"></div>
+        </div>
+        <canvas class="menu-particulas" id="menu-particulas" aria-hidden="true"></canvas>
+
         <div class="menu-marca">
           <h1 class="menu-titulo">AETERNUM</h1>
           <div class="menu-filete"></div>
           <p class="menu-lema">Juego de mesa y aventura de rol</p>
         </div>
 
-        <nav class="menu-opciones">
-          <div class="menu-fondo" aria-hidden="true">
-            <video id="menu-video" autoplay muted loop playsinline
-                   preload="auto" disablepictureinpicture tabindex="-1">
-              <source src="assets/video/menu-background.mp4" type="video/mp4">
-            </video>
-            <div class="menu-fondo-velo"></div>
-          </div>
-
-          <button class="menu-btn" data-destino="historia">
-            <span class="menu-btn-sigil">✦</span>
-            <span class="menu-btn-cuerpo">
-              <span class="menu-btn-titulo">Modo Historia</span>
-              <span class="menu-btn-sub">Elige tu estirpe y recorre su caída</span>
-            </span>
-          </button>
-
-          <button class="menu-btn ${abierto ? '' : 'bloqueado'}" data-destino="solo"
-                  ${abierto ? '' : 'aria-disabled="true"'}>
-            <span class="menu-btn-sigil">${abierto ? '⚔' : '🔒'}</span>
-            <span class="menu-btn-cuerpo">
-              <span class="menu-btn-titulo">Modo Solo</span>
-              <span class="menu-btn-sub">Partida rápida contra la máquina</span>
-              ${candado}
-            </span>
-          </button>
-
-          <button class="menu-btn ${abierto ? '' : 'bloqueado'}" data-destino="constructor"
-                  ${abierto ? '' : 'aria-disabled="true"'}>
-            <span class="menu-btn-sigil">${abierto ? '⬡' : '🔒'}</span>
-            <span class="menu-btn-cuerpo">
-              <span class="menu-btn-titulo">Crea tu Equipo</span>
-              <span class="menu-btn-sub">5 personajes y 8 acciones</span>
-              ${candado}
-            </span>
-          </button>
-
-          <!-- Fuera del juego: abre la web en el navegador del sistema. Nunca
-               se bloquea, porque no depende del progreso de la campaña. -->
-          <button class="menu-btn menu-btn-externo" data-destino="online">
-            <span class="menu-btn-sigil">🌐</span>
-            <span class="menu-btn-cuerpo">
-              <span class="menu-btn-titulo">Juega online (TCG Arena)</span>
-              <span class="menu-btn-sub">
-                Duelos contra otros jugadores · aeternumtcgchile.fun
-              </span>
-            </span>
-            <span class="menu-btn-fuera" aria-hidden="true">↗</span>
-          </button>
-        </nav>
+        <nav class="menu-cartas">${cartas.join('')}</nav>
 
         <footer class="menu-pie">
           <span>${partidas} partida${partidas === 1 ? '' : 's'}</span>
           <span class="menu-pie-sep">·</span>
           <span>${equipos} equipo${equipos === 1 ? '' : 's'} guardado${equipos === 1 ? '' : 's'}</span>
-          <span class="menu-pie-sep">·</span>
-          <button class="menu-salir" id="btn-sonido">Sonido</button>
-          ${
-            S.hayAventuraQueReiniciar()
-              ? `<span class="menu-pie-sep">·</span>
-                 <button class="menu-salir" id="btn-reiniciar-aventura">Reiniciar aventura</button>`
-              : ''
-          }
-          <span class="menu-pie-sep">·</span>
-          <button class="menu-salir" id="btn-salir">Salir</button>
+          <span class="menu-pie-iconos">
+            <button class="menu-icono" id="btn-sonido" title="Sonido" aria-label="Sonido">🔊</button>
+            ${
+              S.hayAventuraQueReiniciar()
+                ? `<button class="menu-icono" id="btn-reiniciar-aventura" title="Reiniciar aventura"
+                           aria-label="Reiniciar aventura">↺</button>`
+                : ''
+            }
+            <button class="menu-icono menu-icono-salir" id="btn-salir" title="Salir" aria-label="Salir">⏻</button>
+          </span>
         </footer>
       </div>
     `;
 
-    contenedor.querySelectorAll('.menu-btn').forEach((btn) => {
+    // Las cartas, en abanico: cada una girada desde abajo según su sitio.
+    const lista = [...contenedor.querySelectorAll('.menu-carta')];
+    const medio = (lista.length - 1) / 2;
+    lista.forEach((el, i) => {
+      const d = i - medio;
+      el.style.setProperty('--giro', `${(d * 5).toFixed(1)}deg`);
+      el.style.setProperty('--alto', `${(Math.abs(d) * Math.abs(d) * 7).toFixed(1)}px`);
+    });
+
+    this.arrancarAmbiente(contenedor);
+
+    contenedor.querySelectorAll('.menu-carta').forEach((btn) => {
       btn.addEventListener('click', () => {
         const destino = btn.dataset.destino;
 
@@ -133,6 +159,8 @@ window.Game.Screens.mainMenu = {
 
         if (destino === 'historia') {
           window.Game.Router.ir('seleccionRaza', { modo: 'historia' });
+        } else if (destino === 'remoto') {
+          window.Game.Router.ir('remoto');
         } else if (destino === 'solo') {
           window.Game.Router.ir('modoSolo');
         } else {
@@ -208,8 +236,74 @@ window.Game.Screens.mainMenu = {
     }, 6000);
   },
 
+  /**
+   * Luciérnagas en un lienzo y un leve movimiento de profundidad que sigue al
+   * ratón: el fondo se desplaza hacia un lado y las luciérnagas y el título
+   * hacia el otro. Todo se suelta en destruir(). Quien pidió menos movimiento
+   * no recibe ninguna de las dos cosas.
+   */
+  arrancarAmbiente(contenedor) {
+    this.pararAmbiente();
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const raiz = contenedor.querySelector('.menu-principal');
+    const lienzo = contenedor.querySelector('#menu-particulas');
+    const ctx = lienzo.getContext('2d');
+    const ajustar = () => {
+      lienzo.width = lienzo.clientWidth;
+      lienzo.height = lienzo.clientHeight;
+    };
+    ajustar();
+    const N = 46;
+    const luces = Array.from({ length: N }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: 0.8 + Math.random() * 1.8,
+      vx: (Math.random() - 0.5) * 0.00018, vy: -0.00008 - Math.random() * 0.00018,
+      fase: Math.random() * Math.PI * 2, ritmo: 0.6 + Math.random() * 1.2
+    }));
+    const dibujar = (t) => {
+      const w = lienzo.width, h = lienzo.height;
+      ctx.clearRect(0, 0, w, h);
+      for (const l of luces) {
+        l.x += l.vx * 16; l.y += l.vy * 16;
+        if (l.y < -0.02) { l.y = 1.02; l.x = Math.random(); }
+        if (l.x < -0.02) l.x = 1.02; else if (l.x > 1.02) l.x = -0.02;
+        const brillo = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 1000 * l.ritmo + l.fase));
+        const x = l.x * w, y = l.y * h;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, l.r * 6);
+        g.addColorStop(0, `rgba(255, 226, 150, ${0.85 * brillo})`);
+        g.addColorStop(0.3, `rgba(220, 190, 110, ${0.35 * brillo})`);
+        g.addColorStop(1, 'rgba(220, 190, 110, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, l.r * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      this.marco = requestAnimationFrame(dibujar);
+    };
+    this.marco = requestAnimationFrame(dibujar);
+
+    const mover = (ev) => {
+      raiz.style.setProperty('--px', ((ev.clientX / innerWidth) - 0.5).toFixed(3));
+      raiz.style.setProperty('--py', ((ev.clientY / innerHeight) - 0.5).toFixed(3));
+    };
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('resize', ajustar);
+    this.soltarAmbiente = () => {
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('resize', ajustar);
+    };
+  },
+
+  pararAmbiente() {
+    if (this.marco) cancelAnimationFrame(this.marco);
+    this.marco = null;
+    if (this.soltarAmbiente) this.soltarAmbiente();
+    this.soltarAmbiente = null;
+  },
+
   /** El Router llama a esto al salir: la música es del menú, no del juego. */
   destruir() {
+    this.pararAmbiente();
     window.Game.Audio.quitarMusica();
   }
 };

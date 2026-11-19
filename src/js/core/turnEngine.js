@@ -65,7 +65,11 @@ window.Game.crearJugador = function (
     // Sale a campo en el orden en que se escribió el equipo, en vez de por
     // potencia. Lo usan las oleadas de calabozo para respetar su escalada.
     ordenFijo: !!opciones.ordenFijo,
-    sangre: { pila: window.Game.SANGRE_TOTAL, gasto: 0, fuera: 0 },
+    // Con cuánta sangre empieza. 30 salvo que se diga otra cosa: las oleadas
+    // de calabozo traen la suya por etapa (`etapa.sangre`), que es la palanca
+    // de dificultad que no toca ninguna carta impresa.
+    sangreTotal: opciones.sangre || window.Game.SANGRE_TOTAL,
+    sangre: { pila: opciones.sangre || window.Game.SANGRE_TOTAL, gasto: 0, fuera: 0 },
     reserva: equipo.map((id) => ({
       uid: `u${++contadorUid}`,
       personaje: id,
@@ -99,6 +103,9 @@ window.Game.TurnEngine = class TurnEngine {
     this.motivoFin = null;
     this.registro = [];
     this.atacaronEsteTurno = new Set(); // uids que ya golpearon
+    // Un despliegue por turno (sacar a alguien o cambiarlo). Sin tope, cambiar
+    // una y otra vez disparaba la Retirada de Sadash sin fin (Oscar).
+    this.desplegoEsteTurno = false;
     // Puestos por las herramientas manuales: [{jugador, cartaId, turnos}]
     this.bloqueos = [];
     this.accionesNegadas = false;
@@ -112,6 +119,17 @@ window.Game.TurnEngine = class TurnEngine {
     this.aturdidos = [];
     // Ataque declarado y aún sin resolver: {atacanteUid, defensorUid}
     this.ataquePendiente = null;
+    // Elección que espera a un HUMANO (la IA elige al instante y nunca deja
+    // nada aquí). Mientras haya una, el turno no avanza. Ver elegir().
+    this.eleccionPendiente = null;
+    // Estados con duración, en turnos de LOS DOS jugadores (Oscar):
+    // [{ tipo, jugadorIdx, uid, cartaId, turnos, motivo }]. Tipos: 'inmune'
+    // (no se le puede atacar), 'sinAtaques' (nadie declara ataques),
+    // 'personajeBloqueado' (no se puede desplegar y sus efectos se niegan).
+    this.estados = [];
+    // Efectos de personaje aplicados solos, para que la pantalla los anuncie:
+    // [{ n, jugadorIdx, uid, texto }]. `n` crece siempre (ver efectosPersonaje).
+    this.anuncios = [];
   }
 
   get jugadorActivo() {
@@ -150,7 +168,101 @@ window.Game.TurnEngine = class TurnEngine {
   }
 
   notificar() {
+    // Los efectos que dependen del estado de la mesa (revelados, Hades) se
+    // recalculan antes de que nadie mire: la pantalla y la IA leen ya el bono.
+    window.Game.EfectosPersonaje?.recalcularPasivos(this);
     this.alCambiar(this);
+  }
+
+  /* ------------------------ Elecciones y estados ------------------------ */
+
+  /**
+   * Una carta da a elegir («o», «puedes», «selecciona»). Si elige la IA, su
+   * regla (`ia`) decide al instante y se sigue; si elige un humano, la
+   * elección queda pendiente, la pantalla la enseña y el turno espera hasta
+   * resolverEleccion(). Con una sola opción no se pregunta nada.
+   * @param {{jugador, titulo, opciones: {id, texto}[], ia?: Function, alElegir: Function}} e
+   */
+  elegir({ jugador, titulo, opciones, ia, alElegir }) {
+    if (!opciones || !opciones.length) return;
+    if (opciones.length === 1) {
+      alElegir(opciones[0].id);
+      return;
+    }
+    if (jugador.esIA) {
+      let id = null;
+      try {
+        id = ia ? ia(opciones) : null;
+      } catch {
+        id = null;
+      }
+      alElegir(opciones.some((o) => o.id === id) ? id : opciones[0].id);
+      return;
+    }
+    this._nEleccion = (this._nEleccion || 0) + 1;
+    this.eleccionPendiente = {
+      n: this._nEleccion,
+      jugadorIdx: this.jugadores.indexOf(jugador),
+      titulo,
+      opciones,
+      alElegir
+    };
+    this.log(`… ${titulo}: ${jugador.nombre} elige.`);
+    this.notificar();
+  }
+
+  resolverEleccion(id) {
+    const e = this.eleccionPendiente;
+    if (!e || !e.opciones.some((o) => o.id === id)) return false;
+    this.eleccionPendiente = null;
+    e.alElegir(id);
+    this.notificar();
+    return true;
+  }
+
+  ponerEstado({ tipo, jugador = null, uid = null, cartaId = null, turnos, motivo, valor = null }) {
+    if (!turnos || turnos <= 0) return false;
+    this.estados.push({
+      tipo,
+      jugadorIdx: jugador ? this.jugadores.indexOf(jugador) : -1,
+      uid,
+      cartaId,
+      turnos,
+      motivo,
+      valor
+    });
+    return true;
+  }
+
+  tieneEstado(tipo, { jugador = null, uid = null, cartaId = null } = {}) {
+    const idx = jugador ? this.jugadores.indexOf(jugador) : null;
+    return this.estados.some(
+      (e) => e.tipo === tipo
+        && (idx === null || e.jugadorIdx === idx)
+        && (uid === null || e.uid === uid)
+        && (cartaId === null || e.cartaId === cartaId)
+    );
+  }
+
+  /** Los estados que pesan sobre una instancia, para pintarlos en su carta. */
+  estadosDe(inst) {
+    if (!inst) return [];
+    return this.estados.filter((e) => e.uid === inst.uid);
+  }
+
+  /** ¿Se le puede declarar un ataque? (Pip y compañía lo impiden). */
+  puedeSerAtacado(inst) {
+    return !inst || !this.tieneEstado('inmune', { uid: inst.uid });
+  }
+
+  /** Deja constancia de un efecto aplicado solo; la pantalla lo enseña. */
+  anunciar(jugador, inst, texto) {
+    this.anuncios.push({
+      n: this.anuncios.length + 1,
+      jugadorIdx: this.jugadores.indexOf(jugador),
+      uid: inst ? inst.uid : null,
+      texto
+    });
   }
 
   iniciar() {
@@ -305,7 +417,10 @@ window.Game.TurnEngine = class TurnEngine {
     if (enPosicion) jugador.activos = jugador.activos.filter((i) => i !== inst);
     if (enReserva) jugador.reserva = jugador.reserva.filter((i) => i !== inst);
 
-    this.revelar(jugador, inst.personaje);
+    // Al Hades deja de contar como revelada (Oscar): el Hades es zona
+    // abierta, se ve, pero no suma a «por cada carta revelada». La acción que
+    // llevaba acoplada vuelve a su zona y sí sigue revelada.
+    jugador.revelados.delete(inst.personaje);
     if (inst.accion) {
       this.revelar(jugador, inst.accion);
       inst.accion = null;
@@ -324,6 +439,17 @@ window.Game.TurnEngine = class TurnEngine {
     // y el contador del Hades sin subir hasta el siguiente cambio de estado.
     this.notificar();
     return true;
+  }
+
+  /**
+   * Destruir es mandar al Hades, pero antes se pregunta si algo lo evita o lo
+   * sustituye (Zhin se destruye en lugar de tu personaje en posición).
+   */
+  destruir(jugador, inst, motivo = 'destruido', { yaDecidido = false } = {}) {
+    // yaDecidido: el dueño ya contestó a Zhin en el golpe; no se vuelve a ofrecer.
+    const evitado = !yaDecidido && window.Game.EfectosPersonaje?.antesDeDestruir(this, jugador, inst, motivo);
+    if (evitado) return false;
+    return this.enviarAlHades(jugador, inst, motivo);
   }
 
   recuperarDelHades(jugador, uid, { costeSangre = 0, motivo = 'efecto' } = {}) {
@@ -390,6 +516,7 @@ window.Game.TurnEngine = class TurnEngine {
   /* --------------------------- Personajes ------------------------------ */
 
   puedeDesplegar(jugador, inst) {
+    if (this.tieneEstado('personajeBloqueado', { uid: inst.uid })) return false;
     if (jugador.ignoraCoste) return true;
     const p = window.Game.CHARACTERS_BY_ID[inst.personaje];
     return p.coste <= this.energiaDe(jugador);
@@ -407,6 +534,8 @@ window.Game.TurnEngine = class TurnEngine {
       `${jugador.nombre} retira a ` +
         `${window.Game.CHARACTERS_BY_ID[inst.personaje].nombre}.`
     );
+    // «Retirada:» (Sadash).
+    window.Game.EfectosPersonaje?.alRetirarse(this, jugador, inst);
   }
 
   /**
@@ -416,12 +545,19 @@ window.Game.TurnEngine = class TurnEngine {
    */
   desplegar(uid, { saltarFase = false } = {}) {
     if (!saltarFase && this.fase !== 'personaje') return false;
+    if (this.eleccionPendiente) return false;
     if (this.terminada) return false;
     if (this.estaAturdido(this.jugadorActivo)) return false;
+
+    // En la fase de personaje, uno por turno. Los efectos de carta que ponen
+    // a alguien en posición (Luh, Escape, Encadenar) no pasan por aquí, y los
+    // que llaman con saltarFase tampoco cuentan.
+    if (!saltarFase && this.desplegoEsteTurno) return false;
 
     const j = this.jugadorActivo;
     const inst = j.reserva.find((i) => i.uid === uid);
     if (!inst || !this.puedeDesplegar(j, inst)) return false;
+    if (!saltarFase) this.desplegoEsteTurno = true;
 
     if (j.activos.length >= j.maxActivos) this.retirar(j, j.activos[0]);
 
@@ -432,10 +568,13 @@ window.Game.TurnEngine = class TurnEngine {
     // indistinguibles: en los dos casos está en la reserva con alguien delante.
     // Los jefes lo usan para seguir lanzando habilidades desde detrás.
     inst.salioAlCampo = true;
+    // Una carta queda revelada desde que se usa (Oscar).
+    this.revelar(j, inst.personaje);
     this.log(
       `${j.nombre} despliega a ` +
         `${window.Game.CHARACTERS_BY_ID[inst.personaje].nombre}.`
     );
+    window.Game.EfectosPersonaje?.alDesplegar(this, j, inst);
     this.notificar();
     return true;
   }
@@ -445,7 +584,19 @@ window.Game.TurnEngine = class TurnEngine {
   /** Acciones libres: las del equipo menos las acopladas a algún activo. */
   accionesDisponibles(jugador) {
     const enUso = new Set(jugador.activos.map((i) => i.accion).filter(Boolean));
-    return jugador.acciones.filter((id) => !enUso.has(id));
+    // Las bloqueadas (Kaw, Lirhym, Herramientas…) tampoco: el bloqueo se
+    // anotaba y se pintaba, pero nadie lo leía, y se podían acoplar igual.
+    const libres = jugador.acciones.filter(
+      (id) => !enUso.has(id) && !window.Game.Manual?.estaBloqueada(this, jugador, id)
+    );
+    // Yrving: si te declararon un tipo y tienes de ese tipo, solo ese.
+    const idx = this.jugadores.indexOf(jugador);
+    const forzado = this.estados.find((e) => e.tipo === 'tipoForzado' && e.jugadorIdx === idx);
+    if (forzado) {
+      const delTipo = libres.filter((id) => window.Game.ACTIONS_BY_ID[id]?.tipo === forzado.valor);
+      if (delTipo.length) return delTipo;
+    }
+    return libres;
   }
 
   /**
@@ -455,6 +606,7 @@ window.Game.TurnEngine = class TurnEngine {
    */
   equipar(accionId, uid = null, { saltarFase = false } = {}) {
     if (!saltarFase && this.fase !== 'accion') return false;
+    if (this.eleccionPendiente) return false;
     if (this.terminada) return false;
     if (this.estaAturdido(this.jugadorActivo)) return false;
 
@@ -469,6 +621,17 @@ window.Game.TurnEngine = class TurnEngine {
 
     if (destino.accion) this.revelar(j, destino.accion);
     destino.accion = accionId;
+    this.revelar(j, accionId);
+    if (destino.tilos) {
+      j.reserva.push(destino.tilos.carta);
+      destino.tilos = null;
+      this.log('Tilos vuelve a la zona de equipo: su puesto lo ocupa la acción.');
+    }
+    const idxJ = this.jugadores.indexOf(j);
+    this.estados = this.estados.filter(
+      (e) => !(e.tipo === 'tipoForzado' && e.jugadorIdx === idxJ
+        && window.Game.ACTIONS_BY_ID[accionId]?.tipo === e.valor)
+    );
 
     const accion = window.Game.ACTIONS_BY_ID[accionId];
     this.log(
@@ -477,6 +640,7 @@ window.Game.TurnEngine = class TurnEngine {
     );
     // El efecto impreso todavía no se ejecuta solo: queda en el registro.
     if (accion.texto) this.log(`  ↳ ${accion.texto}`);
+    window.Game.EfectosPersonaje?.alEquipar(this, j, destino);
 
     this.notificar();
     return true;
@@ -486,6 +650,16 @@ window.Game.TurnEngine = class TurnEngine {
 
   /** Personajes propios que aún pueden golpear este turno. */
   atacantesDisponibles(jugador = this.jugadorActivo) {
+    // Quien abre el duelo no ataca en su primer turno (Oscar). `numeroTurno`
+    // cuenta los turnos de LOS DOS, así que el 1 es siempre el de quien abre
+    // (también en una revancha en la que abre el otro).
+    if (this.numeroTurno === 1) return [];
+    // Diplomático: nadie declara ataques.
+    if (this.tieneEstado('sinAtaques')) return [];
+    // Con alguien enfrente y ninguno atacable (Pip), no hay a quién pegar: el
+    // golpe no puede ir a la sangre porque el campo no está vacío.
+    const rival = this.jugadores[1 - this.jugadores.indexOf(jugador)];
+    if (rival.activos.length && !rival.activos.some((i) => this.puedeSerAtacado(i))) return [];
     return jugador.activos.filter(
       (i) =>
         !this.atacaronEsteTurno.has(i.uid) &&
@@ -511,7 +685,10 @@ window.Game.TurnEngine = class TurnEngine {
    */
   declararAtaque(atacanteUid = null, defensorUid = null) {
     if (this.fase !== 'ataque' || this.terminada) return false;
-    if (this.ataquePendiente) return false;
+    if (this.ataquePendiente || this.eleccionPendiente) return false;
+    // Primer turno de quien abre: no se ataca (también si se pide directo,
+    // como una intención del invitado en remoto).
+    if (this.numeroTurno === 1) return false;
 
     const atacante = this.jugadorActivo;
     const defensor = this.jugadorInactivo;
@@ -525,7 +702,8 @@ window.Game.TurnEngine = class TurnEngine {
 
     let insDefensor = defensorUid
       ? defensor.activos.find((i) => i.uid === defensorUid)
-      : defensor.activos[0] || null;
+      : defensor.activos.find((i) => this.puedeSerAtacado(i)) || defensor.activos[0] || null;
+    if (insDefensor && !this.puedeSerAtacado(insDefensor)) return false;
 
     // Con esbirros en pie, el Eternal no es un objetivo válido: el esbirro se
     // interpone y encaja el golpe, para que el ataque no se pierda por un clic.
@@ -544,6 +722,9 @@ window.Game.TurnEngine = class TurnEngine {
       ? window.Game.CHARACTERS_BY_ID[insDefensor.personaje].nombre
       : 'la sangre rival';
     this.log(`⚔ ${nAtk} declara ataque contra ${nDef}. Aplica efectos y resuelve.`);
+    // «Batalla» de personaje (Krag, Krox): antes que las acciones, para que la
+    // previsión ya lo incluya.
+    window.Game.EfectosPersonaje?.enBatalla(this, atacante, insAtacante, defensor, insDefensor);
     this.notificar();
 
     // Si el defensor es la IA, aplica AQUÍ su carta defensiva: ya está el
@@ -579,6 +760,7 @@ window.Game.TurnEngine = class TurnEngine {
    * aplicarlo. La interfaz lo repinta cada vez que tocas una herramienta.
    */
   previsionAtaque() {
+    window.Game.EfectosPersonaje?.recalcularPasivos(this);
     const imp = this.implicadosAtaque();
     if (!imp || !imp.atacante) return null;
     return window.Game.Combat.resolver(imp.atacante, imp.defensor);
@@ -594,6 +776,9 @@ window.Game.TurnEngine = class TurnEngine {
 
   /** Resuelve el ataque declarado con los valores que tenga en este momento. */
   resolverAtaque() {
+    // Seluah pregunta al declararse el ataque: el golpe espera la respuesta.
+    if (this.eleccionPendiente) return null;
+    window.Game.EfectosPersonaje?.recalcularPasivos(this);
     const imp = this.implicadosAtaque();
     if (!imp || !imp.atacante) {
       this.ataquePendiente = null;
@@ -607,8 +792,38 @@ window.Game.TurnEngine = class TurnEngine {
     this.atacaronEsteTurno.add(imp.atacante.uid);
     this.ataquePendiente = null;
 
+    // Zhin (revelado en la mano del defensor) puede destruirse EN LUGAR de su
+    // personaje en posición. Es una opción, así que al humano se le pregunta
+    // y el resto del golpe espera a su respuesta (Oscar).
+    const EP = window.Game.EfectosPersonaje;
+    const zhin = res.destruido && imp.defensor && EP && EP.zhinDe(this, defensor, imp.defensor);
+    if (zhin) {
+      const nombre = window.Game.CHARACTERS_BY_ID[imp.defensor.personaje].nombre.split(',')[0];
+      this.elegir({
+        jugador: defensor,
+        titulo: `Zhin · ${nombre} va a ser destruido`,
+        opciones: [
+          { id: 'zhin', texto: 'Sacrificar a Zhin en su lugar' },
+          { id: 'no', texto: `Dejar caer a ${nombre}` }
+        ],
+        ia: () => 'zhin',
+        alElegir: (id) => this._cobrarGolpe(imp, res, atacante, defensor, id === 'zhin' ? zhin : null)
+      });
+      return res;
+    }
+    this._cobrarGolpe(imp, res, atacante, defensor, null);
+    return res;
+  }
+
+  /** La segunda mitad del golpe: destruir (o sustituir), sangrar y anotar. */
+  _cobrarGolpe(imp, res, atacante, defensor, sustituto) {
     if (res.destruido && imp.defensor) {
-      this.enviarAlHades(defensor, imp.defensor, 'destruido en combate');
+      if (sustituto) {
+        this.enviarAlHades(defensor, sustituto, 'Zhin se destruye en su lugar');
+        this.anunciar(defensor, imp.defensor, 'Zhin se sacrifica en su lugar');
+      } else {
+        this.destruir(defensor, imp.defensor, 'destruido en combate', { yaDecidido: true });
+      }
     }
     if (res.danoSangre > 0) {
       this.derramar(defensor, res.danoSangre, 'daño de combate');
@@ -634,7 +849,6 @@ window.Game.TurnEngine = class TurnEngine {
     });
 
     this.notificar();
-    return res;
   }
 
   /**
@@ -690,11 +904,23 @@ window.Game.TurnEngine = class TurnEngine {
   siguienteFase() {
     if (this.terminada) return;
     // Con un ataque declarado hay que resolverlo o retirarlo antes de seguir:
-    // si no, se perdería sin aplicarse.
-    if (this.ataquePendiente) return;
+    // si no, se perdería sin aplicarse. Y con una elección en el aire, igual.
+    if (this.ataquePendiente || this.eleccionPendiente) return;
+    // Al cerrar la fase de combate se cobran las autodestrucciones pendientes
+    // (Inmolación). La IA ya lo hacía en su turno; aquí vale también cuando la
+    // carta la aplicas tú desde el recordatorio. Si no hay nada anotado, no hace
+    // nada.
+    if (this.fase === 'ataque' && window.Game.AccionesIA) {
+      window.Game.AccionesIA.cobrarAutodestrucciones(this);
+      if (this.terminada) {
+        this.notificar();
+        return;
+      }
+    }
     const i = window.Game.FASES.indexOf(this.fase);
     if (i < window.Game.FASES.length - 1) {
       this.fase = window.Game.FASES[i + 1];
+      if (this.fase === 'accion') window.Game.EfectosPersonaje?.alEntrarEnAccion(this);
       this.notificar();
     } else {
       this.finalizarTurno();
@@ -706,20 +932,49 @@ window.Game.TurnEngine = class TurnEngine {
     this.ataquePendiente = null;
 
     // Derrame automático de fin de turno: 1 sangre de cada jugador.
+    // Si con eso alguien se queda a 0 la partida acaba AQUÍ, y hay que avisar a
+    // la pantalla: derramar() no notifica, y sin esto la mesa se quedaba en
+    // «Fin de turno» con el duelo ya ganado y sin cartel (pasaba en la etapa 1
+    // del Bosque, con la oleada a 5 de sangre).
     for (const j of this.jugadores) {
       this.derramar(j, 1, 'fin de turno');
-      if (this.terminada) return;
+      if (this.terminada) {
+        this.notificar();
+        return;
+      }
     }
 
     // Los bloqueos manuales caducan solos.
     this.bloqueos = this.bloqueos
       .map((b) => ({ ...b, turnos: b.turnos - 1 }))
       .filter((b) => {
+        // Lirhym: el bloqueo se va cuando ella deja la posición.
+        if (b.mientras && !this.jugadores.some((j) => j.activos.some((i) => i.uid === b.mientras))) {
+          this.log(`⛓ «${window.Game.Manual.nombreCarta(b.cartaId)}» queda libre.`);
+          return false;
+        }
         if (b.turnos > 0) return true;
         this.log(`⛓ «${window.Game.Manual.nombreCarta(b.cartaId)}» queda libre.`);
         return false;
       });
     this.accionesNegadas = false;
+
+    // «Final del turno oponente» y compañía (Tilos).
+    window.Game.EfectosPersonaje?.alFinDeTurno(this, this.jugadorActivo);
+    if (this.terminada) {
+      this.notificar();
+      return;
+    }
+
+    // Los estados con duración cuentan los turnos de LOS DOS jugadores
+    // (Oscar), incluido el turno en que se pusieron.
+    this.estados = this.estados
+      .map((e) => ({ ...e, turnos: e.turnos - 1 }))
+      .filter((e) => {
+        if (e.turnos > 0) return true;
+        this.log(`⏳ Termina «${e.motivo}».`);
+        return false;
+      });
 
     // Los modificadores temporales se revierten restando lo mismo que se
     // sumó, en vez de poner a cero: así no se llevan por delante los bonus
@@ -750,6 +1005,7 @@ window.Game.TurnEngine = class TurnEngine {
     this.numeroTurno++;
     this.fase = 'personaje';
     this.atacaronEsteTurno.clear();
+    this.desplegoEsteTurno = false;
     this.log(`— Turno ${this.numeroTurno}: ${this.jugadorActivo.nombre} —`);
     this.notificar();
   }

@@ -98,6 +98,9 @@ window.Game.AI = {
    */
   jugarFase(motor, { pausarEnAtaques = false } = {}) {
     if (motor.terminada) return false;
+    // Una carta suya pide que ELIJA el humano (Zhin, Campo caótico…): se para
+    // hasta que conteste.
+    if (motor.eleccionPendiente) return false;
     // Hay un ataque suyo esperando resolución: no toca moverse todavía.
     if (motor.ataquePendiente) return false;
 
@@ -107,7 +110,7 @@ window.Game.AI = {
     // --- Fase de personaje: llena los puestos libres ------------------------
     if (motor.fase === 'personaje') {
       let guarda = 0;
-      while (yo.activos.length < yo.maxActivos && guarda++ < 10) {
+      while (yo.activos.length < yo.maxActivos && !motor.desplegoEsteTurno && guarda++ < 10) {
         const candidatos = this.candidatos(motor, yo);
         if (!candidatos.length) break;
         if (!motor.desplegar(candidatos[0].uid)) break;
@@ -121,6 +124,7 @@ window.Game.AI = {
     // --- Fase de acción: equipa a cada personaje ----------------------------
     if (motor.fase === 'accion') {
       for (const inst of yo.activos) {
+        if (inst.tilos) continue;
         const elegida = this.elegirAccion(motor, yo, rival, inst);
         if (elegida && motor.equipar(elegida, inst.uid)) {
           // Las de timing «Acción equipada» ocurren aquí mismo, al acoplarlas.
@@ -128,6 +132,7 @@ window.Game.AI = {
             window.Game.AccionesIA.alEquipar(motor, yo, inst);
           }
         }
+        if (motor.eleccionPendiente) return false;
       }
       motor.siguienteFase();
       return true;
@@ -186,6 +191,78 @@ window.Game.AI = {
   },
 
   /**
+   * Lo que valdría `inst` EN POSICIÓN ahora mismo: lo impreso más los pasivos
+   * que le tocarían (los suyos —Gurh, Zabar, Auram— y los de sus aliados
+   * desde la mano o el Hades —Lydia, Acompañantes, Ejército—), más lo que le
+   * quita al rival (Thila). Sin esto la IA solo veía números impresos, y los
+   * Reanimados, flojos sobre el papel y fuertes con el Hades lleno, salían
+   * tarde o nunca.
+   *
+   * Se prueba poniéndolo un momento en posición, sin tocar nada más: las
+   * funciones de `PASIVOS` solo leen.
+   */
+  valorEnCampo(motor, yo, inst) {
+    const EP = window.Game.EfectosPersonaje;
+    const C = window.Game.CHARACTERS_BY_ID;
+    let v = this.valor(inst);
+    if (!EP || !motor) return v;
+    const rival = motor.jugadores[1 - motor.jugadores.indexOf(yo)];
+    const antes = yo.activos;
+    yo.activos = [inst];
+    try {
+      const fuentes = [
+        { inst, donde: 'posicion' },
+        ...yo.reserva.filter((i) => i !== inst && yo.revelados.has(i.personaje)).map((i) => ({ inst: i, donde: 'mano' })),
+        ...yo.hades.map((i) => ({ inst: i, donde: 'hades' }))
+      ];
+      for (const { inst: f, donde } of fuentes) {
+        const fn = EP.PASIVOS[f.personaje];
+        if (!fn || EP.DONDE_PASIVO[f.personaje] !== donde || EP.negado(motor, f)) continue;
+        for (const p of fn(motor, yo, f) || []) {
+          const n = (p.ataque || 0) + (p.defensa || 0);
+          if (p.inst === inst) v += n;
+          else if (p.j === rival) v -= n; // Thila: lo que pierde el rival
+        }
+      }
+    } catch (err) {
+      // Si algo no cuadra, se queda con lo impreso.
+    } finally {
+      yo.activos = antes;
+    }
+    // Vyla al entrar llena el Hades con otro Reanimado: vale lo que alimenta.
+    if (inst.personaje === 'rea_vyla'
+        && yo.reserva.some((i) => i !== inst && C[i.personaje].raza === 'reanimado')) v += 3;
+    return v;
+  },
+
+  /** Ataque que tendría en posición (impreso + pasivos), para los cruces. */
+  ataqueEnCampo(motor, yo, inst) {
+    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque;
+    if (!motor || !yo) return base;
+    const EP = window.Game.EfectosPersonaje;
+    const antes = yo.activos;
+    let extra = 0;
+    yo.activos = [inst];
+    try {
+      const fuentes = [
+        { inst, donde: 'posicion' },
+        ...yo.reserva.filter((i) => i !== inst && yo.revelados.has(i.personaje)).map((i) => ({ inst: i, donde: 'mano' })),
+        ...yo.hades.map((i) => ({ inst: i, donde: 'hades' }))
+      ];
+      for (const { inst: f, donde } of fuentes) {
+        const fn = EP && EP.PASIVOS[f.personaje];
+        if (!fn || EP.DONDE_PASIVO[f.personaje] !== donde || EP.negado(motor, f)) continue;
+        for (const p of fn(motor, yo, f) || []) if (p.inst === inst) extra += p.ataque || 0;
+      }
+    } catch (err) {
+      extra = 0;
+    } finally {
+      yo.activos = antes;
+    }
+    return base + extra;
+  },
+
+  /**
    * Quién puede salir ahora, en orden de preferencia.
    *
    * Con `ordenFijo` respeta el orden en que viene el equipo, que es como se
@@ -199,7 +276,8 @@ window.Game.AI = {
         (a, b) => yo.equipo.indexOf(a.personaje) - yo.equipo.indexOf(b.personaje)
       );
     }
-    return libres.sort((a, b) => this.valor(b) - this.valor(a));
+    const v = new Map(libres.map((i) => [i, this.valorEnCampo(motor, yo, i)]));
+    return libres.sort((a, b) => v.get(b) - v.get(a));
   },
 
   /**
@@ -215,16 +293,21 @@ window.Game.AI = {
     if (!objetivo) return false;
 
     const actual = yo.activos[0];
-    const sirve = this.superaA(actual, objetivo);
+    const sirve = this.superaA(actual, objetivo, motor, yo);
 
     // En modo oportunista se cambia también con el actual sirviendo, si hay
     // alguien que pega más fuerte para este mismo cruce.
     if (sirve && !this.AJUSTES.relevoOportunista) return false;
 
+    // El Eternal no sale a relevar mientras le queden esbirros: se esconde
+    // tras ellos. Pasaba en cuanto tus personajes aplicaban sus bonus solos
+    // (Annia +1): el esbirro ya no podía con ella, salía Iskar y la etapa 6 del
+    // Bosque caía del 67% al 12%.
     const relevo = this.candidatos(motor, yo).find(
       (i) =>
-        this.superaA(i, objetivo) &&
-        (!sirve || this.valor(i) > this.valor(actual))
+        !motor.eternalProtegido(yo, i) &&
+        this.superaA(i, objetivo, motor, yo) &&
+        (!sirve || this.valorEnCampo(motor, yo, i) > this.valorEnCampo(motor, yo, actual))
     );
     if (!relevo) return false;
 
@@ -235,8 +318,8 @@ window.Game.AI = {
    * ¿Bastaría el ataque impreso de `inst` para tumbar a `objetivo`? Se mira
    * en crudo porque en fase de personaje aún no hay acciones acopladas.
    */
-  superaA(inst, objetivo) {
-    const atk = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque;
+  superaA(inst, objetivo, motor = null, yo = null) {
+    const atk = this.ataqueEnCampo(motor, yo, inst);
     const postura = window.Game.Combat.postura(objetivo);
     if (postura === 'neutral') return true;
     const umbral =
@@ -249,6 +332,10 @@ window.Game.AI = {
   /** Prefiere el objetivo que pueda destruir; si no, el más peligroso. */
   elegirObjetivo(motor, atacante, rival) {
     if (!rival.activos.length) return null;
+    // Los intocables (Pip) no son objetivo.
+    const atacables = rival.activos.filter((d) => motor.puedeSerAtacado(d));
+    if (!atacables.length) return null;
+    rival = { ...rival, activos: atacables };
     const atk = window.Game.Combat.ataqueEfectivo(atacante);
 
     const matables = rival.activos.filter((d) => {
@@ -308,8 +395,11 @@ window.Game.AI = {
 
     // Su respuesta. Se estima con el ataque impreso del rival: todavía no ha
     // equipado, pero es lo que puede llegar a pegar.
+    // Con sus pasivos (Lydia, Gurh…) y sus modificadores: lo impreso se
+    // quedaba corto contra los que crecen solos.
     const suGolpe = rival.activos.reduce(
-      (mx, d) => Math.max(mx, window.Game.CHARACTERS_BY_ID[d.personaje].ataque),
+      (mx, d) => Math.max(mx, window.Game.CHARACTERS_BY_ID[d.personaje].ataque
+        + (d.pasivo?.ataque || 0) + (d.modificadores?.ataque || 0)),
       0
     );
     if (suGolpe > 0) {
@@ -331,8 +421,12 @@ window.Game.AI = {
   },
 
   elegirAccion(motor, yo, rival, inst) {
+    const coste = window.Game.CHARACTERS_BY_ID[inst.personaje].coste;
+    const devocionRinde = motor.vidaDe(yo) <= 4 && yo.sangre.gasto >= coste
+      && coste >= 2 && yo.reserva.length > 0;
     const disponibles = motor
       .accionesDisponibles(yo)
+      .filter((id) => id !== 'n_devocion' || devocionRinde)
       .map((id) => window.Game.ACTIONS_BY_ID[id]);
     if (!disponibles.length) return null;
 

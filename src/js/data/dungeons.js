@@ -84,6 +84,9 @@ window.Game.DUNGEONS = {
     raza: 'desterrado',
     nombre: 'El Bosque Nocturno',
     eternal: 'cri_uldar',
+    // Tema del escenario 2D por el que se avanza entre etapas (ui/temas2d.js).
+    // Un calabozo sin él usa la travesía sobre el mapa.
+    escenario2d: 'bosque',
 
     // El mapa de avance del lateral. `nodos` son coordenadas EN PÍXELES DE LA
     // IMAGEN (no del SVG del sendero anterior), una por etapa, plantadas a
@@ -105,19 +108,19 @@ window.Game.DUNGEONS = {
 
     // Lo que deja el Eternal al caer. No se usa para nada: es constancia de
     // que lo derribaste, y una de las cuatro que abren la historia final.
-    // TEXTOS PROVISIONALES: reescribir con la prosa definitiva.
     gema: {
       id: 'gema_orden',
       nombre: 'Cristal del Orden',
       sigil: '◈',
       mensaje:
-        'El cristal de Üldar late todavía con la luz enferma del bosque. Así ' +
-        'no sirve de nada: para limpiarlo hacen falta los otros tres.'
+        'El cristal de Iskar late todavía con la luz enferma del bosque. ' +
+        'Solo, no sirve de nada: para limpiarlo hacen falta los otros tres.'
     },
     intro:
-      'Annia acaba de ser desterrada de su pueblo por despertar poderes del ' +
-      'Orden. Obligada a internarse en los bosques, descubre que la corrupción ' +
-      'llegó antes que ella.',
+      'Annia despertó la luz del Orden en sus manos, y su pueblo la echó ' +
+      'por ello. Esa misma noche cruza el linde del Bosque Nocturno, el ' +
+      'viejo hogar de los sabios, y descubre que la corrupción llegó ' +
+      'antes que ella.',
 
     // Escena de entrada al calabozo, ANTES del texto dorado. Opcional: el
     // calabozo que no la tenga pasa directo a su `cinematica`.
@@ -129,10 +132,10 @@ window.Game.DUNGEONS = {
 
     cinematica: {
       texto:
-        'El hedor se extiende a lo lejos. El bosque que originalmente fue cuna ' +
-        'de los sabios y fuente de las más profundas reflexiones, era ahora ' +
-        'nada más que el escondrijo de bestias enloquecidas, bandidos y ' +
-        'conspiradores. ¿Qué habrá ocurrido?'
+        'El Bosque Nocturno fue cuna de sabios: aquí se pensaba despacio y ' +
+        'se hablaba en voz baja. Hoy huele a podredumbre. Bestias ' +
+        'enloquecidas, bandidos y conspiradores se reparten la espesura, y ' +
+        'nadie sabe qué fue de su guardián.'
     },
 
     // Las acciones con las que arrancas, antes de cualquier desbloqueo.
@@ -143,111 +146,159 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Ojos en la maleza',
+        // Vitalidad de la oleada: su sangre inicial en vez de 30. Es la palanca
+        // de dificultad que no toca ninguna carta impresa (ver CLAUDE.md).
+        sangre: 5,
         criaturas: ['cri_ratas'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_annia', texto: 'Primera noche fuera de los muros… y el bosque no está vacío.' },
+          { quien: 'des_annia', texto: 'Esos ojos. Ninguna rata tiene ese verde.' },
+          { quien: 'des_annia', texto: 'Tranquila. Es solo luz. Tu luz.' },
+        ],
         narracion:
           'La primera noche fuera de los muros, Annia aprende que el bosque ' +
-          'no está vacío. Algo pequeño y numeroso la observa desde la maleza, ' +
-          'y sus ojos brillan con un verde que ninguna alimaña debería tener.',
+          'no está vacío. Algo pequeño y numeroso la observa desde la maleza,' +
+          ' con un verde en los ojos que ninguna alimaña debería tener.',
         cineEntrada: {
           texto:
-            'Raras criaturas salen al encuentro de Annia, parecen haber ' +
-            'perdido la cordura.'
+            'Las ratas no huyen de ella. La rodean, se detienen todas a la vez ' +
+            'y esperan, como si alguien les hubiera dicho que esperaran.'
         },
         cineVictoria: {
           texto:
-            'Una magia vil se ha apoderado de las criaturas de este bosque, ' +
-            'pero Annia ya no estará sola en esta travesía.'
+            'Una magia vil se ha adueñado de las criaturas del bosque. Pero ' +
+            'Annia ya no camina sola.'
         },
         recompensa: { personaje: 'des_axel', accion: 'o_captura' },
         textoRecompensa:
-          'Axel, un muchacho que lleva semanas escondido, sale de entre los ' +
-          'árboles al oír la pelea. No pregunta su nombre: solo le ofrece agua.'
+          'Axel, un muchacho que lleva semanas escondido en el bosque, sale ' +
+          'de entre los árboles al oír la pelea. No le pregunta el nombre: ' +
+          'solo le ofrece agua.'
       },
       {
         n: 2,
         titulo: 'El que caza de noche',
+        sangre: 8,
         criaturas: ['cri_ratas', 'cri_lobo'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_axel', texto: 'Bebe. Llevo semanas escondido aquí: no eres la única a la que el bosque no quiere.' },
+          { quien: 'des_annia', texto: 'Gracias… ¿Oíste eso?' },
+          { quien: 'des_axel', texto: 'Las ratas no cazan solas. Algo grande va detrás, esperando a que ellas abran la herida.' },
+        ],
         narracion:
-          'Las ratas no cazaban solas. Algo mayor las seguía, dejando que ' +
-          'abrieran la herida antes de morder. Axel lo ve primero.',
+          'Las ratas no cazaban solas. Algo más grande las sigue y deja que ' +
+          'ellas abran la herida antes de morder. Axel lo ve primero; siempre' +
+          ' ve primero.',
         cineEntrada: {
           texto:
-            'El peligro acecha por todos lados, pero existe la esperanza de ' +
-            'encontrar a los sabios que aún habitan los bosques.'
+            'Dicen que en lo hondo del bosque aún viven los sabios. Si es ' +
+            'verdad, hay que llegar hasta ellos antes de que el bosque llegue a' +
+            ' Annia.'
         },
         cineVictoria: {
           texto:
-            'La leyenda era cierta, los sabios están más cerca de lo que parece.'
+            'Entre los árboles, otra luz responde a la de Annia. La leyenda era' +
+            ' cierta: los sabios están más cerca de lo que parece.'
         },
         recompensa: { personaje: 'des_thiana', accion: 'd_escape' },
         textoRecompensa:
-          'Thiana los encuentra siguiendo el rastro de luz que Annia deja sin ' +
-          'querer. También a ella la echaron por brillar en la oscuridad.'
+          'Thiana llega siguiendo la luz que Annia deja sin querer. A ella ' +
+          'también la echaron por brillar en la oscuridad.'
       },
       {
         n: 3,
         titulo: 'La manada de los sin nombre',
+        sangre: 10,
         criaturas: ['cri_ratas', 'cri_lobo', 'cri_gnolls'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_thiana', texto: 'Seguí tu luz. A mí también me echaron por brillar.' },
+          { quien: 'des_annia', texto: 'Mira cómo se mueven. Ya no son bestias sueltas.' },
+          { quien: 'des_thiana', texto: 'Alguien les dice dónde morder. Déjame mostrártelo: la luz no miente.' },
+        ],
         narracion:
-          'Ya no son bestias sueltas: hay orden en cómo se mueven. Alguien, ' +
-          'en alguna parte, les está diciendo dónde morder.',
+          'Ya no son bestias sueltas: se mueven en orden, cierran el paso, ' +
+          'rodean. Alguien, en alguna parte, les está diciendo dónde morder.',
         cineEntrada: {
           texto:
-            'Los conspiradores se han apoderado de los bosques, pero se cuenta ' +
-            'que, en lo más profundo del bosque, existe una esperanza. Debemos ' +
-            'avanzar.'
+            'Los conspiradores se han adueñado del bosque. Pero en lo más ' +
+            'hondo, dicen, todavía arde una esperanza. Hay que seguir ' +
+            'avanzando.'
         },
         cineVictoria: {
           texto:
-            'Gnolls corruptos, siempre han sido afines con la baja moral… ' +
-            '¿Pero este nivel de violencia…? Oh, Üldar… Ayúdanos.'
+            'Los gnolls nunca fueron gente de fiar, pero esto es otra cosa: es ' +
+            'crueldad aprendida. —Iskar, guardián del bosque… ayúdanos.'
         },
         recompensa: { personaje: 'des_erem', accion: 'd_acrobatico' },
         textoRecompensa:
-          'Erem los estaba observando desde antes de la pelea. Un anciano que ' +
-          'enseña a los jóvenes a defenderse, y que ya ha visto esto antes.'
+          'Erem los observaba desde antes de la pelea. Es un maestro: enseña ' +
+          'a los jóvenes a defenderse, y ya ha visto esto antes.'
       },
       {
         n: 4,
         titulo: 'Manos humanas',
+        sangre: 15,
         criaturas: ['cri_gnolls', 'cri_conspiradores'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_erem', texto: 'Las bestias no se organizan solas, muchacha.' },
+          { quien: 'des_annia', texto: 'Hay hombres entre los gnolls. Sin magia, sin marca…' },
+          { quien: 'des_erem', texto: 'Por eso son peligrosos: no tienen nada que perder. Quédate cerca.' },
+        ],
         narracion:
-          'Entre los gnolls camina algo peor: hombres. Sin magia, sin marca, ' +
-          'sin corrupción en la piel. Dan órdenes, y las bestias obedecen.',
+          'Entre los gnolls caminan hombres. Sin magia, sin marca, sin ' +
+          'corrupción en la piel. Dan órdenes, y las bestias obedecen.',
         cineEntrada: {
           texto:
-            'La envidia corroe a la humanidad desde la gran lluvia de los ' +
-            'eternos, y los sin magia están buscando desesperadamente medios ' +
-            'para conseguir poder… qué terrible futuro nos espera.'
+            'Desde la Gran Lluvia, la envidia corroe a los que no recibieron ' +
+            'nada. Los sin don buscan poder a cualquier precio… y alguien les ' +
+            'ha enseñado dónde encontrarlo.'
         },
         cineVictoria: {
           texto:
-            'Hemos encontrado a los responsables, y sus ideas son ' +
-            'profundamente peligrosas.'
+            'Los responsables ya tienen rostro: hombres comunes con ideas ' +
+            'profundamente peligrosas. Lo que todavía no se sabe es qué quieren' +
+            ' del bosque.'
         },
         recompensa: { personaje: 'des_lydia', accion: 'n_ocultamiento' },
         textoRecompensa:
-          'Lydia reconoce los símbolos que llevan cosidos. Lleva media vida ' +
-          'estudiando encantamientos y sabe leer lo que otros solo ven.'
+          'Lydia reconoce los símbolos que los conspiradores llevan cosidos. ' +
+          'Lleva media vida estudiando encantamientos y sabe leer lo que ' +
+          'otros solo ven.'
       },
       {
         n: 5,
         titulo: 'Los que no tienen don',
+        sangre: 20,
         criaturas: ['cri_conspiradores'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_lydia', texto: 'Esos símbolos cosidos… los conozco. No son de protección.' },
+          { quien: 'des_annia', texto: '¿Qué buscan, entonces?' },
+          { quien: 'des_lydia', texto: 'No quieren matar al Eternal del Orden. Quieren que les obedezca. Y lo están consiguiendo.' },
+        ],
         narracion:
-          'Sin bestias que los cubran, los conspiradores se muestran tal cual ' +
-          'son. Lydia lo dice en voz alta y nadie quiere creerlo: no vinieron ' +
-          'a matar al Eternal del Orden. Vinieron a corromperlo. Y lo están ' +
-          'consiguiendo.',
+          'Sin bestias que los cubran, los conspiradores se muestran tal cual' +
+          ' son. Lydia lo dice en voz alta y nadie quiere creerlo: no ' +
+          'vinieron a matar al Eternal del Orden. Vinieron a corromperlo. Y ' +
+          'lo están consiguiendo.',
         cineEntrada: {
           texto:
-            'El eternal Üldar ya no oye la voz de su padre; sin la voz de su ' +
-            'eterno, escucha a diario la voz de los conspiradores.'
+            'Iskar ya no oye la voz de su padre, el Orden. En su silencio solo ' +
+            'queda otra voz, que le habla cada día: la de los conspiradores.'
         },
         cineVictoria: {
           texto:
-            'Debemos ir a por el eternal, debemos recordarle que sin su magia ' +
-            'del Orden, nuestro mundo caerá fácilmente.'
+            'Hay que llegar hasta el Eternal y recordarle quién es. Sin la ' +
+            'magia del Orden, Aether’Num se vendrá abajo.'
         },
         recompensa: { personaje: 'des_auram', accion: 'n_investigar' },
         textoRecompensa:
@@ -256,18 +307,34 @@ window.Game.DUNGEONS = {
       },
       {
         n: 6,
-        titulo: 'Üldar, lo que queda del Orden',
+        titulo: 'Iskar, lo que queda del Orden',
+        sangre: 30,
         criaturas: ['cri_esbirro_bosque', 'cri_esbirro_bosque', 'cri_uldar'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'des_auram', texto: 'Erem y yo sabemos adónde hay que ir. Al centro.' },
+          { quien: 'des_annia', texto: 'Ahí está Iskar… todavía parece él.' },
+          { quien: 'des_auram', texto: 'Esa es la peor parte, Annia. No venimos a matar a un monstruo.' },
+          { quien: 'des_annia', texto: 'Venimos a impedir que nazca uno.' },
+        ],
         esJefe: true,
         narracion:
-          'El Eternal del bosque sigue en pie, enorme y luminoso, y esa es la ' +
-          'peor parte: todavía parece él. Los esbirros que lo rodean brotaron ' +
-          'de su propia luz enferma. La banda entiende, demasiado tarde, que ' +
-          'no vienen a matar a un monstruo, sino a impedir que uno nazca.',
+          'El Eternal del Orden sigue en pie, enorme y luminoso, y esa es la ' +
+          'peor parte: todavía parece él. Los esbirros que lo rodean brotaron' +
+          ' de su propia luz enferma. La banda entiende, demasiado tarde, que' +
+          ' no viene a matar a un monstruo, sino a impedir que uno nazca.',
+        cineEntrada: {
+          texto:
+            'En el corazón del bosque late una luz enorme, con un ritmo que no ' +
+            'es el suyo. Iskar repite órdenes ajenas con una voz que todavía ' +
+            'suena a justicia.'
+        },
         cineVictoria: {
           texto:
-            'Üldar ha caído, pero ha dejado su cristal corrompido… si lo ' +
-            'limpiamos correctamente, volverá a la vida.'
+            'Iskar ha caído. De su pecho rueda un cristal que aún late con luz ' +
+            'enferma. Si alguien supiera limpiarlo, el guardián del bosque ' +
+            'podría volver a ser quien fue.'
         },
         recompensa: null,
         textoRecompensa: null
@@ -280,6 +347,8 @@ window.Game.DUNGEONS = {
     raza: 'lunaria',
     nombre: 'El Oasis',
     eternal: 'cri_brahma',
+    // Tema del escenario 2D (ui/temas2d.js).
+    escenario2d: 'oasis',
 
     // Sube por el cañón entre cristales hasta la plataforma ritual bajo la luna.
     mapa: {
@@ -301,24 +370,24 @@ window.Game.DUNGEONS = {
       nombre: 'Cristal del Jardín',
       sigil: '◈',
       mensaje:
-        'El cristal de Brahma sigue caliente, como una semilla que no se ' +
-        'decide a abrir. Guárdalo: solo no hará crecer nada.'
+        'El cristal de Brahma sigue tibio, como una semilla que no se ' +
+        'decide a abrir. Guárdalo: solo, no hará crecer nada.'
     },
     intro:
-      'Sadash sigue el rastro de una luna que no debería estar menguando, y ' +
-      'la encuentra colgada sobre el único lugar de Aether’Num donde aún ' +
-      'crece algo. No va sola: los espíritus acompañantes se despegaron de ' +
-      'la arboleda en cuanto ella se alejó de la luz de su diosa. Si el ' +
-      'oasis cae, no quedará nada que refleje esa luz.',
+      'Sadash sigue el rastro de una luna que no debería estar menguando,' +
+      ' y la encuentra colgada sobre el único lugar de Aether’Num donde ' +
+      'aún crece algo. No va sola: sus espíritus acompañantes no la dejan' +
+      ' nunca. Si el Oasis cae, no quedará nada que refleje la luz de su ' +
+      'diosa.',
     // Esta sí trae audio de verdad (-20 dB de media), así que suena.
     videoIntro: { src: 'assets/video/lunaria-intro.mp4', conSonido: true },
 
     cinematica: {
       texto:
-        'Este glorioso lugar da descanso a los afligidos, lo ha hecho por ' +
-        'milenios. Sin embargo, con la gran lluvia de los eternos despertó en ' +
-        'los ahora empoderados lunaria, una nueva idea acerca de su antigua ' +
-        'vocación.'
+        'Desde hace milenios, el Oasis da descanso a los afligidos: aquí el' +
+        ' dolor termina y el cansancio se apaga. Pero la Gran Lluvia ' +
+        'despertó en los Lunaria una idea nueva sobre su antigua vocación, ' +
+        'y no todos la entendieron igual.'
     },
     accionesIniciales: ['o_finta', 'd_bloquear', 'n_ruego'],
     // Sadash no aguanta sola la primera oleada de centauros, así que los
@@ -330,21 +399,29 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Cascos en la niebla',
+        sangre: 12,
         criaturas: ['cri_centauro'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_sadash', texto: 'Tenemos que llegar a la arboleda antes del alba. Los míos tienen que saber lo que está pasando.' },
+          { quien: 'lun_acompanantes', texto: '(El lobo se detiene. El cuervo grazna hacia la niebla: algo se mueve entre los árboles.)' },
+          { quien: 'lun_sadash', texto: 'Cascos… Son los centauros. Vigilan este bosque desde antes de la Gran Lluvia. Ellos no atacarían…' },
+        ],
         narracion:
-          'Los centauros vigilaban el bosque del oasis desde antes de la gran ' +
-          'lluvia. Ahora disparan a cualquier cosa que se mueva, y Sadash se ' +
+          'Los centauros vigilan el bosque del Oasis desde antes de la Gran ' +
+          'Lluvia. Ahora disparan a cualquier cosa que se mueva, y Sadash se ' +
           'mueve muy despacio.',
         cineEntrada: {
           texto:
-            'Sadash, junto a sus fieles compañeros, debe reencontrarse con los ' +
-            'suyos para darles un informe urgente, las criaturas de los bosques ' +
-            'estaban volviéndose agresivas de pronto.'
+            'Sadash debe llegar a la arboleda y advertir a los suyos: las ' +
+            'criaturas del bosque se están volviendo agresivas de un día para ' +
+            'otro.'
         },
         cineVictoria: {
           texto:
-            'Definitivamente algo no andaba bien, ¿Por qué los centauros se ' +
-            'volverían contra los habitantes del bosque?'
+            'Algo no anda bien. Los centauros jamás se habían vuelto contra los' +
+            ' habitantes del bosque. ¿Qué los empuja?'
         },
         recompensa: { personaje: 'lun_delem', accion: 'o_captura' },
         textoRecompensa:
@@ -354,48 +431,62 @@ window.Game.DUNGEONS = {
       {
         n: 2,
         titulo: 'Bajo las raíces',
+        sangre: 15,
         criaturas: ['cri_centauro', 'cri_troles'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_delem', texto: 'Te alcancé, Sadash. Los troles no duermen: llevan meses despiertos.' },
+          { quien: 'lun_sadash', texto: 'La noche siempre los cubrió con su velo. ¿Qué les está robando el descanso?' },
+          { quien: 'lun_delem', texto: 'No lo sé. Pero algo en este bosque ya no quiere que nada se acabe.' },
+        ],
         narracion:
           'Los troles salen de donde el bosque es más espeso. La corrupción ' +
-          'les ha quitado el sueño: llevan meses despiertos y furiosos.',
+          'les ha quitado el sueño: llevan meses despiertos, y furiosos.',
         cineEntrada: {
           texto:
-            'La noche siempre ha cubierto con su amable velo a todas las ' +
-            'criaturas, algunos duermen, otros salen de sus madrigueras sólo de ' +
-            'noche… Pero el insomnio estaba causando un severo agotamiento en ' +
-            'las criaturas del bosque.'
+            'La noche siempre cubrió con su velo a todas las criaturas: unas ' +
+            'duermen, otras salen a cazar. Pero en este bosque ya nadie duerme,' +
+            ' y el desvelo los está volviendo locos.'
         },
         cineVictoria: {
           texto:
-            'La noche siempre ha estado relacionada con la muerte, un descanso ' +
-            'para muchos, y la vigilia para otros. Algo está cambiando.'
+            'La noche es pariente de la muerte: descanso para unos, vigilia ' +
+            'para otros. Y algo le está robando la mitad que descansa.'
         },
         // Única recompensa sin personaje del juego: los acompañantes ya venían
         // en el equipo desde la etapa 1, y no hay un séptimo lunaria que dar.
         recompensa: { accion: 'd_escape' },
         textoRecompensa:
-          'Los espíritus se adelantan entre las raíces y le enseñan por dónde ' +
-          'no pasan los troles. Nadie nuevo se suma a la banda: lo que se ' +
+          'Los espíritus se adelantan entre las raíces y le enseñan por dónde' +
+          ' no pasan los troles. Nadie nuevo se suma a la banda: lo que se ' +
           'suma es una manera de salir viva.'
       },
       {
         n: 3,
         titulo: 'El claro equivocado',
+        sangre: 12,
         criaturas: ['cri_centauro', 'cri_troles', 'cri_culto_eclipse'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_delem', texto: 'Ese claro… hay alguien ahí. Son de los nuestros.' },
+          { quien: 'lun_sadash', texto: 'Conozco esa cara. Pero esos ojos blancos… no parpadean.' },
+          { quien: 'lun_delem', texto: 'Es lo que queda de un lunaria cuando la luna se le apaga del todo.' },
+        ],
         narracion:
           'Entre los árboles hay elfos de ojos blancos que no parpadean. ' +
           'Sadash tarda en decirlo en voz alta: son de los suyos, o lo que ' +
           'queda de un lunaria cuando la luna se le apaga del todo.',
         cineEntrada: {
           texto:
-            'A lo lejos reconoces un rostro familiar, sin embargo, su mirada ' +
-            'presagia algo temible.'
+            'A lo lejos, un rostro conocido. Pero su mirada ya no tiene luna.'
         },
         cineVictoria: {
           texto:
-            'Lunarias están perdiendo su vínculo con la sagrada muerte, los ' +
-            'guardianes del sagrado descanso ya no desean más esta cruel ' +
-            'misión. Y ahora mismo desean más para sí mismas.'
+            'Hay Lunaria que perdieron el vínculo con la muerte sagrada. Los ' +
+            'guardianes del descanso se cansaron de su misión… y ahora quieren ' +
+            'algo para sí mismos.'
         },
         recompensa: { personaje: 'lun_falum', accion: 'd_acrobatico' },
         textoRecompensa:
@@ -405,71 +496,95 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'El culto del eclipse',
+        sangre: 12,
         criaturas: ['cri_troles', 'cri_culto_eclipse'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_falum', texto: 'No vinieron a matar el Oasis, muchacha. Vinieron a taparlo.' },
+          { quien: 'lun_sadash', texto: 'Sin luz, lo que crece deja de crecer…' },
+          { quien: 'lun_falum', texto: '…y lo que duerme deja de despertar. Abandonaron el sagrado descanso. Quieren mover los límites.' },
+        ],
         narracion:
-          'No vinieron a matar el oasis. Vinieron a taparlo. Sin luz, lo que ' +
+          'No vinieron a matar el Oasis. Vinieron a taparlo. Sin luz, lo que ' +
           'crece deja de crecer, y lo que duerme deja de despertar.',
         cineEntrada: {
           texto:
-            'Un grupo de Lunarias ha abandonado el camino del sagrado descanso. ' +
-            'En sus palabras, el antiguo equilibrio no se recuperaría… para ' +
-            'ellos es el momento de mover los límites de lo posible.'
+            'Un grupo de Lunaria ha abandonado el camino del sagrado descanso. ' +
+            'Dicen que el viejo equilibrio no volverá, y que ha llegado la hora' +
+            ' de mover los límites de lo posible.'
         },
         cineVictoria: {
           texto:
-            'La gran lluvia de los eternos movió los límites de lo imaginable, ' +
-            'ahora mismo la magia corría por las venas de los mortales que, ' +
-            'antaño, rendían devotamente culto a sus eternos para suplicar su ' +
-            'venia, y esa magia a la vez que un mecanismo para proteger, ' +
-            'también se volvió un riesgo para Aether’Num.'
+            'La Gran Lluvia movió los límites de lo imaginable. La magia que ' +
+            'antes se suplicaba a los Eternos corre hoy por las venas de los ' +
+            'mortales: sirve para proteger, y también para romper el mundo.'
         },
         recompensa: { personaje: 'lun_seluah', accion: 'o_luna_sangrienta' },
         textoRecompensa:
-          'Seluah escucha lo que ninguno oye y traduce: el culto ya no manda ' +
-          'aquí. Alguien lo manda a él.'
+          'Seluah escucha lo que ninguno oye, y traduce: el culto ya no manda' +
+          ' aquí. Alguien lo manda a él.'
       },
       {
         n: 5,
         titulo: 'La raíz que respira',
+        sangre: 12,
         criaturas: ['cri_culto_eclipse', 'cri_esbirro_oasis'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_seluah', texto: 'Escucha, Sadash. El bosque respira, pero no como antes.' },
+          { quien: 'lun_sadash', texto: 'Se está levantando contra nosotras.' },
+          { quien: 'lun_seluah', texto: 'No distingue entre enemigo y auxilio. Aquí ya nada termina: ni el dolor, ni el cansancio.' },
+        ],
         narracion:
-          'El bosque se levanta contra ellos. Los esbirros no son criaturas ' +
-          'del culto: son el propio oasis defendiéndose de todo el que entra, ' +
-          'sin distinguir ya entre enemigo y auxilio.',
+          'El bosque se levanta contra ellas. Los esbirros no son criaturas ' +
+          'del culto: son el propio Oasis, defendiéndose de todo el que entra' +
+          ' sin distinguir ya entre enemigo y auxilio.',
         cineEntrada: {
           texto:
-            'Un oasis que ya no provee descanso, ni final al dolor, cansancio y ' +
-            'tristeza, todo permanece para siempre, nada termina.'
+            'Un Oasis que ya no da descanso, ni pone fin al dolor, al ' +
+            'cansancio, a la tristeza. Aquí todo permanece para siempre. Nada ' +
+            'termina.'
         },
         cineVictoria: {
           texto:
-            'Las criaturas del oasis están confundidas, el eternal de la muerte ' +
-            'no está haciendo su trabajo aquí. ¿Significa esto que ya nadie ' +
-            'morirá? ¿Acaso existe la posibilidad de vivir para siempre?'
+            'Las criaturas del Oasis están confundidas: el Eternal de la Muerte' +
+            ' ya no hace su trabajo. ¿Significa que nadie volverá a morir? ¿Es ' +
+            'esto vivir para siempre?'
         },
         recompensa: { personaje: 'lun_lirhym', accion: 'n_investigar' },
         textoRecompensa:
           'Lirhym llega en persona. Que la Reina abandone el bosque alto ' +
-          'significa que lo del oasis ya no es asunto de una sola arboleda.'
+          'significa que lo del Oasis ya no es asunto de una sola arboleda.'
       },
       {
         n: 6,
         titulo: 'Brahma, el jardín que se cerró',
+        sangre: 8,
         criaturas: ['cri_esbirro_oasis', 'cri_esbirro_oasis', 'cri_brahma'],
+        // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
+        // suyo. Lo dicen al andar, antes de los enemigos.
+        dialogo: [
+          { quien: 'lun_lirhym', texto: 'Ahí está Brahma. Todavía brilla.' },
+          { quien: 'lun_sadash', texto: 'Es hermoso… Cuesta aceptar lo que sostiene.' },
+          { quien: 'lun_lirhym', texto: 'No sostiene la vida del bosque, Sadash. Sostiene su encierro.' },
+          { quien: 'lun_sadash', texto: 'Entonces hay que devolverle su final.' },
+        ],
         esJefe: true,
         narracion:
-          'El Eternal de los oasis todavía brilla, y esa luz sigue siendo ' +
-          'hermosa. Por eso cuesta tanto aceptar que lo que sostiene ya no es ' +
-          'la vida del bosque, sino su encierro.',
+          'Brahma, el Eternal de la Muerte, todavía brilla, y esa luz sigue ' +
+          'siendo hermosa. Por eso cuesta tanto aceptar que lo que sostiene ' +
+          'ya no es la vida del bosque, sino su encierro.',
         cineEntrada: {
           texto:
-            'Es como si el tiempo no transcurriese aquí, una extraña sensación ' +
-            'de permanencia… ¿esto es la inmortalidad?'
+            'Es como si el tiempo no pasara aquí. Una extraña sensación de ' +
+            'permanencia… ¿Esto es la inmortalidad?'
         },
         cineVictoria: {
           texto:
-            'Todo lo que tiene un comienzo tiene un final, la vida termina, las ' +
-            'alegrías acaban, pero también el dolor.'
+            'Todo lo que tiene un comienzo tiene un final. La vida termina, las' +
+            ' alegrías acaban… pero también el dolor.'
         },
         recompensa: null,
         textoRecompensa: null
@@ -505,22 +620,22 @@ window.Game.DUNGEONS = {
       nombre: 'Cristal del Retorno',
       sigil: '◈',
       mensaje:
-        'El cristal de Tarh Akh pesa más de lo que debería, como si trajera ' +
-        'algo dentro. Que descanse ahí hasta que estén los cuatro.'
+        'El cristal de Tarh Akh pesa más de lo que debería, como si trajera' +
+        ' algo dentro. Que descanse ahí hasta que estén los cuatro.'
     },
     intro:
-      'Luh baja a la metrópolis caída, donde algo lleva semanas impidiendo ' +
-      'que los muertos descansen. Si alguien sabe lo que eso pesa, es quien ' +
-      'ya volvió una vez.',
+      'Luh baja a la metrópolis caída, donde algo lleva semanas ' +
+      'impidiendo que los muertos descansen. Si alguien sabe lo que eso ' +
+      'pesa, es quien ya volvió una vez.',
 
     // Audio real (-19,4 dB de media), así que suena.
     videoIntro: { src: 'assets/video/reanimado-intro.mp4', conSonido: true },
 
     cinematica: {
       texto:
-        'La magia de la vida es un milagro asombroso, sin embargo, en las ' +
-        'manos equivocadas, sobre todo de aquellos poseídos por el dolor y la ' +
-        'pérdida, se sale de control fácilmente.'
+        'La magia de la Vida es un milagro. Pero en manos de quien no ' +
+        'soporta perder, en manos del dolor, se sale de control con una ' +
+        'facilidad aterradora.'
     },
     accionesIniciales: ['o_finta', 'd_bloquear', 'n_ruego'],
     // Luh no baja sola: el Ejército y Gurh entran con ella desde la etapa 1 en
@@ -531,69 +646,93 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Los que no descansan',
+        sangre: 10,
         criaturas: ['cri_condenados'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_luh', texto: 'Bajen despacio. El agua no deja ver el fondo.' },
+          { quien: 'rea_gurh', texto: 'Algo se mueve ahí dentro. Muchos.' },
+          { quien: 'rea_luh', texto: 'No atacan por hambre, Gurh. Atacan porque nadie les ha dado permiso para detenerse.' },
+        ],
         narracion:
           'El agua de las alcantarillas le llega a las rodillas, y algo se ' +
           'mueve dentro. Luh reconoce el gesto: no atacan por hambre, atacan ' +
           'porque nadie les ha dado permiso para detenerse.',
         cineEntrada: {
           texto:
-            '¿Por qué han vuelto a la vida?, se mueven en la búsqueda de ' +
-            'explicaciones o algún propósito hacia el lugar desde donde surgen ' +
-            'los sin memoria.'
+            '¿Por qué se han levantado? Caminan sin memoria, buscando una ' +
+            'razón, todos hacia el mismo lugar: el pozo del que salieron.'
         },
         cineVictoria: {
           texto:
-            '¿Qué magia les habrá vuelto a levantar de esta manera tan cruel?'
+            '¿Qué clase de magia los despierta así, tan a medias, tan cruel?'
         },
         // Sin personaje: el Ejército ya baja con Luh desde el principio.
         recompensa: { accion: 'o_captura' },
         textoRecompensa:
-          'Nadie nuevo se suma: los que bajaron con Luh ya son los que hay. Lo ' +
+          'Nadie nuevo se suma: los que bajaron con Luh son los que hay. Lo ' +
           'que se aprende aquí es a agarrar al que huye.'
       },
       {
         n: 2,
         titulo: 'Lo que rezuma',
+        sangre: 15,
         criaturas: ['cri_condenados', 'cri_slime'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_gurh', texto: 'Eso… eso era gente.' },
+          { quien: 'rea_luh', texto: 'La corrupción no solo levanta. También disuelve, y vuelve a juntar.' },
+          { quien: 'rea_gurh', texto: 'Mi pueblo cayó entero. No dejaré que les hagan esto.' },
+        ],
         narracion:
           'La corrupción no solo levanta cadáveres: también los disuelve y ' +
           'los vuelve a juntar. Lo que avanza por el túnel ya no tiene forma ' +
           'de nada que haya vivido.',
         cineEntrada: {
-          texto: 'Esta terrible magia sólo causa sufrimiento, pobres almas.'
+          texto:
+            'Esta magia solo sabe causar sufrimiento. Pobres almas.'
         },
         cineVictoria: {
           texto:
-            'Definitivamente alguien está utilizando magia de la vida para ' +
-            'reanimar a la gente de este pueblo.'
+            'Ya no hay duda: alguien está usando la magia de la Vida para ' +
+            'levantar a la gente de esta ciudad.'
         },
         // Sin personaje: Gurh también venía en el equipo de salida.
         recompensa: { accion: 'd_escape' },
         textoRecompensa:
-          'Gurh, que fue la última en caer cuando arrasaron su pueblo, enseña ' +
-          'lo único que le sirvió entonces: por dónde salir de un túnel que se ' +
+          'Gurh, la última en caer cuando arrasaron su pueblo, enseña lo ' +
+          'único que le sirvió entonces: por dónde salir de un túnel que se ' +
           'cierra.'
       },
       {
         n: 3,
         titulo: 'La cripta abierta',
+        sangre: 12,
         criaturas: ['cri_condenados', 'cri_slime', 'cri_nigromante'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_luh', texto: 'Un hombre vivo, dando órdenes a los muertos.' },
+          { quien: 'rea_gurh', texto: '¿Lo conoces?' },
+          { quien: 'rea_luh', texto: 'Conozco lo que siente. Amó tanto que no supo soltar. Por eso me da miedo.' },
+        ],
         narracion:
           'Al fondo hay un hombre vivo dando órdenes a los muertos. No es un ' +
           'monstruo: es alguien que amó tanto que decidió no soltar. Esa es ' +
           'la parte que Luh no sabe cómo combatir.',
         cineEntrada: {
           texto:
-            'En el fondo de una gran galería subterránea, recitaba sus hechizos ' +
-            'quien fuera un gran orador y líder de muchedumbres. El reino caído ' +
-            'sólo es un despojo de lo que fue, y este hombre ya no lograba ' +
-            'distinguir la línea entre el bien y el mal.'
+            'Al fondo de una gran galería recita sus hechizos quien fuera un ' +
+            'gran orador, líder de muchedumbres. Del reino solo quedan ' +
+            'despojos, y él ya no distingue dónde termina el amor y dónde ' +
+            'empieza el crimen.'
         },
         cineVictoria: {
           texto:
-            'Un hombre desesperado está dispuesto a lo que sea para recuperar ' +
-            'lo que ha perdido.'
+            'Un hombre desesperado está dispuesto a cualquier cosa por ' +
+            'recuperar lo que perdió.'
         },
         recompensa: { personaje: 'rea_vyla', accion: 'd_acrobatico' },
         textoRecompensa:
@@ -603,20 +742,28 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'Marea de huesos',
+        sangre: 8,
         criaturas: ['cri_slime', 'cri_nigromante'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_vyla', texto: 'Lo vi una vez. En mi ciudad, la noche que cayó.' },
+          { quien: 'rea_luh', texto: '¿Y cómo terminó?' },
+          { quien: 'rea_vyla', texto: 'No terminó. Por eso sigo aquí.' },
+        ],
         narracion:
           'El nigromante ya no finge. Cada muerto que la banda libera vuelve ' +
           'a levantarse dos túneles más allá, y la cuenta nunca baja.',
         cineEntrada: {
           texto:
-            'La magia de la vida es increíble, puede extender incluso la vida ' +
-            'del nigromante moribundo por las heridas de la batalla.'
+            'La magia de la Vida es asombrosa: puede sostener incluso al ' +
+            'nigromante, herido de muerte en la batalla.'
         },
         cineVictoria: {
           texto:
-            'Para revivir al reino, la magia del nigromante debe extenderse, ' +
-            'debemos aprender a usarla todos, no sólo un hombre enamorado ' +
-            'haciendo experimentos.'
+            'Si esta magia puede devolver un reino entero, no debería estar en ' +
+            'manos de un solo hombre enamorado. Cada uno de los que volvieron ' +
+            'mira al nigromante… y aprende.'
         },
         recompensa: { personaje: 'rea_zabar', accion: 'n_llamada' },
         textoRecompensa:
@@ -626,19 +773,29 @@ window.Game.DUNGEONS = {
       {
         n: 5,
         titulo: 'La voz bajo la piedra',
+        sangre: 10,
         criaturas: ['cri_nigromante', 'cri_esbirro_catacumbas'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_zabar', texto: 'Huelo su sangre. Está asustado.' },
+          { quien: 'rea_luh', texto: 'Mira las paredes, Zabar. Él tampoco sabe qué estaba alimentando.' },
+          { quien: 'rea_zabar', texto: 'Me da igual. Lo único que recuerdo es a mi hija.' },
+        ],
         narracion:
-          'De las paredes brota algo que no es carne ni piedra. El nigromante ' +
-          'retrocede: tampoco él sabía qué había estado alimentando.',
+          'De las paredes brota algo que no es carne ni piedra. El nigromante' +
+          ' retrocede: tampoco él sabía qué había estado alimentando.',
         cineEntrada: {
-          texto: 'Una batalla a dos bandos estaría a punto de desatarse.'
+          texto:
+            'Algo despierta bajo la piedra, y el nigromante ya no lo controla. ' +
+            'Una batalla a dos bandos está a punto de estallar.'
         },
         cineVictoria: {
           texto:
-            'Pobre alma atormentada, el nigromante Aj’Khul, antaño consejero ' +
-            'del rey, y amante de la reina, hizo hasta lo imposible para ' +
-            'revivirla. Ya no queda nada de quien fue, llevó todo demasiado ' +
-            'lejos.'
+            'Pobre alma atormentada. Aj’Khul, consejero del rey y amante de la ' +
+            'reina, hizo lo imposible por devolverle la vida a ella. Ya no ' +
+            'queda nada de quien fue: lo llevó todo demasiado lejos. Mientras ' +
+            'la piedra se derrumba, escapa entre la niebla.'
         },
         recompensa: { personaje: 'rea_thila', accion: 'n_investigar' },
         textoRecompensa:
@@ -648,28 +805,33 @@ window.Game.DUNGEONS = {
       {
         n: 6,
         titulo: 'Tarh Akh, lo que la muerte olvidó',
+        sangre: 8,
         criaturas: ['cri_esbirro_catacumbas', 'cri_esbirro_catacumbas', 'cri_tarh_akh'],
         esJefe: true,
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'rea_thila', texto: 'Recuerdo estos ritos. Los serví antes de la Catástrofe.' },
+          { quien: 'rea_luh', texto: '¿A quién servías?' },
+          { quien: 'rea_thila', texto: 'Eso es lo único que no recuerdo.' },
+          { quien: 'rea_luh', texto: 'Entonces sirve a esto: que por fin descanse.' },
+        ],
         narracion:
-          'El Eternal de las catacumbas sostenía la frontera entre morir y ' +
-          'volver. Corrompido, la ha borrado. Darle descanso es lo único ' +
+          'Tarh Akh, el Eternal de la Vida, sostenía la frontera entre morir ' +
+          'y volver. Corrompido, la ha borrado. Darle descanso es lo único ' +
           'piadoso que queda por hacer, y también lo más difícil.',
         cineEntrada: {
           texto:
-            'La magia de la vida ya no está en manos de su eterna solamente, ' +
-            'ahora las criaturas de Aether’Num la utilizarían para sus propios ' +
-            'fines. El eternal custodio de la vida es ahora irreconocible, ' +
-            'antes fuente de fertilidad, ahora fuente de putrefacción y el ' +
-            'deseo desesperado de dar vida incluso a lo que debería volver al ' +
-            'polvo.'
+            'La magia de la Vida ya no es solo de su Eterna. Su Eternal, antes ' +
+            'fuente de fertilidad, es hoy fuente de podredumbre: desea con ' +
+            'desesperación dar vida incluso a lo que debería volver al polvo.'
         },
         cineVictoria: {
           texto:
-            'Con el eternal caído, la magia de la vida quedaba ahora casi por ' +
-            'completo en manos de los reanimados, que observando cuidadosamente ' +
-            'a Aj’Khul, habrían aprendido las bases para utilizarla. Un nuevo ' +
-            'imperio y ejército incansable había despertado. ¿Quién le pondría ' +
-            'fin?'
+            'Con el Eternal caído, la magia de la Vida queda casi entera en ' +
+            'manos de los Reanimados, que aprendieron sus bases mirando a ' +
+            'Aj’Khul. Un nuevo imperio, un ejército que no se cansa, acaba de ' +
+            'despertar. ¿Quién podrá ponerle fin?'
         },
         recompensa: null,
         textoRecompensa: null
@@ -705,20 +867,20 @@ window.Game.DUNGEONS = {
       nombre: 'Cristal de la Forja',
       sigil: '◈',
       mensaje:
-        'El cristal de A’tar no se ha apagado: dentro sigue habiendo fuego, ' +
-        'esperando un yunque que todavía no tienes.'
+        'El cristal de A’tar no se ha apagado: dentro sigue habiendo fuego,' +
+        ' esperando un yunque que todavía no tienes.'
     },
     intro:
       'Pip lleva catorce días fingiendo ser chatarra. Cuando por fin se ' +
-      'levanta, descubre que la Forja de los Persecutores ya no obedece ni ' +
-      'al Rey Caído.',
+      'levanta, descubre que la Forja de los Persecutores ya no obedece ' +
+      'ni al Rey Caído.',
     // Audio real, aunque más bajo que los otros (-29,9 dB de media).
     videoIntro: { src: 'assets/video/oxitron-intro.mp4', conSonido: true },
 
     cinematica: {
       texto:
-        'Los viejos dominios de un señor de carácter rígido y dictatorial, el ' +
-        'hombre que se condenó a sí mismo a la soledad, rodeado sólo de ' +
+        'Los viejos dominios de un señor rígido y dictatorial: el hombre ' +
+        'que se condenó a sí mismo a la soledad, rodeado solo de ' +
         'mecanizados sin alma propia.'
     },
     accionesIniciales: ['o_finta', 'd_bloquear', 'n_ruego'],
@@ -728,19 +890,27 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Escoria viva',
+        sangre: 3,
         criaturas: ['cri_rocoso'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_pip', texto: 'Catorce días inmóvil. Registro: nadie vino a buscarme.' },
+          { quien: 'oxi_pip', texto: 'Temperatura del suelo en aumento. Probabilidad de ser visto: baja.' },
+          { quien: 'oxi_pip', texto: 'Corrección: alta.' },
+        ],
         narracion:
           'La escoria que se acumula junto a los hornos ha empezado a abrir ' +
-          'ojos. Pip calcula que si no se mueve, no lo verán. Se equivoca.',
+          'ojos. Pip calcula que, si no se mueve, no lo verán. Se equivoca.',
         cineEntrada: {
           texto:
-            'Luego de uno de los ahora frecuentes temblores, por entre las ' +
-            'grietas del suelo, se levantó una extraña criatura ardiente.'
+            'Tras uno de los temblores, ahora tan frecuentes, algo ardiente se ' +
+            'levanta por las grietas del suelo.'
         },
         cineVictoria: {
           texto:
-            '¿Magia del caos?, extraña cosa… Este siempre fue dominio de la ' +
-            'vida y el orden.'
+            '¿Magia del Caos? Extraño. Estas forjas siempre fueron dominio de ' +
+            'la vida y del orden.'
         },
         recompensa: { personaje: 'oxi_kaw', accion: 'o_captura' },
         textoRecompensa:
@@ -750,119 +920,160 @@ window.Game.DUNGEONS = {
       {
         n: 2,
         titulo: 'Los hornos despiertos',
+        sangre: 5,
         criaturas: ['cri_rocoso', 'cri_guardian'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_kaw', texto: 'Llevaba aquí desde antes que tú. Esperando lo mismo.' },
+          { quien: 'oxi_pip', texto: '¿Órdenes?' },
+          { quien: 'oxi_kaw', texto: 'Ninguna. Hace días que nadie nos da ninguna.' },
+        ],
         narracion:
-          'Un guardián de lava bloquea el paso a la galería baja. Fue puesto ' +
-          'ahí para proteger la forja de intrusos, y ya no distingue quién ' +
+          'Un guardián de lava bloquea el paso a la galería baja. Lo pusieron' +
+          ' ahí para proteger la forja de intrusos, y ya no distingue quién ' +
           'la construyó.',
         cineEntrada: {
           texto:
-            'Definitivamente algo no anda bien, este entorno antaño sumamente ' +
-            'organizado por un solo señor, ahora estaba llenándose de fuerzas ' +
-            'desorganizadas que incluso lucha entre sí.'
+            'Algo va mal. Este lugar, antes ordenado al milímetro por un solo ' +
+            'señor, se llena de fuerzas sin dueño que incluso luchan entre sí.'
         },
         cineVictoria: {
           texto:
-            'Estas criaturas, al sentir una fuerza de otro dominio, como las ' +
-            'máquinas vivientes, atacan sin piedad. Los dominios de Aether’Num ' +
-            'están en conflicto.'
+            'Estas criaturas atacan sin piedad a todo lo que viene de otro ' +
+            'dominio, como las máquinas vivientes. Los dominios de Aether’Num ' +
+            'están en guerra.'
         },
         recompensa: { personaje: 'oxi_krag', accion: 'd_escape' },
         textoRecompensa:
-          'Krag encaja los golpes que los otros no pueden. A cambio va ' +
+          'Krag encaja los golpes que los otros no pueden. A cambio, va ' +
           'dejando tuercas por el camino.'
       },
       {
         n: 3,
         titulo: 'La cadena de montaje',
+        sangre: 10,
         criaturas: ['cri_rocoso', 'cri_guardian', 'cri_horda'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_krag', texto: 'La línea de montaje sigue en marcha.' },
+          { quien: 'oxi_pip', texto: '¿Fabricando qué?' },
+          { quien: 'oxi_krag', texto: 'Nada que lleve nuestro diseño.' },
+        ],
         narracion:
           'La forja no se ha parado: sigue fabricando. Lo que sale de la ' +
           'línea ya no son autómatas, sino cosas de roca y fuego que caminan ' +
           'como soldados.',
         cineEntrada: {
           texto:
-            'Las antiguas forjas ahora son alimentadas por magia del caos, ' +
-            '¿Pero cómo el caos llegó a estas tierras?'
+            'Las viejas forjas se alimentan ahora de magia del Caos. Pero ¿cómo' +
+            ' llegó el Caos hasta aquí?'
         },
         cineVictoria: {
           texto:
-            'Si esto sigue, el continente entero se llenará de este enjambre ' +
-            'llameante y anárquico.'
+            'Si esto sigue, el continente entero se llenará de este enjambre de' +
+            ' fuego sin ley.'
         },
         recompensa: { personaje: 'oxi_brawl', accion: 'd_acrobatico' },
         textoRecompensa:
-          'Brawl llega con el paso pesado de un capitán que ya ha perdido una ' +
-          'guerra antes y no piensa perder esta.'
+          'Brawl llega con el paso pesado de un capitán que ya perdió una ' +
+          'guerra y no piensa perder esta.'
       },
       {
         n: 4,
         titulo: 'Horda llameante',
+        sangre: 12,
         criaturas: ['cri_guardian', 'cri_horda'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_brawl', texto: 'Marchan hacia la salida. Hacia los reinos de arriba.' },
+          { quien: 'oxi_pip', texto: 'Eso no estaba en el protocolo.' },
+          { quien: 'oxi_brawl', texto: 'Ya perdí una guerra, Pip. Esta no.' },
+        ],
         narracion:
           'Ya no salen de uno en uno. Marchan en formación, con hachas ' +
           'fundidas al brazo, hacia una salida que da directamente a los ' +
           'reinos de arriba.',
         cineEntrada: {
-          texto: 'Han comenzado su avanzada, esta horda es indetenible.'
+          texto:
+            'Han empezado a avanzar. Esta horda no se va a detener sola.'
         },
         cineVictoria: {
           texto:
-            'Esto es inaceptable, caos por todo lugar. Debemos frenarlos, hay ' +
-            'pistas de que la fuente de este caos se encuentra en el lugar más ' +
-            'profundo de las forjas.'
+            'Inaceptable: Caos en cada rincón. Todas las pistas apuntan a lo ' +
+            'más profundo de las forjas. De ahí sale todo.'
         },
         recompensa: { personaje: 'oxi_krox', accion: 'd_encadenar' },
         textoRecompensa:
-          'Krox se oye antes de verse. El persecutor incansable ha encontrado ' +
-          'por fin algo que perseguir de vuelta.'
+          'Krox se oye antes de verse. El persecutor incansable ha ' +
+          'encontrado, por fin, algo que perseguir de vuelta.'
       },
       {
         n: 5,
         titulo: 'El corazón del yunque',
+        sangre: 5,
         criaturas: ['cri_horda', 'cri_esbirro_forjas'],
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_krox', texto: 'Objetivo localizado. Profundidad: máxima.' },
+          { quien: 'oxi_pip', texto: '¿Qué objetivo?' },
+          { quien: 'oxi_krox', texto: 'Lo que hace temblar la montaña. Por fin algo que perseguir.' },
+        ],
         narracion:
           'En el centro de la forja, la roca misma se ha puesto de pie. Los ' +
           'esbirros no fueron fabricados: la montaña los escupió cuando el ' +
           'Eternal dejó de contenerla.',
         cineEntrada: {
           texto:
-            'Estas criaturas surgen desde el mismísimo magma, no hay líderes, ' +
-            'sólo una furia indetenible hacia el mundo que los escupió.'
+            'Surgen del mismo magma. No tienen líder: solo una furia ciega ' +
+            'contra el mundo que los escupió.'
         },
         cineVictoria: {
           texto:
-            'Puertas de acero tras puertas de acero, una jaula antes ' +
-            'custodiada por mecanizados ahora inanimados, ¿Qué habrán estado ' +
-            'custodiando bajo el magma del volcán?'
+            'Puertas de acero tras puertas de acero. Una jaula, custodiada ' +
+            'antes por mecanizados que ya no se mueven. ¿Qué guardaban bajo el ' +
+            'magma del volcán?'
         },
         recompensa: { personaje: 'oxi_kratox', accion: 'n_investigar' },
         textoRecompensa:
-          'Kratox, el Almirante, habla antes de golpear, como siempre. ' +
-          'Explica a la montaña por qué va a apagarla.'
+          'Kratox, el Almirante, habla antes de golpear, como siempre. Le ' +
+          'explica a la montaña por qué va a apagarla.'
       },
       {
         n: 6,
         titulo: "A'tar, el fuego sin herrero",
+        sangre: 8,
         criaturas: ['cri_esbirro_forjas', 'cri_esbirro_forjas', 'cri_atar'],
         esJefe: true,
+        // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
+        // bocadillos al empezar el duelo (ui/bocadillos.js).
+        dialogo: [
+          { quien: 'oxi_kratox', texto: 'Antes de proceder, explicaré los motivos.' },
+          { quien: 'oxi_pip', texto: '¿A él? ¿Al Eternal?' },
+          { quien: 'oxi_kratox', texto: 'A todos se les explica, Pip. Es lo que nos distingue de la escoria.' },
+          { quien: 'oxi_pip', texto: 'Entonces explícale rápido.' },
+        ],
         narracion:
-          'El Eternal de las forjas daba forma a la materia. Corrompido, solo ' +
-          'sabe fundirla. Si no lo detienen aquí, no quedará nada sólido en ' +
-          'todo Aether’Num.',
+          'A’tar, el Eternal del Caos, era la energía que movía las forjas. ' +
+          'Encadenado durante años, su fuerza se desbordó: ya no da forma a ' +
+          'nada, solo funde. Si no lo detienen aquí, no quedará nada sólido ' +
+          'en Aether’Num.',
         cineEntrada: {
           texto:
-            'En lo más profundo del volcán, se encuentra el señor de las forjas ' +
-            'A’Tar, quien encerrado por mucho tiempo fue esclavizado para usar ' +
-            'su magia del caos como fuente de energía para derretir el metal, ' +
-            'moldearlo y darle vida. ¿Quién podrá calmar su cólera?'
+            'En lo más hondo del volcán está A’tar, señor de las forjas. Lo ' +
+            'encerraron hace mucho y lo esclavizaron: su magia del Caos era el ' +
+            'fuego que derretía el metal, lo moldeaba y le daba vida. ¿Quién ' +
+            'podrá calmar su cólera?'
         },
         cineVictoria: {
           texto:
-            'La cuna del caos se ha apagado, los soldados persecutores escuchan ' +
-            'la voz de un nuevo señor, que desde la distancia les ordena ' +
-            'capturar a cualquiera sobre quien haya caído parte de la gloriosa ' +
-            'lluvia de los eternales.'
+            'La cuna del Caos se apaga. Y en el silencio, los Persecutores oyen' +
+            ' una voz nueva que, desde lejos, les da la primera orden en ' +
+            'semanas: capturar a todo aquel sobre quien haya caído la lluvia de' +
+            ' los Eternos.'
         },
         recompensa: null,
         textoRecompensa: null
@@ -887,12 +1098,13 @@ window.Game.HISTORIA_FINAL = {
   id: 'historia_secreta',
   titulo: 'La bendición de los que piden ayuda',
   texto:
-    'Aunque todos los cristales de los eternales fueron corrompidos, existía ' +
-    'esperanza aún para los habitantes de Aether’Num. Quedaba una ninfa capaz ' +
-    'de usar la magia de la vida con su propósito original, junto a ella un ' +
-    'joven ingeniero capaz de crear mecanizados diferentes de los surgidos de ' +
-    'la forja. Quien clama por ayuda, recibirá la bendición de su eterno, a ' +
-    'veces, a través de alianzas insospechadas.',
+    'Los cristales de los cuatro Eternales quedaron corrompidos, pero ' +
+    'en Aether’Num aún quedaba esperanza. Quedaba una ninfa capaz de ' +
+    'usar la magia de la Vida con su propósito original y, junto a ' +
+    'ella, un joven ingeniero capaz de construir mecanizados distintos ' +
+    'de los que salen de la Forja. Quien clama por ayuda recibe la ' +
+    'bendición de su Eterno; a veces, a través de alianzas que nadie ' +
+    'esperaba.',
   desbloquea: {
     // Los seis mercenarios que la historia presenta.
     personajes: [

@@ -2,7 +2,9 @@ window.Game = window.Game || {};
 window.Game.Screens = window.Game.Screens || {};
 
 /**
- * Mesa de duelo. El jugador humano es siempre jugadores[0].
+ * Mesa de duelo. Tú eres `jugadores[this.yoIdx]` (`this.tu()`): 0 contra la
+ * IA, en el calabozo y como anfitrión de un duelo remoto; 1 como invitado,
+ * que juega con el motor espejo de core/dueloRed.js. El rival es `this.suyo()`.
  */
 window.Game.Screens.partida = {
   motor: null,
@@ -19,7 +21,18 @@ window.Game.Screens.partida = {
     this.recordatorios = [];
     this.uidsRecordados = new Set();
     this.eco = null;
+    this.anunciosVistos = 0;
+    this.vivas = [];
     this.limpiarBurbujaRecordatorio();
+    // Duelo remoto (core/dueloRed.js): el anfitrión corre el motor de verdad y
+    // el invitado juega con un espejo. Tú eres el 0 o el 1.
+    this.remoto = params.modo === 'remoto' ? params : null;
+    this.yoIdx = this.remoto && this.remoto.rol === 'invitado' ? 1 : 0;
+    this.eleccionEnviada = null;
+    this.desconexion = false;
+    this.mantenerRed = false;
+    // Revancha: quién la ha pedido ya, y si el rival se fue de la sala.
+    this.revancha = { yo: false, rival: false, fuera: false };
 
     const razaJugador = params.raza || 'lunaria';
     const esCalabozo = params.modo === 'historia' && params.etapa;
@@ -53,9 +66,18 @@ window.Game.Screens.partida = {
         // Acotado por etapa: las dos primeras van solo con Finta y Acrobático.
         window.Game.accionesDeOleada(etapa.n),
         true,
-        { maxActivos: 1, ordenFijo: true }
+        { maxActivos: 1, ordenFijo: true, sangre: etapa.sangre }
       );
       this.etapa = etapa;
+    } else if (this.remoto) {
+      // Los equipos los acordó la sala (screens/remoto.js). El invitado no
+      // crea jugadores: los recibe en la foto del anfitrión.
+      if (this.remoto.rol === 'anfitrion') {
+        const p = this.remoto;
+        jugador = window.Game.crearJugador(p.nombre, p.raza, p.equipo.personajes, p.equipo.acciones);
+        rival = window.Game.crearJugador(p.nombreRival, p.razaRival, p.equipoRival.personajes, p.equipoRival.acciones);
+      }
+      this.etapa = null;
     } else {
       const razaRival =
         params.razaRival || window.Game.RACE_ORDER.find((r) => r !== razaJugador);
@@ -86,7 +108,10 @@ window.Game.Screens.partida = {
       ${window.Game.Ambiente.html(ambiente)}
       <div class="pantalla mesa">
         <header class="mesa-cabecera">
-          <button class="btn-volver" id="btn-salir-partida">← Abandonar</button>
+          <button class="btn-salir-mesa" id="btn-salir-partida"
+                  title="Abandonar" aria-label="Abandonar">
+            <span class="bsm-ico" aria-hidden="true">←</span><span class="bsm-txt">Abandonar</span>
+          </button>
           <!-- El mezclador es una capa suelta, no una pantalla: se puede abrir
                a media partida sin perderla. -->
           <button class="mesa-sonido" id="btn-sonido-mesa"
@@ -98,6 +123,26 @@ window.Game.Screens.partida = {
         </header>
 
         <div class="mesa-tablero">
+          <!-- El plano de la mesa, inclinado: se ve en diagonal, con el lado
+               rival al fondo. Los retratos van DENTRO para compartir el mismo
+               contexto de apilado que las cartas: fuera, la inclinación
+               dejaría los atajos de la carta (z-index 8) debajo de ellos. -->
+          <!-- La mano del rival, oculta: sus reversos dicen cuántos personajes
+               le esperan y cuántas acciones tiene libres, sin decir cuáles.
+               Espejo de la tuya: personajes a la izquierda, acciones a la
+               derecha y su placa en medio. -->
+          <div class="mesa-manos mesa-manos-rival">
+            <div class="mano mano-rival">
+              <span class="mano-titulo" id="titulo-rival-personajes">Personajes</span>
+              <div class="mano-cartas" id="mano-rival-personajes"></div>
+            </div>
+            <div class="placa-slot" id="placa-rival"></div>
+            <div class="mano mano-rival mano-acciones">
+              <span class="mano-titulo" id="titulo-rival-acciones">Acciones</span>
+              <div class="mano-cartas" id="mano-rival-acciones"></div>
+            </div>
+          </div>
+          <div class="mesa-plano" style="${this.estiloTapete(razaJugador)}">
           <div id="panel-rival"></div>
           <div class="mesa-centro">
             <ol class="fases" id="mesa-fases" aria-label="Fase del turno">
@@ -116,11 +161,14 @@ window.Game.Screens.partida = {
                  más se usa y estaba a dos clics detrás de una pestaña. Vive en
                  el esqueleto, que pintar() no reescribe, así que el último
                  resultado aguanta los repintados sin tener que conservarlo. -->
+            <div class="mesa-atacar" id="mesa-atacar"></div>
             <div class="mesa-dado">
               <button type="button" id="btn-dado" class="mesa-dado-btn"
-                      title="Tirar un d6">🎲</button>
-              <span class="mesa-dado-valor" id="mesa-dado-valor">—</span>
+                      title="Tirar un d6" aria-label="Tirar un dado de seis caras">
+                <span class="dado" id="mesa-dado-cara" data-v="6"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              </button>
             </div>
+            <div class="mesa-avanzar" id="mesa-avanzar"></div>
           </div>
           <div id="panel-jugador"></div>
 
@@ -131,8 +179,29 @@ window.Game.Screens.partida = {
             <div class="flotantes-lado rival" data-lado="rival"></div>
             <div class="flotantes-lado jugador" data-lado="jugador"></div>
           </div>
+          </div>
+
+          <!-- Tu mano, bajo la mesa y sin inclinar: personajes a la izquierda,
+               acciones a la derecha, siempre a la vista. Se pulsan en su fase. -->
+          <div class="mesa-manos">
+            <div class="mano mano-personajes">
+              <span class="mano-titulo">Personajes</span>
+              <div class="mano-cartas" id="mesa-controles"></div>
+            </div>
+            <div class="placa-slot" id="placa-jugador"></div>
+            <div class="mano mano-acciones">
+              <span class="mano-titulo">Acciones</span>
+              <div class="mano-cartas" id="mano-acciones"></div>
+            </div>
+          </div>
 
           <div class="aviso-jefe oculto" id="aviso-jefe"></div>
+          <!-- Cuando una carta tuya da a elegir: el turno espera tu respuesta. -->
+          <div class="eleccion oculto" id="eleccion" role="dialog" aria-live="polite"></div>
+          <!-- Aviso de cambio de turno. En el esqueleto, que pintar() no
+               reescribe: si viviera en los paneles, el primer repintado lo
+               cortaría a medio mostrar. -->
+          <div class="aviso-turno" id="aviso-turno" aria-live="polite"></div>
         </div>
 
         <aside class="mesa-lateral">
@@ -140,10 +209,15 @@ window.Game.Screens.partida = {
             <div class="lupa-vacia">Pasa el ratón por una carta para verla</div>
           </div>
           <div class="lateral-pestanas">
-            <button class="pestana activa" data-panel="registro-lista">Registro</button>
-            <button class="pestana" data-panel="herramientas">Herramientas</button>
-            <button class="pestana" data-panel="recordatorios" id="pestana-recordatorios">
-              Recordatorios
+            <button class="pestana activa" data-panel="registro-lista" title="Registro">
+              <span class="pestana-ico" aria-hidden="true">📜</span><span class="pestana-txt">Registro</span>
+            </button>
+            ${this.remoto ? '' : `<button class="pestana" data-panel="herramientas" title="Herramientas">
+              <span class="pestana-ico" aria-hidden="true">🛠</span><span class="pestana-txt">Herramientas</span>
+            </button>`}
+            <button class="pestana" data-panel="recordatorios" id="pestana-recordatorios" title="Recordatorios">
+              <span class="pestana-ico" aria-hidden="true">⚡</span><span class="pestana-txt">Recordatorios</span>
+              <span class="pestana-num" hidden></span>
             </button>
           </div>
           <div id="registro-lista" class="lateral-panel"></div>
@@ -151,26 +225,47 @@ window.Game.Screens.partida = {
           <div id="recordatorios" class="lateral-panel oculto"></div>
         </aside>
 
-        <footer class="mesa-controles" id="mesa-controles"></footer>
       </div>
       <div class="mesa-fin oculto" id="mesa-fin"></div>
     `;
 
-    this.motor = new window.Game.TurnEngine({
-      jugador,
-      oponente: rival,
-      alCambiar: () => this.pintar()
-    });
+    // Los personajes hablan en los duelos de campaña (ui/bocadillos.js).
+    window.Game.Bocadillos?.iniciar(this, esCalabozo ? { raza: razaJugador, etapa: this.etapa } : null);
+
+    window.Game.Recordatorios.yoIdx = this.remoto ? this.yoIdx : null;
+    if (this.remoto && this.remoto.rol === 'invitado') {
+      this.motor = window.Game.DueloRed.invitado({ red: window.Game.Red, alCambiar: () => this.pintar() });
+    } else {
+      this.motor = new window.Game.TurnEngine({
+        jugador,
+        oponente: rival,
+        alCambiar: () => this.pintar()
+      });
+      if (this.remoto) this.sesionRed = window.Game.DueloRed.anfitrion({ motor: this.motor, red: window.Game.Red });
+    }
+    // Si se corta, se avisa mientras se reconecta (core/red.js lo intenta
+    // solo); si el rival se va o no hay manera, el duelo se interrumpe.
+    this.soltarRed = this.remoto
+      ? window.Game.Red.on('estado', (estado, detalle) => {
+        this.mostrarReconexion(estado === 'reconectando');
+        if (estado === 'cerrado' || estado === 'error') this.rivalDesconectado(detalle);
+      })
+      : null;
+    this.soltarMensajesSala = this.remoto
+      ? window.Game.Red.on('mensaje', (d) => this.mensajeDeSala(d))
+      : null;
 
     // Abandonar tira el duelo entero y no hay forma de retomarlo, así que
     // pasa por la confirmación genérica. Con el duelo YA terminado no
     // pregunta nada: ahí el botón es solo la puerta de salida y preguntar
     // sería ruido.
     contenedor.querySelector('#btn-salir-partida').addEventListener('click', async () => {
-      if (!this.motor.terminada) {
+      if (!this.motor.terminada && !this.desconexion) {
         const ok = await window.Game.Confirmar.preguntar({
           titulo: 'Abandonar el duelo',
-          texto: this.etapa
+          texto: this.remoto
+            ? 'El duelo termina para los dos y se cierra la sala. No se puede retomar.'
+            : this.etapa
             ? `Se pierde lo jugado en «${this.etapa.titulo}» y la etapa se ` +
               'queda sin superar: tendrás que empezarla de nuevo desde el ' +
               'principio. El avance de las etapas anteriores no se toca.'
@@ -179,12 +274,43 @@ window.Game.Screens.partida = {
         });
         if (!ok) return;
       }
-      window.Game.Router.ir('mainMenu');
+      // En historia se vuelve al MAPA del calabozo, igual que al terminar la
+      // etapa: mandar al menú obligaba a navegar de vuelta para reintentarla.
+      if (this.params.modo === 'historia') {
+        window.Game.Router.ir('historia', { raza: this.params.raza });
+      } else if (this.remoto) {
+        window.Game.Red.cerrar();
+        window.Game.Router.ir('remoto');
+      } else {
+        window.Game.Router.ir('mainMenu');
+      }
     });
 
     // Los atajos de la carta van por DELEGACIÓN: `pintar()` rehace los dos
     // paneles enteros en cada cambio de estado, así que un oyente puesto en el
     // botón moriría en el primer repintado. El contenedor sí sobrevive.
+    // El botón redondo de cada carta abre y cierra su abanico. Se toca la
+    // clase en el DOM que ya está (así la transición se ve) y se recuerda el
+    // uid, para que los repintados lo pinten ya abierto.
+    contenedor.addEventListener('click', (ev) => {
+      const gatillo = ev.target.closest('.ct-gatillo');
+      if (!gatillo) return;
+      const caja = gatillo.closest('[data-uid-tool]');
+      const abrir = this.atajoAbierto !== caja.dataset.uidTool;
+      this.cerrarAbanico();
+      if (abrir) {
+        this.atajoAbierto = caja.dataset.uidTool;
+        caja.classList.add('abierto');
+        gatillo.setAttribute('aria-expanded', 'true');
+      }
+    });
+    contenedor.addEventListener('pointerdown', (ev) => {
+      if (this.atajoAbierto && !ev.target.closest('.campo-atajos')) this.cerrarAbanico();
+    });
+    contenedor.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && this.atajoAbierto) this.cerrarAbanico();
+    });
+
     contenedor.addEventListener('click', (ev) => {
       const btn = ev.target.closest('.ct-btn');
       if (!btn || btn.disabled) return;
@@ -202,11 +328,18 @@ window.Game.Screens.partida = {
       // Las mismas primitivas y el mismo motivo que el panel: un atajo no
       // puede dejar un rastro distinto en el registro que la ruta larga.
       const M = window.Game.Manual;
+      // En remoto solo ajustas a los tuyos; el invitado se lo pide al anfitrión.
+      if (this.remoto && !this.tu().activos.includes(destino)) return;
+      const n = Number(btn.dataset.n);
+      if (m.esEspejo) {
+        if (btn.dataset.tool === 'limpiar') m.intento('limpiarModificadores', destino);
+        else m.intento('modificar', destino, btn.dataset.tool === 'atq' ? { ataque: n } : { defensa: n });
+        return;
+      }
       if (btn.dataset.tool === 'limpiar') {
         M.limpiarModificadores(m, destino, 'manual');
         return;
       }
-      const n = Number(btn.dataset.n);
       M.modificar(
         m,
         destino,
@@ -224,6 +357,9 @@ window.Game.Screens.partida = {
 
       const j = m.jugadores[Number(btn.dataset.jugador)];
       if (!j) return;
+      // En remoto solo mueves tu sangre (en el invitado, el espejo convierte
+      // derramar/pagar/recuperar en una intención para el anfitrión).
+      if (this.remoto && j !== this.tu()) return;
 
       // Las mismas llamadas y el mismo motivo que el panel largo. Ninguna de
       // las tres notifica por su cuenta, de ahí el notificar() final; y
@@ -235,14 +371,69 @@ window.Game.Screens.partida = {
       m.notificar();
     });
 
+    // Avance automático de fases: elegir carta (desplegar o acoplar) vuelve a
+    // programar el paso con el retardo corto; tocar CUALQUIER otra cosa de la
+    // mesa durante la cuenta atrás la cancela para esta fase (estás haciendo
+    // algo: aplicar un efecto, mirar Herramientas…). El botón de avanzar sigue
+    // funcionando a mano siempre.
+    contenedor.addEventListener('pointerdown', (ev) => {
+      if (!this.avance) return;
+      if (ev.target.closest('#btn-avanzar, #btn-resolver')) return;
+      if (this.avance.atk) {
+        this.cancelarAvance();
+        this.ataqueManual = true;
+        this.pintarBotonResolver();
+        return;
+      }
+      if (ev.target.closest('.opcion-carta')) {
+        this.cancelarAvance();
+        this.entroListo = false;
+        return;
+      }
+      this.cancelarAvance();
+      this.faseManual = true;
+      this.pintarBotonAvance();
+    }, true);
+
+    contenedor.addEventListener('click', (ev) => {
+      if (ev.target.closest('#btn-atacar-mesa')) this.atacarDesdeMesa();
+      // Revelar pinchando el reverso en la mano del rival (es la misma
+      // respuesta que el botón «… oculta N» de la placa).
+      const dorso = ev.target.closest('[data-revelar]');
+      const m = this.motor;
+      if (dorso && m && m.eleccionPendiente && m.eleccionPendiente.jugadorIdx === this.yoIdx) {
+        this.responder(dorso.dataset.revelar);
+      }
+    });
+
+    // Brillo «foil»: la carta en juego (y la de la lupa) se inclina hacia el
+    // cursor y un reflejo la cruza. Delegado, porque pintar() rehace las
+    // cartas: si la que tenías debajo se rehízo, el siguiente movimiento
+    // engancha a la nueva.
+    contenedor.addEventListener('pointermove', (ev) => {
+      const carta = ev.target.closest('.campo-par .mini-carta, .lupa img');
+      if (carta !== this.foilCarta) this.soltarFoil();
+      if (!carta || this.sinMovimiento()) return;
+      this.foilCarta = carta;
+      const r = carta.getBoundingClientRect();
+      const x = (ev.clientX - r.left) / r.width;
+      const y = (ev.clientY - r.top) / r.height;
+      carta.classList.add('foil');
+      carta.style.setProperty('--rx', `${((x - 0.5) * 18).toFixed(1)}deg`);
+      carta.style.setProperty('--ry', `${((0.5 - y) * 18).toFixed(1)}deg`);
+      carta.style.setProperty('--mx', `${Math.round(x * 100)}%`);
+      carta.style.setProperty('--my', `${Math.round(y * 100)}%`);
+    });
+    contenedor.addEventListener('pointerleave', () => this.soltarFoil());
+
     contenedor.querySelector('#btn-dado').addEventListener('click', (ev) => {
       if (!this.motor || this.motor.terminada) return;
       // La tirada ocurre YA, entera: lo que se retrasa es solo enseñarla. Así
       // el registro y el motor nunca dependen de una animación.
-      const r = window.Game.Manual.dado(this.motor, 0, 'tirada manual');
-      // Después de `dado()`, que ya repintó: esta caja no la toca `pintar()`,
-      // así que el resultado se queda a la vista hasta la siguiente tirada.
-      this.mostrarTirada(ev.currentTarget, r.resultado);
+      // La tirada la enseña pintar(), que vigila motor.ultimaTirada: así rueda
+      // igual la del botón que la de una Finta o la de la IA.
+      if (this.motor.esEspejo) this.motor.intento('dado');
+      else window.Game.Manual.dado(this.motor, 0, 'tirada manual');
     });
 
     contenedor.querySelector('#btn-sonido-mesa').addEventListener('click', () => {
@@ -267,7 +458,145 @@ window.Game.Screens.partida = {
     window.Game.Ambiente.conectar(contenedor);
     window.Game.Recordatorios.reiniciar();
     window.Game.Audio.ponerMusica('batalla');
-    this.motor.iniciar();
+    // El invitado no arranca nada: espera la primera foto del anfitrión. En
+    // las revanchas abre uno y otro por turnos (`abre`).
+    if (!this.motor.esEspejo) {
+      if (this.remoto && this.remoto.abre === 1) this.motor.turnoDe = 1;
+      this.motor.iniciar();
+    }
+  },
+
+  /* ------------------------ Duelo remoto: la sala ------------------------ */
+
+  /** Velo sobre la mesa mientras core/red.js recupera la conexión. */
+  mostrarReconexion(si) {
+    const tab = this.contenedor && this.contenedor.querySelector('.mesa-tablero');
+    if (!tab) return;
+    let velo = tab.querySelector('.aviso-red');
+    if (!si) { if (velo) velo.remove(); return; }
+    if (velo) return;
+    velo = document.createElement('div');
+    velo.className = 'aviso-red';
+    const quien = this.motor && this.motor.jugadores ? this.suyo().nombre : 'tu rival';
+    velo.innerHTML = `<div class="aviso-red-caja"><span class="remoto-luz"></span>
+      Se cortó la conexión con ${quien}. Reconectando…<small>La partida sigue donde estaba.</small></div>`;
+    tab.appendChild(velo);
+  },
+
+  /** Revancha, vuelta a la sala y arranque de la revancha (invitado). */
+  mensajeDeSala(d) {
+    if (!d || !this.motor) return;
+    if (d.tipo === 'revancha') {
+      this.revancha.rival = true;
+      if (this.motor.terminada) this.pintarFin();
+      this.revisarRevancha();
+    } else if (d.tipo === 'sala') {
+      this.mantenerRed = true;
+      window.Game.Router.ir('remoto');
+    } else if (d.tipo === 'empezar' && this.remoto.rol === 'invitado') {
+      this.mantenerRed = true;
+      window.Game.Router.ir('partida', { modo: 'remoto', rol: 'invitado', raza: this.remoto.raza });
+    }
+  },
+
+  pedirRevancha() {
+    if (this.revancha.yo || this.revancha.fuera) return;
+    this.revancha.yo = true;
+    window.Game.Red.enviar({ tipo: 'revancha' });
+    this.pintarFin();
+    this.revisarRevancha();
+  },
+
+  /** Los dos la quieren: el anfitrión arranca otra, abriendo el otro jugador. */
+  revisarRevancha() {
+    if (!this.revancha.yo || !this.revancha.rival || this.remoto.rol !== 'anfitrion') return;
+    window.Game.Red.enviar({ tipo: 'empezar' });
+    this.mantenerRed = true;
+    window.Game.Router.ir('partida', { ...this.remoto, abre: this.remoto.abre === 1 ? 0 : 1 });
+  },
+
+  volverALaSala() {
+    window.Game.Red.enviar({ tipo: 'sala' });
+    this.mantenerRed = true;
+    window.Game.Router.ir('remoto');
+  },
+
+  /** El cartel de fin de un duelo remoto: revancha, sala o salir. */
+  finRemoto(el, gano) {
+    const R = window.Game.Red;
+    const rival = this.suyo().nombre;
+    const r = this.revancha;
+    const estado = r.fuera
+      ? `${rival} salió de la sala.`
+      : r.yo && !r.rival ? `Esperando a que ${rival} acepte…`
+        : !r.yo && r.rival ? `${rival} quiere la revancha.` : '';
+    el.innerHTML = `
+      <div class="fin-caja">
+        <h2 class="${gano ? 'fin-victoria' : 'fin-derrota'}">${gano ? 'Victoria' : 'Derrota'}</h2>
+        <p class="fin-motivo">${this.textoMotivo(gano)}</p>
+        ${estado ? `<p class="nota fin-revancha-estado">${estado}</p>` : ''}
+        <div class="fin-botones">
+          <button class="btn-primario" id="btn-revancha" ${r.yo || r.fuera ? 'disabled' : ''}>
+            ${r.rival && !r.yo ? 'Aceptar la revancha' : 'Revancha'}</button>
+          <button class="btn-secundario" id="btn-a-sala" ${r.fuera ? 'disabled' : ''}>Volver a la sala</button>
+          <button class="btn-secundario" id="btn-fin-menu">Salir</button>
+        </div>
+      </div>`;
+    el.querySelector('#btn-revancha').addEventListener('click', () => this.pedirRevancha());
+    el.querySelector('#btn-a-sala').addEventListener('click', () => this.volverALaSala());
+    el.querySelector('#btn-fin-menu').addEventListener('click', () => {
+      R.cerrar();
+      window.Game.Router.ir('remoto');
+    });
+  },
+
+  /** Tú y tu rival en esta mesa (ver la cabecera del archivo). */
+  tu() {
+    return this.motor.jugadores[this.yoIdx];
+  },
+
+  suyo() {
+    return this.motor.jugadores[1 - this.yoIdx];
+  },
+
+  /**
+   * Responder la pregunta de la placa. En el invitado la respuesta viaja al
+   * anfitrión y la placa se esconde hasta la foto siguiente: así un doble clic
+   * no contesta también la pregunta que venga detrás.
+   */
+  responder(id) {
+    const m = this.motor;
+    const e = m.eleccionPendiente;
+    if (!e) return;
+    if (m.esEspejo) {
+      if (this.eleccionEnviada === e.n) return;
+      this.eleccionEnviada = e.n;
+      this.contenedor.querySelector('#eleccion')?.classList.add('oculto');
+    }
+    m.resolverEleccion(id);
+  },
+
+  /** Se fue el rival o se cortó: el duelo no puede seguir. */
+  rivalDesconectado(detalle) {
+    if (!this.contenedor || !this.motor) return;
+    // Con el duelo ya terminado, solo se apaga la revancha.
+    if (this.motor.terminada) {
+      this.revancha.fuera = true;
+      this.pintarFin();
+      return;
+    }
+    if (this.desconexion) return;
+    this.desconexion = true;
+    this.cancelarAvance();
+    const el = this.contenedor.querySelector('#mesa-fin');
+    el.classList.remove('oculto');
+    el.innerHTML = `
+      <div class="fin-caja">
+        <h2 class="fin-derrota">Duelo interrumpido</h2>
+        <p class="fin-motivo">${detalle || 'Se perdió la conexión con tu rival.'}</p>
+        <button class="btn-primario" id="btn-fin-menu">Volver</button>
+      </div>`;
+    el.querySelector('#btn-fin-menu').addEventListener('click', () => window.Game.Router.ir('remoto'));
   },
 
   /** Usa el último equipo guardado de esa raza; si no hay, el predeterminado. */
@@ -300,8 +629,10 @@ window.Game.Screens.partida = {
     const m = this.motor;
     const c = this.contenedor;
     if (!m || !c) return;
+    // El invitado no pinta nada hasta la primera foto del anfitrión.
+    if (m.esEspejo && !m.listo) return;
 
-    const [humano, ia] = m.jugadores;
+    const humano = this.tu(), ia = this.suyo();
 
     c.querySelector('#mesa-turno').textContent =
       `Turno ${m.numeroTurno} · ${m.jugadorActivo.nombre}`;
@@ -321,10 +652,20 @@ window.Game.Screens.partida = {
     // comparando con la revisión anterior.
     window.Game.Recordatorios.observar(m);
     this.recordatorios = window.Game.Recordatorios.pendientes(m);
+    // Lo que el juego sabe aplicar se aplica solo, sin preguntar. Aplicar
+    // repinta entero, así que este pintado ya no tiene nada que hacer.
+    if (this.autoAplicar()) return;
     this.uidsRecordados = window.Game.Recordatorios.uidsConPendientes(this.recordatorios);
 
+    // La barra de sangre se mide ANTES de rehacer los paneles y se anima
+    // después desde ese ancho: ver animarBarras().
+    const barrasAntes = this.medirBarras();
     c.querySelector('#panel-rival').innerHTML = this.panel(ia, true);
     c.querySelector('#panel-jugador').innerHTML = this.panel(humano, false);
+    c.querySelector('#placa-rival').innerHTML = this.placaConSangre(ia, true);
+    c.querySelector('#placa-jugador').innerHTML = this.placaConSangre(humano, false);
+    this.pintarManoRival();
+    this.animarBarras(barrasAntes);
     // La banda central sirve dos cosas que nunca coinciden: TU previsión de
     // ataque y lo que la IA acaba de acoplar en SU turno. Comparten hueco a
     // propósito, para no añadir una fila que le quite altura al tablero.
@@ -359,7 +700,14 @@ window.Game.Screens.partida = {
     window.Game.Tutorial.alCerrar = () => this.pintar();
     // Se pasa la pantalla porque algún paso mira su estado, como los
     // recordatorios pendientes, que no viven en el motor.
-    window.Game.Tutorial.revisar(c, m, this.params, this);
+    if (!this.remoto) window.Game.Tutorial.revisar(c, m, this.params, this);
+    this.mostrarAnuncios();
+    this.rodarSiHuboTirada();
+    this.pintarEleccion();
+
+    // Al FINAL: la burbuja de recordatorio y el tutorial se crean más arriba
+    // en este mismo pintado, y el avance no puede correr con ellos abiertos.
+    this.revisarAvanceAutomatico();
 
     if (m.terminada) {
       this.pintarFin();
@@ -377,8 +725,9 @@ window.Game.Screens.partida = {
         return;
       }
       // Ataque suyo declarado y sin resolver: el turno queda en tus manos
-      // para que puedas defenderte antes de que se aplique.
-      if (m.ataquePendiente) return;
+      // para que puedas defenderte antes de que se aplique. Y si una carta te
+      // pide elegir en su turno, también espera.
+      if (m.ataquePendiente || m.eleccionPendiente) return;
 
       this.iaEnCurso = true;
       this.temporizador = setTimeout(() => this.pasoIA(), this.RITMO_IA);
@@ -387,6 +736,218 @@ window.Game.Screens.partida = {
 
   /** Pausa entre fases del rival, en ms. */
   RITMO_IA: 620,
+
+  /**
+   * Avance automático de TUS fases de personaje y de acción. Pasarlas a mano
+   * cuando ya no queda nada que hacer en ellas era el clic más repetido del
+   * juego. Retardo corto si acabas de jugar (para ver la carta entrar), más
+   * largo si la fase empezó ya «hecha» —alguien en posición o acción puesta
+   * desde el turno anterior—, por si quieres cambiarlo. El ataque solo pasa
+   * solo cuando ya nadie puede atacar: si aún puedes, decides tú. El fin de
+   * turno no tiene nada que hacer y se cierra con la misma cuenta atrás.
+   */
+  AUTO_MS_TRAS_JUGADA: 600,
+  AUTO_MS_AL_ENTRAR: 1400,
+  /** Personaje, acción y fin: pasan casi al instante (lo justo para ver la carta entrar). */
+  AUTO_MS_RAPIDO: 450,
+
+  /**
+   * Flujo del turno (Oscar): poner un personaje —o cambiarlo— pasa SOLO a la
+   * fase de acción, y acoplar una acción pasa sola al ataque. Si ya había
+   * alguien en posición, o la acción venía puesta del turno anterior, no hay
+   * cuenta atrás: se confirma con «Mantener …» (el botón de avanzar). La única
+   * fase que da tiempo —para tirar dados y aplicar efectos— es la de ataque.
+   */
+  firmaAcciones(j) {
+    return j.activos.map((i) => `${i.uid}:${i.accion || '-'}:${i.tilos ? i.tilos.tipo : '-'}`).join('|');
+  },
+
+  /** ¿La fase actual ya no pide nada al jugador? */
+  faseCumplida() {
+    const m = this.motor;
+    const humano = this.tu();
+    // Personaje: solo cuando ya desplegaste (uno por turno). Mantener a quien
+    // ya estaba se confirma a mano.
+    if (m.fase === 'personaje') return !!m.desplegoEsteTurno;
+    if (m.fase === 'accion') {
+      if (!humano.activos.length) return true;
+      const C = window.Game.Combat;
+      if (!humano.activos.every((i) => C._accion(i))) return false;
+      // Solo si la acción se puso EN esta fase; la que venía puesta se mantiene a mano.
+      return this.firmaAccionAlEntrar !== undefined && this.firmaAcciones(humano) !== this.firmaAccionAlEntrar;
+    }
+    // Ataque: solo cuando ya nadie puede atacar. Si aún puedes, decides tú.
+    if (m.fase === 'ataque') return !m.ataquePendiente && !m.atacantesDisponibles(humano).length;
+    // Fin de turno: no hay nada que hacer en él.
+    if (m.fase === 'fin') return true;
+    return false;
+  },
+
+  /** Rótulo del botón de avanzar: «Mantener …» cuando confirmar es lo que toca. */
+  etiquetaAvanzar() {
+    const m = this.motor;
+    const humano = this.tu();
+    if (m.fase === 'fin') return 'Finalizar turno';
+    if (m.fase === 'personaje' && humano.activos.length && !m.desplegoEsteTurno) return 'Mantener posición →';
+    if (m.fase === 'accion' && humano.activos.length && humano.activos.every((i) => window.Game.Combat._accion(i))) {
+      return 'Mantener acción →';
+    }
+    return 'Siguiente fase →';
+  },
+
+  cancelarAvance() {
+    if (this.avance) clearTimeout(this.avance.timer);
+    this.avance = null;
+  },
+
+  /**
+   * Un ataque declarado —tuyo o contra ti— se resuelve solo tras una cuenta
+   * atrás corta: la previsión ya está a la vista y los efectos automáticos ya
+   * se aplicaron al declararlo. Tocar cualquier cosa de la mesa la detiene y
+   * vuelven Resolver/Retirar a mano, como con las fases.
+   */
+  AUTO_MS_RESOLVER: 1600,
+
+  revisarResolucion() {
+    const m = this.motor;
+    const atk = m.ataquePendiente;
+    if (atk !== this.ataqueVisto) {
+      this.ataqueVisto = atk;
+      this.ataqueManual = false;
+      this.nAtaque = (this.nAtaque || 0) + 1;
+      // El golpe recién declarado, tuyo o contra ti, como emergente rojo.
+      const texto = atk && this.textoGolpe();
+      if (texto) this.emergente(texto, { clase: 'combate' });
+    }
+    const clave = `atk:${this.nAtaque}`;
+    const avisoJefe = this.contenedor.querySelector('#aviso-jefe:not(.oculto)');
+    // En remoto lo resuelve solo quien ataca (el que encaja tiene «Encajar»):
+    // si no, los dos PC lo mandarían a la vez.
+    const puede = !m.terminada && atk && !this.ataqueManual && !m.eleccionPendiente
+      && (!this.remoto || m.jugadorActivo === this.tu())
+      && !window.Game.Tutorial.activo && !avisoJefe;
+    if (!puede) {
+      if (this.avance && this.avance.atk) this.cancelarAvance();
+      this.pintarBotonResolver();
+      return !!atk;
+    }
+    if (!this.avance || this.avance.clave !== clave) {
+      this.cancelarAvance();
+      const ms = this.AUTO_MS_RESOLVER;
+      this.avance = {
+        clave, ms, atk: true, desde: Date.now(),
+        timer: setTimeout(() => {
+          const sigue = this.avance && this.avance.clave === clave;
+          this.avance = null;
+          if (sigue && this.motor === m && m.ataquePendiente === atk && !window.Game.Tutorial.activo) {
+            m.resolverAtaque();
+          } else {
+            this.pintarBotonResolver();
+          }
+        }, ms)
+      };
+    }
+    this.pintarBotonResolver();
+    return true;
+  },
+
+  pintarBotonResolver() {
+    const btn = this.contenedor && this.contenedor.querySelector('#btn-resolver');
+    if (!btn) return;
+    const a = this.avance && this.avance.atk ? this.avance : null;
+    btn.classList.toggle('auto', !!a);
+    if (a) {
+      const defiendo = this.motor.jugadorActivo !== this.tu();
+      btn.textContent = defiendo ? 'Encajando…' : 'Resolviendo…';
+      btn.style.setProperty('--auto-ms', `${a.ms}ms`);
+      btn.style.setProperty('--auto-desde', `-${Date.now() - a.desde}ms`);
+    } else {
+      btn.textContent = btn.dataset.etiqueta || 'Resolver';
+    }
+  },
+
+  revisarAvanceAutomatico() {
+    const m = this.motor;
+    if (!m) return;
+    // A media aplicación de un efecto (su dado repinta) el golpe aún no lleva
+    // el bonus: se espera al pintado de después para no anunciarlo a medias.
+    if (this.aplicando) return;
+    // Con una elección pendiente no corre ninguna cuenta atrás: espera.
+    if (m.eleccionPendiente) {
+      this.cancelarAvance();
+      this.pintarBotonAvance();
+      this.pintarBotonResolver();
+      return;
+    }
+    // Con un ataque en el aire manda su resolución, no el paso de fase.
+    if (this.revisarResolucion()) return;
+    const humano = this.tu();
+    const clave = `${m.numeroTurno}:${m.fase}`;
+    if (this.claveFase !== clave) {
+      this.claveFase = clave;
+      this.faseManual = false;
+      this.cancelarAvance();
+      this.firmaAccionAlEntrar = m.fase === 'accion' ? this.firmaAcciones(humano) : undefined;
+      this.entroListo = this.faseCumplida();
+    }
+    const avisoJefe = this.contenedor.querySelector('#aviso-jefe:not(.oculto)');
+    const puede = !m.terminada
+      && m.jugadorActivo === humano
+      && !m.ataquePendiente
+      && !this.faseManual
+      && !window.Game.Tutorial.activo
+      && !this.burbujaViva
+      && !avisoJefe
+      && this.faseCumplida();
+    if (!puede) {
+      this.cancelarAvance();
+      this.pintarBotonAvance();
+      return;
+    }
+    if (!this.avance || this.avance.clave !== clave) {
+      const ms = m.fase !== 'ataque' ? this.AUTO_MS_RAPIDO
+        : this.entroListo ? this.AUTO_MS_AL_ENTRAR : this.AUTO_MS_TRAS_JUGADA;
+      this.avance = {
+        clave, ms, desde: Date.now(),
+        timer: setTimeout(() => {
+          const sigue = this.avance && this.avance.clave === clave;
+          this.avance = null;
+          this.pintarBotonAvance();
+          // Se vuelve a mirar al disparar: puede haber salido una burbuja o el
+          // tutorial durante la cuenta atrás.
+          if (sigue && this.motor === m && `${m.numeroTurno}:${m.fase}` === clave && !m.ataquePendiente
+              && !window.Game.Tutorial.activo && !this.burbujaViva) {
+            m.siguienteFase();
+          }
+        }, ms)
+      };
+    }
+    this.pintarBotonAvance();
+  },
+
+  /**
+   * El botón de avanzar enseña la cuenta atrás como una barra que se llena.
+   * El HTML se rehace en cada repintado, así que la barra retoma donde iba con
+   * un retraso negativo (mismo truco que las animaciones de la mesa).
+   */
+  pintarBotonAvance() {
+    const btn = this.contenedor && this.contenedor.querySelector('#btn-avanzar');
+    if (!btn) return;
+    const a = this.avance;
+    const estaba = btn.classList.contains('auto');
+    btn.classList.toggle('auto', !!a);
+    if (!a && estaba) btn.textContent = this.etiquetaAvanzar();
+    if (a) {
+      btn.textContent = {
+        personaje: 'Pasando a Acción…',
+        accion: 'Pasando a Ataque…',
+        ataque: 'Pasando a Fin de turno…',
+        fin: 'Cerrando el turno…'
+      }[this.motor.fase] || 'Pasando…';
+      btn.style.setProperty('--auto-ms', `${a.ms}ms`);
+      btn.style.setProperty('--auto-desde', `-${Date.now() - a.desde}ms`);
+    }
+  },
 
   /**
    * Cuántas líneas de registro se pintan. Eran 14, que en un turno de jefe
@@ -419,12 +980,12 @@ window.Game.Screens.partida = {
    * panel. Nada del juego depende de que la animación termine.
    */
   mostrarTirada(boton, resultado) {
-    const caja = this.contenedor.querySelector('#mesa-dado-valor');
-    if (!caja) return;
+    const cara = this.contenedor.querySelector('#mesa-dado-cara');
+    if (!cara || !boton) return;
 
-    // Quien pidió menos movimiento no lo recibe: se escribe y ya.
-    if (this.sinMovimiento() || !boton) {
-      caja.textContent = resultado;
+    // Quien pidió menos movimiento no lo recibe: cambia la cara y ya.
+    if (this.sinMovimiento()) {
+      cara.dataset.v = resultado;
       return;
     }
 
@@ -432,22 +993,192 @@ window.Game.Screens.partida = {
     // Quitar, forzar reflujo y volver a poner: sin esto, una segunda tirada
     // durante la primera no reinicia la animación y el dado se queda quieto
     // aunque el motor sí haya tirado.
-    boton.classList.remove('girando');
-    caja.classList.remove('nuevo');
+    boton.classList.remove('girando', 'dorado');
     void boton.offsetWidth;
     boton.classList.add('girando');
-    caja.classList.add('girando');
 
-    // Testigo por si llega otra tirada mientras esta rueda: solo escribe la
-    // última, y así no se pisan dos resultados en desorden.
+    // Testigo por si llega otra tirada mientras esta rueda: solo pinta la
+    // última, y así no se pisan dos resultados en desorden. Mientras rueda,
+    // las caras van cambiando al azar.
     const mia = (this.nTirada = (this.nTirada || 0) + 1);
+    const baraja = setInterval(() => {
+      if (mia !== this.nTirada) return clearInterval(baraja);
+      cara.dataset.v = 1 + Math.floor(Math.random() * 6);
+    }, 70);
     setTimeout(() => {
+      clearInterval(baraja);
       if (mia !== this.nTirada || !this.contenedor) return;
       boton.classList.remove('girando');
-      caja.classList.remove('girando');
-      caja.textContent = resultado;
-      caja.classList.add('nuevo');
+      cara.dataset.v = resultado;
+      // Destello dorado al caer, que se apaga solo.
+      boton.classList.add('dorado');
+      setTimeout(() => boton.classList.remove('dorado'), 900);
     }, this.MS_DADO);
+  },
+
+  soltarFoil() {
+    const c = this.foilCarta;
+    this.foilCarta = null;
+    if (!c) return;
+    c.classList.remove('foil');
+    ['--rx', '--ry', '--mx', '--my'].forEach((v) => c.style.removeProperty(v));
+  },
+
+  /**
+   * La mano oculta del rival: un reverso por cada personaje en su reserva y
+   * por cada acción libre. En abanico, colgando hacia la mesa (giro y
+   * desplazamiento al revés que en tu mano). El reverso es CSS: fondo oscuro,
+   * marco dorado, el círculo de runas y el emblema de su estirpe. El arte
+   * oficial (assets/cartas/reverso.webp) queda para las partidas contra
+   * jugadores, por decisión de Oscar.
+   */
+  pintarManoRival() {
+    const m = this.motor;
+    const ia = this.suyo();
+    const r = this.colorLado(ia);
+    // Contra una persona, el reverso oficial (Oscar lo reservó para eso);
+    // contra la IA y en el calabozo, el dibujado.
+    const dorso = this.remoto
+      ? `<div class="dorso-carta dorso-oficial" style="--raza-primario:${r.colorPrimario}">
+          <img src="assets/cartas/reverso.webp" alt=""></div>`
+      : `<div class="dorso-carta" style="--raza-primario:${r.colorPrimario}">
+        ${this.RUNAS}<span class="dorso-sigil">${r.sigil}</span>
+      </div>`;
+    // Lo revelado va boca arriba; y mientras eliges qué revelar (Annia, Thiana,
+    // Axel, Erem), los reversos elegibles brillan y se pueden pinchar.
+    const e = m.eleccionPendiente;
+    const elegibles = new Set(e && e.jugadorIdx === this.yoIdx ? e.opciones.filter((o) => o.revelar).map((o) => o.id) : []);
+    const C = window.Game.CHARACTERS_BY_ID, A = window.Game.ACTIONS_BY_ID;
+    const carta = (id) => {
+      const c = C[id] || A[id];
+      if (ia.revelados.has(id) && c) {
+        return `<div class="dorso-carta revelada" data-lupa="${c.imagen}" data-lupa-nombre="${c.nombre}" title="${c.nombre}">
+            <img src="${c.imagen}" alt="${c.nombre}"></div>`;
+      }
+      return elegibles.has(id)
+        ? dorso.replace('<div class="dorso-carta', `<div data-revelar="${id}" title="Revelar esta carta" class="dorso-carta elegible`)
+        : dorso;
+    };
+    const llenar = (sel, titulo, ids, nombre) => {
+      const caja = this.contenedor.querySelector(sel);
+      const n = ids.length;
+      caja.innerHTML = ids.map(carta).join('');
+      this.contenedor.querySelector(titulo).textContent = n ? `${nombre} ${n}` : nombre;
+      const cartas = [...caja.children];
+      const medio = (cartas.length - 1) / 2;
+      cartas.forEach((el, i) => {
+        const d = i - medio;
+        el.style.setProperty('--giro', `${(-d * 6).toFixed(1)}deg`);
+        el.style.setProperty('--alto', `${(-Math.abs(d) * Math.abs(d) * 0.9).toFixed(1)}px`);
+        el.style.zIndex = i + 1;
+      });
+    };
+    llenar('#mano-rival-personajes', '#titulo-rival-personajes', ia.reserva.map((i) => i.personaje), 'Personajes');
+    llenar('#mano-rival-acciones', '#titulo-rival-acciones', m.accionesDisponibles(ia), 'Acciones');
+  },
+
+  /**
+   * La elección pendiente de tu lado, como una placa sobre la mesa con una
+   * opción por botón. Sin cuenta atrás (Oscar): es tu decisión. Solo se
+   * rehace cuando cambia la elección, para que los repintados no la parpadeen.
+   */
+  pintarEleccion() {
+    const el = this.contenedor.querySelector('#eleccion');
+    if (!el) return;
+    const e = this.motor.eleccionPendiente;
+    if (!e || e.jugadorIdx !== this.yoIdx || this.motor.terminada || this.eleccionEnviada === e.n) {
+      el.classList.add('oculto');
+      if (!e || this.eleccionEnviada !== e.n) this.eleccionVista = null;
+      return;
+    }
+    if (this.eleccionVista === e.n) return;
+    this.eleccionVista = e.n;
+    el.innerHTML = `
+      <div class="eleccion-caja">
+        <span class="eleccion-sup">Elige</span>
+        <strong class="eleccion-titulo">${e.titulo}</strong>
+        <div class="eleccion-opciones">
+          ${e.opciones.map((o) => `<button type="button" class="eleccion-op" data-op="${o.id}">${o.texto}</button>`).join('')}
+        </div>
+      </div>`;
+    el.classList.remove('oculto');
+    el.querySelectorAll('[data-op]').forEach((b) => {
+      b.addEventListener('click', () => this.responder(b.dataset.op));
+    });
+  },
+
+  /** Pulsaste una carta con una pregunta esperando: la placa se sacude. */
+  recordarEleccion() {
+    const caja = this.contenedor.querySelector('#eleccion:not(.oculto) .eleccion-caja');
+    if (!caja) return;
+    caja.classList.remove('sacude');
+    void caja.offsetWidth; // reflujo: reinicia la animación
+    caja.classList.add('sacude');
+    // Dentro de la placa: un emergente de la banda quedaría detrás de ella.
+    if (!caja.querySelector('.eleccion-aviso')) {
+      caja.insertAdjacentHTML('beforeend', '<span class="eleccion-aviso">Responde primero para seguir jugando</span>');
+    }
+  },
+
+  /** Los estados con duración de una carta, como pastillas («⛨ 2»). */
+  ICONO_ESTADO: { inmune: '⛨', personajeBloqueado: '⛓', sinAtaques: '☮' },
+
+  chipsEstado(inst) {
+    const lista = this.motor.estadosDe(inst);
+    if (!lista.length) return '';
+    return `<span class="estado-chips">${lista
+      .map((e) => `<span class="estado-chip" title="${e.motivo}: ${e.turnos} ${e.turnos === 1 ? 'turno' : 'turnos'}">${this.ICONO_ESTADO[e.tipo] || '•'} ${e.turnos}</span>`)
+      .join('')}</span>`;
+  },
+
+  placaDe(idx) {
+    return this.contenedor.querySelector(idx === this.yoIdx ? '#placa-jugador' : '#placa-rival');
+  },
+
+  /** El tapete de la mesa: el suelo de la estirpe de quien juega en casa. */
+  TAPETES: ['desterrado', 'lunaria', 'oxitron', 'reanimado'],
+
+  estiloTapete(raza) {
+    if (!this.TAPETES.includes(raza)) return '';
+    // url() en línea y no en una variable CSS: en una variable se resolvería
+    // contra la hoja de estilos y no cargaría (ver CLAUDE.md).
+    return `background-image:linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.22)),url('assets/tapetes/${raza}.webp')`;
+  },
+
+  /**
+   * El círculo de runas donde se pone el personaje en posición. Se dibuja en
+   * el plano de la mesa, así que la inclinación lo aplana como un círculo
+   * pintado en el suelo. `encendido` cuando a ese lado le toca elegir
+   * personaje.
+   */
+  RUNAS: (() => {
+    const glifos = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊ';
+    const letras = [...glifos].map((g, i) => {
+      const a = (i / glifos.length) * Math.PI * 2;
+      const x = (50 + Math.cos(a) * 41).toFixed(1);
+      const y = (50 + Math.sin(a) * 41).toFixed(1);
+      const giro = ((a * 180) / Math.PI + 90).toFixed(0);
+      return `<text x="${x}" y="${y}" transform="rotate(${giro} ${x} ${y})">${g}</text>`;
+    }).join('');
+    return `<svg class="runas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <circle cx="50" cy="50" r="34.5" fill="none" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2.2"/>
+      <g font-size="7" fill="currentColor" text-anchor="middle" dominant-baseline="central">${letras}</g>
+    </svg>`;
+  })(),
+
+  zonaEncendida(esRival, fase) {
+    const m = this.motor;
+    const j = m.jugadores[esRival ? 1 : 0];
+    return !m.terminada && m.jugadorActivo === j && m.fase === fase;
+  },
+
+  /** Si el motor tiró un dado desde el último pintado, lo hace rodar. */
+  rodarSiHuboTirada() {
+    const t = this.motor.ultimaTirada;
+    if (!t || t.n === this.tiradaVista) return;
+    this.tiradaVista = t.n;
+    this.mostrarTirada(this.contenedor.querySelector('#btn-dado'), t.resultado);
   },
 
   /** Lleva el registro a su última línea. */
@@ -513,7 +1244,7 @@ window.Game.Screens.partida = {
   instanciasJefe() {
     const m = this.motor;
     if (!m) return [];
-    const ia = m.jugadores[1];
+    const ia = this.suyo();
     const tieneHabilidades = (i) => {
       const c = window.Game.CHARACTERS_BY_ID[i.personaje];
       return c && Array.isArray(c.habilidades) && c.habilidades.length;
@@ -580,7 +1311,7 @@ window.Game.Screens.partida = {
     el.classList.remove('oculto');
     el.innerHTML = `
       <div class="aviso-jefe-caja">
-        <h3>Turno de ${m.jugadores[1].nombre}</h3>
+        <h3>Turno de ${this.suyo().nombre}</h3>
         <p class="nota">
           ${
             parte.length
@@ -593,116 +1324,55 @@ window.Game.Screens.partida = {
       </div>
     `;
 
-    el.querySelector('#btn-aviso-seguir').addEventListener('click', () => {
+    // Se cierra solo cuando ha dado tiempo a leerlo (al ritmo de las
+    // cinemáticas, 20 car/s); «Continuar» lo cierra antes. Tocar el aviso
+    // (no el botón) lo deja quieto para leer con calma.
+    const seguir = el.querySelector('#btn-aviso-seguir');
+    const letras = el.querySelector('.aviso-jefe-caja').textContent.replace(/\s+/g, ' ').length;
+    const ms = Math.min(12000, Math.max(4000, (letras / 20) * 1000));
+    let cerrado = false;
+    const continuar = () => {
+      if (cerrado) return;
+      cerrado = true;
+      clearTimeout(this.temporizadorJefe);
       this.avisoResueltoEn = m.numeroTurno;
       el.classList.add('oculto');
       this.pintar();
+    };
+    seguir.classList.add('auto');
+    seguir.style.setProperty('--auto-ms', `${ms}ms`);
+    seguir.addEventListener('click', continuar);
+    el.addEventListener('pointerdown', (ev) => {
+      if (ev.target.closest('#btn-aviso-seguir')) return;
+      clearTimeout(this.temporizadorJefe);
+      seguir.classList.remove('auto');
     });
+    clearTimeout(this.temporizadorJefe);
+    this.temporizadorJefe = setTimeout(continuar, ms);
   },
 
-  /** Ficha de un jugador: sangre, personaje activo, reserva y revelados. */
-  panel(j, esRival) {
+  /**
+   * La placa del jugador: avatar redondo con marco dorado, el emblema de la
+   * estirpe en una pastilla y el nombre. El avatar es quien da la cara: el
+   * personaje en posición, o el primero que espera si no hay nadie. Con su
+   * retrato flotante (un busto) si lo tiene; si no, el arte de su carta.
+   * Brilla en dorado cuando es el turno de ese lado.
+   */
+  /**
+   * La placa con la sangre dentro (Vida · Energía · Fuera, sus flechas y la
+   * barra). Va FUERA de la mesa, en el esqueleto: la del rival arriba y la
+   * tuya entre tus dos manos. Así los lados de la mesa quedan para el tapete y
+   * las cartas. Las mismas clases de siempre (sangre-barra, sm-energia…), así
+   * que las flechas, el destello de sangre y el tutorial siguen funcionando.
+   */
+  placaConSangre(j, esRival) {
     const m = this.motor;
     const r = this.colorLado(j);
     const vida = m.vidaDe(j);
     const energia = m.energiaDe(j);
-    // Ancho de cada tramo de la barra respecto al total de 30.
-    const pct = (n) => `${(n / window.Game.SANGRE_TOTAL) * 100}%`;
-
-    const activo = j.activos.length
-      ? j.activos.map((i) => this.cartaActiva(i, esRival)).join('')
-      : '<div class="slot-vacio">Sin personaje activo</div>';
-
-    // La oleada de calabozo es información pública: ya la viste en la
-    // pantalla de la etapa. Se enseña quién espera turno para salir.
-    const esperando =
-      esRival && this.etapa && j.reserva.length
-        ? `<div class="espera">
-             <span class="espera-titulo">Esperando ${j.reserva.length}</span>
-             <div class="espera-cartas">
-               ${j.reserva
-                 .map((i) => {
-                   const p = window.Game.CHARACTERS_BY_ID[i.personaje];
-                   const lista = m.puedeDesplegar(j, i);
-                   return `<div class="espera-carta ${lista ? '' : 'cara'}"
-                                data-lupa="${p.imagen}" data-lupa-nombre="${p.nombre}"
-                                title="${p.nombre}${
-                                  lista ? '' : ` — necesita ${p.coste} de energía`
-                                }">
-                             <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
-                             <span class="espera-stats">⚔${p.ataque} 🛡${p.defensa}</span>
-                           </div>`;
-                 })
-                 .join('')}
-             </div>
-           </div>`
-        : '';
-
-    // Lo que está en el Hades ya se ve entero abajo: no lo repitas aquí.
-    const enHades = new Set(j.hades.map((i) => i.personaje));
-    const revelados = [...j.revelados]
-      .filter((id) => !enHades.has(id))
-      .map(
-        (id) =>
-          window.Game.CHARACTERS_BY_ID[id]?.nombre ||
-          window.Game.ACTIONS_BY_ID[id]?.nombre
-      )
-      .filter(Boolean);
-
-    const hades = j.hades.length
-      ? `<div class="hades">
-           <span class="hades-titulo" title="Zona abierta: ambos jugadores la ven">
-             Hades ${j.hades.length}
-           </span>
-           <div class="hades-cartas">
-             ${j.hades
-               .map((i) => {
-                 const p = window.Game.CHARACTERS_BY_ID[i.personaje];
-                 return `<div class="hades-carta" data-lupa="${p.imagen}"
-                              data-lupa-nombre="${p.nombre}" title="${p.nombre}">
-                           <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
-                         </div>`;
-               })
-               .join('')}
-           </div>
-         </div>`
-      : '';
-
-    // El vacío se pinta pegado al Hades porque es su zona adyacente, y solo
-    // cuando hay algo: una caja vacía permanente sería ruido en toda partida
-    // que no toque a Errante.
-    const vacio = j.vacio.length
-      ? `<div class="hades es-vacio">
-           <span class="hades-titulo" title="Adyacente al Hades: solo se entra y se sale por él">
-             Vacío ${j.vacio.length}
-           </span>
-           <div class="hades-cartas">
-             ${j.vacio
-               .map((i) => {
-                 const p = window.Game.CHARACTERS_BY_ID[i.personaje];
-                 return `<div class="hades-carta" data-lupa="${p.imagen}"
-                              data-lupa-nombre="${p.nombre}" title="${p.nombre}">
-                           <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
-                         </div>`;
-               })
-               .join('')}
-           </div>
-         </div>`
-      : '';
-
-    return `
-      <div class="mesa-lado ${esRival ? 'es-rival' : 'es-jugador'} ${
-        // En calabozo las criaturas se pintan a mayor tamaño: son el
-        // espectáculo de la etapa, no un rival simétrico.
-        esRival && this.etapa ? 'es-oleada' : ''
-      }"
-           style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
-        <div class="lado-info">
-          <span class="mesa-sigil">${r.sigil}</span>
-          <div>
-            <strong>${j.nombre}</strong>
-            <span class="mesa-raza">${r.nombre}</span>
-          </div>
+    const total = j.sangreTotal || window.Game.SANGRE_TOTAL;
+    const pct = (n) => `${(n / total) * 100}%`;
+    const sangre = `
           <div class="sangre">
             <div class="sangre-marcadores">
               <div class="sm sm-vida" title="Pila inicial: sangre intacta. Si llega a 0, pierdes.">
@@ -723,25 +1393,94 @@ window.Game.Screens.partida = {
               </div>
             </div>
 
-            <!-- Las tres pilas suman siempre 30: la barra lo hace evidente. -->
-            <div class="sangre-barra" title="Las tres pilas suman 30 sangres">
+            <!-- Las tres pilas suman siempre lo mismo: la barra lo hace evidente. -->
+            <div class="sangre-barra" title="Las tres pilas suman ${total} sangres">
               <div class="seg seg-vida" style="width:${pct(j.sangre.pila)}"></div>
               <div class="seg seg-gasto" style="width:${pct(j.sangre.gasto)}"></div>
               <div class="seg seg-fuera" style="width:${pct(j.sangre.fuera)}"></div>
             </div>
 
             <div class="sangre-pie">
-              <span>de ${window.Game.SANGRE_TOTAL}</span>
+              <span>de ${total}</span>
               <span class="sangre-zonas">
                 <span title="En reserva">👥 ${j.reserva.length}</span>
                 <span title="En el Hades">✖ ${j.hades.length}</span>
               </span>
             </div>
           </div>
+`;
+    return `<div class="placa-marco" style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
+      ${this.placa(j, r, esRival, sangre)}
+    </div>`;
+  },
+
+  placa(j, r, esRival, extra = '') {
+    const m = this.motor;
+    const inst = j.activos[0] || j.reserva[0] || j.hades[0] || null;
+    const p = inst && window.Game.CHARACTERS_BY_ID[inst.personaje];
+    const foto = p ? (p.imagenFlotante || p.imagen) : null;
+    const enTurno = !m.terminada && m.jugadorActivo === j;
+    return `
+      <div class="placa ${enTurno ? 'en-turno' : ''}">
+        <div class="placa-avatar">
+          <div class="placa-foto ${p && p.imagenFlotante ? 'es-busto' : ''}">
+            ${foto ? `<img src="${foto}" alt="" loading="lazy">` : ''}
+          </div>
+          <span class="placa-sigil" title="${r.nombre}">${r.sigil}</span>
         </div>
+        <div class="placa-texto">
+          <strong>${j.nombre}</strong>
+          <span class="mesa-raza">${r.nombre}${p ? ` · ${p.nombre.split(',')[0]}` : ''}</span>
+          ${extra}
+        </div>
+      </div>`;
+  },
+
+  /** Ficha de un jugador: sangre, personaje activo, reserva y revelados. */
+  panel(j, esRival) {
+    const m = this.motor;
+    const r = this.colorLado(j);
+    const vida = m.vidaDe(j);
+    const energia = m.energiaDe(j);
+    // Ancho de cada tramo de la barra respecto a la sangre con que empezó
+    // (30, o la de la etapa si es una oleada).
+    const total = j.sangreTotal || window.Game.SANGRE_TOTAL;
+    const pct = (n) => `${(n / total) * 100}%`;
+
+    const activo = j.activos.length
+      ? j.activos.map((i) => this.cartaActiva(i, esRival)).join('')
+      : `<div class="zona-runas vacia ${this.zonaEncendida(esRival, 'personaje') ? 'encendida' : ''}">
+           ${this.RUNAS}<span class="zona-rotulo">Posición</span>
+         </div>`;
+
+    // Lo que está en el Hades ya se ve entero abajo: no lo repitas aquí.
+    const enHades = new Set(j.hades.map((i) => i.personaje));
+    // Lo que está en juego también cuenta como revelado (desde que se usa),
+    // pero ya se ve en la mesa: la lista es para lo usado que volvió a la mano.
+    const enJuego = new Set(j.activos.flatMap((i) => [i.personaje, i.accion]).filter(Boolean));
+    const revelados = [...j.revelados]
+      .filter((id) => !enHades.has(id) && !enJuego.has(id))
+      .map(
+        (id) =>
+          window.Game.CHARACTERS_BY_ID[id]?.nombre ||
+          window.Game.ACTIONS_BY_ID[id]?.nombre
+      )
+      .filter(Boolean);
+
+    // Hades y destierro (el vacío): dos zonas de verdad junto al personaje en
+    // posición, siempre a la vista (zonaFuera).
+    const hades = this.zonaFuera(j.hades, 'hades');
+    const vacio = this.zonaFuera(j.vacio || [], 'destierro');
+
+    return `
+      <div class="mesa-lado ${esRival ? 'es-rival' : 'es-jugador'} ${
+        // En calabozo las criaturas se pintan a mayor tamaño: son el
+        // espectáculo de la etapa, no un rival simétrico.
+        esRival && this.etapa ? 'es-oleada' : ''
+      }"
+           style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
         <div class="lado-fila">
-          <div class="lado-campo">${activo}</div>
-          ${esperando}
+          <div class="lado-campo">${activo}<div class="zonas-fuera">${hades}${vacio}</div></div>
         </div>
         ${
           revelados.length
@@ -751,10 +1490,44 @@ window.Game.Screens.partida = {
                </div>`
             : ''
         }
-        ${hades}
-        ${vacio}
       </div>
     `;
+  },
+
+  /** Cuántas cartas se ven en abanico en el Hades y el destierro (las últimas). */
+  CARTAS_EN_ZONA: 5,
+
+  /**
+   * El Hades o el destierro (el vacío) como zona de la mesa: un hueco del
+   * tamaño de una carta con las últimas en abanico (la de arriba, la más
+   * reciente) y el total en una pastilla. Cada carta va a la lupa al tocarla.
+   * Lleva también las clases viejas (`hades`, `casilla-hades`), que usan el
+   * tutorial y los recordatorios para anclarse.
+   */
+  zonaFuera(lista, tipo) {
+    const esHades = tipo === 'hades';
+    const nombre = esHades ? 'Hades' : 'Destierro';
+    const icono = esHades ? '☠' : '✧';
+    const ayuda = esHades
+      ? 'Hades: aquí van los destruidos. Zona abierta: los dos la ven.'
+      : 'Destierro (el vacío): junto al Hades; solo se entra y se sale por él.';
+    const visibles = lista.slice(-this.CARTAS_EN_ZONA);
+    const cartas = visibles.map((i, k) => {
+      const p = window.Game.CHARACTERS_BY_ID[i.personaje];
+      if (!p) return '';
+      return `<div class="zf-carta" style="--k:${k};--n:${visibles.length}"
+                   data-lupa="${p.imagen}" data-lupa-nombre="${p.nombre}" title="${p.nombre}">
+                <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
+              </div>`;
+    }).join('');
+    const clases = esHades ? 'hades casilla-hades zf-hades' : 'hades es-vacio zf-destierro';
+    return `
+      <div class="zona-fuera ${clases} ${lista.length ? '' : 'vacia'}" title="${ayuda}">
+        <div class="zf-pila">
+          ${cartas || `<span class="zf-icono" aria-hidden="true">${icono}</span>`}
+        </div>
+        <span class="zf-rotulo">${nombre}${lista.length ? ` <b>${lista.length}</b>` : ''}</span>
+      </div>`;
   },
 
   /**
@@ -773,7 +1546,7 @@ window.Game.Screens.partida = {
     const capa = this.contenedor && this.contenedor.querySelector('#mesa-flotantes');
     if (!m || !capa) return;
 
-    const [humano, ia] = m.jugadores;
+    const humano = this.tu(), ia = this.suyo();
     this.pintarLadoFlotante(capa.querySelector('[data-lado="rival"]'), ia);
     this.pintarLadoFlotante(capa.querySelector('[data-lado="jugador"]'), humano);
   },
@@ -837,15 +1610,20 @@ window.Game.Screens.partida = {
              <img src="${a.imagen}" alt="${a.nombre}" loading="lazy">
              ${marca('accion')}
            </div>`
-      : '<div class="mini-carta vacia" title="Sin acción">—</div>';
+      : `<div class="mini-carta vacia hueco-accion ${
+          this.zonaEncendida(esRival, 'accion') ? 'encendida' : ''
+        }" title="Sin acción"><span>Acción</span></div>`;
 
     return `
       <div class="campo-par">
+        <div class="zona-runas ${this.zonaEncendida(esRival, 'personaje') ? 'encendida' : ''}">
+        ${this.RUNAS}
         <div class="mini-carta personaje postura-${postura}"
              data-uid-personaje="${inst.uid}"
              data-lupa="${p.imagen}" data-lupa-nombre="${p.nombre}">
           <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
           ${marca('posicion')}
+          ${this.chipsEstado(inst)}
           <div class="mini-stats">
             <span class="stat-atq ${atk > 0 ? 'activo' : ''}">⚔ ${
               atk > 0 ? atk : p.ataque
@@ -854,6 +1632,7 @@ window.Game.Screens.partida = {
               def > 0 ? def : p.defensa
             }</span>
           </div>
+        </div>
         </div>
         ${cartaAccion}
         ${this.atajosDeCarta(inst)}
@@ -882,7 +1661,8 @@ window.Game.Screens.partida = {
    * recortan a lo que haya.
    */
   flechasDeSangre(j, esRival, hueco) {
-    const lado = esRival ? 1 : 0;
+    const lado = this.motor.jugadores.indexOf(j);
+    if (this.remoto && esRival) return '';
     const boton = (op, glifo, titulo, activo) =>
       `<button type="button" class="sg-flecha" data-sangre="${op}"
                data-jugador="${lado}" title="${titulo}"
@@ -919,15 +1699,32 @@ window.Game.Screens.partida = {
    * en esta mesa lo escaso es el alto —las cartas ya se encogen en ventanas
    * bajas— y una fila nueva le habría quitado sitio al tablero.
    */
+  /**
+   * Abanico de la carta: un botón redondo que despliega los pequeños en arco
+   * hacia la derecha. Cada uno lleva su ángulo como coseno y seno sin unidad;
+   * el radio lo pone el CSS (--abanico-r), que lo acorta en ventanas bajas,
+   * donde la fila de cartas —que recorta en vertical— es más baja.
+   */
+  ABANICO_GRADOS: [-62, -31, 0, 31, 62],
+
+  cerrarAbanico() {
+    this.atajoAbierto = null;
+    this.contenedor?.querySelectorAll('.campo-atajos.abierto').forEach((c) => {
+      c.classList.remove('abierto');
+      c.querySelector('.ct-gatillo')?.setAttribute('aria-expanded', 'false');
+    });
+  },
+
   atajosDeCarta(inst) {
-    const fila = (tool, icono, nombre) => `
-      <div class="ct-fila">
-        <span class="ct-icono" aria-hidden="true">${icono}</span>
-        <button type="button" class="ct-btn" data-tool="${tool}" data-n="1"
-                title="${nombre} +1" aria-label="${nombre} más uno">▲</button>
-        <button type="button" class="ct-btn" data-tool="${tool}" data-n="-1"
-                title="${nombre} −1" aria-label="${nombre} menos uno">▼</button>
-      </div>`;
+    // En remoto, los ± solo en tus cartas: las del rival las ajusta él.
+    if (this.remoto && !this.tu().activos.includes(inst)) return '';
+    let k = 0;
+    const pequeno = (tool, n, glifo, titulo, extra = '') => {
+      const g = (this.ABANICO_GRADOS[k] * Math.PI) / 180;
+      const estilo = `--cx:${Math.cos(g).toFixed(3)};--cy:${Math.sin(g).toFixed(3)};--i:${k++}`;
+      return `<button type="button" class="ct-btn" data-tool="${tool}" data-n="${n}"
+                style="${estilo}" title="${titulo}" aria-label="${titulo}" ${extra}>${glifo}</button>`;
+    };
 
     // Deshacer. No lo pide ninguna carta —no sale en el recuento del mazo—,
     // lo pide haber puesto el ±1 a un clic: equivocarse es ahora mucho más
@@ -936,16 +1733,19 @@ window.Game.Screens.partida = {
     const mods = inst.modificadores || { ataque: 0, defensa: 0 };
     const hayQueLimpiar = !!(mods.ataque || mods.defensa);
 
+    const abierto = this.atajoAbierto === inst.uid;
+
     return `
-      <div class="campo-atajos" data-uid-tool="${inst.uid}">
-        ${fila('atq', '⚔', 'Ataque')}
-        ${fila('def', '🛡', 'Defensa')}
-        <div class="ct-fila ct-fila-limpiar">
-          <button type="button" class="ct-btn ct-limpiar" data-tool="limpiar"
-                  title="Quitar los modificadores puestos a mano"
-                  aria-label="Quitar los modificadores"
-                  ${hayQueLimpiar ? '' : 'disabled'}>↺</button>
-        </div>
+      <div class="campo-atajos ${abierto ? 'abierto' : ''}" data-uid-tool="${inst.uid}">
+        <button type="button" class="ct-gatillo ${hayQueLimpiar ? 'modificado' : ''}"
+                aria-expanded="${abierto}" title="Ajustar ataque y defensa">
+          <span class="ctg-cerrado" aria-hidden="true">±</span><span class="ctg-abierto" aria-hidden="true">×</span>
+        </button>
+        ${pequeno('atq', 1, '⚔+', 'Ataque +1')}
+        ${pequeno('atq', -1, '⚔−', 'Ataque −1')}
+        ${pequeno('limpiar', 0, '↺', 'Quitar los modificadores puestos a mano', hayQueLimpiar ? '' : 'disabled')}
+        ${pequeno('def', 1, '🛡+', 'Defensa +1')}
+        ${pequeno('def', -1, '🛡−', 'Defensa −1')}
       </div>`;
   },
 
@@ -953,11 +1753,49 @@ window.Game.Screens.partida = {
     window.Game.Lupa.conectar(this.contenedor);
   },
 
+  /**
+   * «⚔ Atacar» en la banda central, entre los dos lados: donde ocurre la
+   * batalla, y no abajo en el pie. Ataca con lo que digan los selectores del
+   * pie si los hay (cuando hay de verdad entre qué elegir) o, si no, con el
+   * único atacante contra el único objetivo.
+   */
+  botonAtacarMesa() {
+    const m = this.motor;
+    const humano = this.tu();
+    if (m.terminada || m.jugadorActivo !== humano || m.fase !== 'ataque' || m.ataquePendiente) return '';
+    if (!m.atacantesDisponibles(humano).length) return '';
+    return '<button type="button" class="btn-atacar-mesa" id="btn-atacar-mesa">⚔ Atacar</button>';
+  },
+
+  atacarDesdeMesa() {
+    const m = this.motor;
+    const humano = this.tu();
+    const rival = this.suyo();
+    // Un solo puesto por bando en todos los modos: el único atacante contra
+    // el único objetivo (o la sangre, si el campo rival está vacío).
+    const a = (m.atacantesDisponibles(humano)[0] || {}).uid || null;
+    const d = (rival.activos[0] || {}).uid || null;
+    m.declararAtaque(a, d);
+  },
+
+  /** El golpe declarado, en una línea para el emergente rojo. */
+  textoGolpe() {
+    const prev = this.motor.previsionAtaque();
+    if (!prev) return null;
+    const v = `⚔ ${prev.atacanteValor}`;
+    if (prev.destruido) return `${v} — lo destruye${prev.danoSangre ? ` y ${prev.danoSangre} a la sangre` : ''}`;
+    if (prev.danoSangre) return `${v} — ${prev.danoSangre} de daño`;
+    if (prev.danoReflejado) return `${v} — el escudo refleja ${prev.danoReflejado}`;
+    return `${v} — no pasa`;
+  },
+
   /** Previsualiza qué pasaría si el humano atacase ahora. */
   veredicto() {
     const m = this.motor;
-    const [humano, ia] = m.jugadores;
+    const humano = this.tu(), ia = this.suyo();
     if (m.terminada) return '';
+    const paz = m.estados.find((e) => e.tipo === 'sinAtaques');
+    if (paz) return `<span class="veredicto-paz">☮ Nadie puede atacar · ${paz.turnos} ${paz.turnos === 1 ? 'turno' : 'turnos'}</span>`;
     if (m.jugadorActivo !== humano || m.fase !== 'ataque') return '';
     const atacante = m.atacantesDisponibles(humano)[0];
     if (!atacante) {
@@ -1007,8 +1845,10 @@ window.Game.Screens.partida = {
    */
   reaccionarASucesos() {
     const s = this.detectarSucesos();
-    // Primer pintado: solo se toma la foto, ni suena ni se mueve nada.
-    if (!s) return;
+    window.Game.Bocadillos?.revisar(this, s);
+    // Primer pintado: solo se toma la foto, ni suena ni se mueve nada… salvo
+    // el aviso de turno, que también tiene que decir quién abre el duelo.
+    if (!s) { this.mostrarAvisoTurno(); return; }
     this.sonarSucesos(s);
     this.animarSucesos(s);
   },
@@ -1055,6 +1895,10 @@ window.Game.Screens.partida = {
       enPosicion: hayNuevo(activos, this.eco.activos),
       acoplada: hayNuevo(equipadas, this.eco.equipadas),
       ataque: m.atacaronEsteTurno.size > base,
+      turnoNuevo: m.numeroTurno !== this.eco.turno,
+      // Claves «idx:uid» e «idx:uid:accion» de lo que acaba de aparecer.
+      nuevosActivos: [...activos].filter((k) => !this.eco.activos.has(k)),
+      nuevasAcciones: [...equipadas].filter((k) => !this.eco.equipadas.has(k)),
       golpe: foto.golpe > this.eco.golpe ? m.ultimoGolpe : null
     };
 
@@ -1072,10 +1916,179 @@ window.Game.Screens.partida = {
 
   /** Lo que acaba de pasar, en movimiento. */
   animarSucesos(s) {
+    if (s.turnoNuevo) this.mostrarAvisoTurno();
+    if (s.golpe) this.numerosDeGolpe(s.golpe);
+    const ahora = Date.now();
+    for (const k of s.nuevosActivos || []) {
+      const uid = k.split(':')[1];
+      this.vivas.push({ sel: `[data-uid-personaje="${uid}"]`, clase: 'entra-campo', desde: ahora, ms: this.MS_ENTRADA });
+    }
+    for (const k of s.nuevasAcciones || []) {
+      const uid = k.split(':')[1];
+      this.vivas.push({ sel: `[data-uid-accion="${uid}"]`, clase: 'acopla-accion', desde: ahora, ms: this.MS_ENTRADA });
+    }
+    this.pintarVivas();
     if (s.golpe) {
       this.golpeVivo = { n: s.golpe.n, desde: Date.now(), golpe: s.golpe };
     }
     this.pintarGolpe();
+  },
+
+  /**
+   * «Tu turno» / «Turno de …» en grande, un momento. Antes solo cambiaba un
+   * texto chico en la cabecera, y en el turno de la IA costaba saber cuándo te
+   * tocaba. No bloquea nada (`pointer-events: none`) ni para la cadena de la
+   * IA: es un aviso, no un modal.
+   */
+  mostrarAvisoTurno() {
+    const m = this.motor;
+    const el = this.contenedor && this.contenedor.querySelector('#aviso-turno');
+    if (!el || !m || m.terminada) return;
+    const tuyo = m.jugadorActivo === this.tu();
+    el.innerHTML = `
+      <strong>${tuyo ? 'Tu turno' : `Turno de ${m.jugadorActivo.nombre}`}</strong>
+      <span>Turno ${m.numeroTurno}</span>`;
+    el.classList.toggle('es-rival', !tuyo);
+    // Quitar, forzar reflujo y volver a poner: si el aviso anterior aún se
+    // estaba viendo, sin esto no volvería a empezar.
+    el.classList.remove('visible');
+    void el.offsetWidth;
+    el.classList.add('visible');
+  },
+
+  /* ---------------- Feedback visual: entradas, números, sangre ---------- */
+
+  /** Duraciones en ms. Las manda el JS y el CSS las lee por `--dur`. */
+  MS_ENTRADA: 460,
+  MS_NUMERO: 1100,
+  MS_SANGRE: 520,
+
+  /** Animaciones de un solo uso que deben sobrevivir a los repintados. */
+  vivas: [],
+
+  /**
+   * Reaplica las animaciones que siguen vivas. Mismo truco que pintarGolpe():
+   * pintar() rehace los paneles y se llevaría la clase, así que se vuelve a
+   * poner con un `animation-delay` NEGATIVO igual a lo ya transcurrido, para
+   * que retome donde iba en vez de empezar de nuevo.
+   */
+  pintarVivas() {
+    const ahora = Date.now();
+    this.vivas = this.vivas.filter((v) => ahora - v.desde < v.ms);
+    if (this.sinMovimiento() || !this.contenedor) return;
+    for (const v of this.vivas) {
+      const el = this.contenedor.querySelector(v.sel);
+      if (!el) continue;
+      el.style.setProperty('--dur', `${v.ms}ms`);
+      el.style.animationDelay = `-${ahora - v.desde}ms`;
+      el.classList.add(v.clase);
+    }
+  },
+
+  /**
+   * Número flotante sobre quien encajó el golpe: «−5» en rojo, «Destruido»,
+   * el reflejo del escudo en dorado sobre QUIEN ATACÓ, y «Sin daño» si el
+   * golpe no hizo nada. Se cuelga directamente del tablero, que pintar() no
+   * reescribe (solo sus paneles), así que no hace falta reaplicarlo.
+   */
+  numerosDeGolpe(g) {
+    const tab = this.contenedor && this.contenedor.querySelector('.mesa-tablero');
+    if (!tab) return;
+    const panelDe = (idx) => idx < 0 ? null
+      : this.contenedor.querySelector(idx === this.yoIdx ? '#panel-jugador' : '#panel-rival');
+    // Sobre la carta si sigue en la mesa; si no, sobre su barra de sangre.
+    const sobre = (idx, uid) => {
+      const p = panelDe(idx);
+      if (!p) return null;
+      return (uid && p.querySelector(`[data-uid-personaje="${uid}"]`))
+        || this.placaDe(idx).querySelector('.sangre-barra') || p;
+    };
+    const poner = (el, texto, clase) => {
+      if (!el) return;
+      const rt = tab.getBoundingClientRect(), re = el.getBoundingClientRect();
+      const n = document.createElement('div');
+      n.className = `numero-golpe ${clase}`;
+      n.textContent = texto;
+      n.style.setProperty('--dur', `${this.MS_NUMERO}ms`);
+      n.style.left = `${re.left - rt.left + tab.scrollLeft + re.width / 2}px`;
+      n.style.top = `${re.top - rt.top + tab.scrollTop + re.height * 0.4}px`;
+      tab.appendChild(n);
+      setTimeout(() => n.remove(), this.MS_NUMERO + 150);
+    };
+
+    const def = sobre(g.defensorIdx, g.destruido ? null : g.defensorUid);
+    if (g.destruido) {
+      poner(def, g.danoSangre > 0 ? `Destruido −${g.danoSangre}` : 'Destruido', 'es-destruido');
+    } else if (g.danoSangre > 0) {
+      poner(def, `−${g.danoSangre}`, 'es-dano');
+    }
+    if (g.danoReflejado > 0) {
+      poner(sobre(g.atacanteIdx, g.atacanteUid), `−${g.danoReflejado} reflejo`, 'es-reflejo');
+    }
+    if (!g.destruido && !g.danoSangre && !g.danoReflejado) {
+      poner(def, 'Sin daño', 'es-nulo');
+    }
+  },
+
+  /**
+   * Los efectos de personaje que el juego aplicó solo (motor.anuncios), como
+   * un rótulo amarillo sobre la carta que sube y se desvanece. Va colgado del
+   * tablero, no de los paneles, para que los repintados no lo corten. Varios a
+   * la vez se escalonan hacia arriba para no pisarse.
+   */
+  MS_ANUNCIO: 2600,
+
+  mostrarAnuncios() {
+    const m = this.motor;
+    const visto = this.anunciosVistos || 0;
+    const nuevos = m.anuncios.filter((a) => a.n > visto);
+    if (m.anuncios.length) this.anunciosVistos = Math.max(visto, m.anuncios[m.anuncios.length - 1].n);
+    if (!nuevos.length) return;
+    nuevos.forEach((a, k) => {
+      const panel = this.contenedor.querySelector(a.jugadorIdx === this.yoIdx ? '#panel-jugador' : '#panel-rival');
+      const el = (a.uid && panel.querySelector(`[data-uid-personaje="${a.uid}"]`)) || panel;
+      this.emergente(a.texto, { sobre: el, escalon: k, ms: this.MS_ANUNCIO });
+    });
+  },
+
+  /** Ancho REAL (en %) de cada tramo de la barra de sangre, antes de repintar. */
+  medirBarras() {
+    const out = {};
+    if (!this.contenedor) return out;
+    for (const id of ['placa-jugador', 'placa-rival']) {
+      const barra = this.contenedor.querySelector(`#${id} .sangre-barra`);
+      // (los ids son los de las placas: la sangre ya no vive en el panel)
+      const total = barra && barra.getBoundingClientRect().width;
+      if (!total) continue;
+      out[id] = [...barra.querySelectorAll('.seg')]
+        .map((s) => (s.getBoundingClientRect().width / total) * 100);
+    }
+    return out;
+  },
+
+  /**
+   * La barra de sangre que BAJA en vez de saltar.
+   *
+   * pintar() rehace el panel, así que la barra nueva nace ya con su ancho
+   * final y el `transition` del CSS nunca llegaba a verse. Aquí se la pone un
+   * instante en el ancho que tenía en pantalla (medido antes de repintar) y se
+   * la deja transicionar hasta el nuevo. Como se mide el ancho REAL, un
+   * repintado a mitad de camino continúa desde donde iba, sin saltos.
+   */
+  animarBarras(antes) {
+    if (this.sinMovimiento()) return;
+    for (const [id, anchos] of Object.entries(antes)) {
+      const segs = [...this.contenedor.querySelectorAll(`#${id} .sangre-barra .seg`)];
+      if (segs.length !== anchos.length) continue;
+      const destino = segs.map((s) => s.style.width);
+      if (segs.every((s, i) => Math.abs(parseFloat(destino[i]) - anchos[i]) < 0.3)) continue;
+      segs.forEach((s, i) => { s.style.transition = 'none'; s.style.width = `${anchos[i]}%`; });
+      void segs[0].offsetWidth;
+      segs.forEach((s, i) => {
+        s.style.transition = `width ${this.MS_SANGRE}ms cubic-bezier(0.2, 0.7, 0.2, 1)`;
+        s.style.width = destino[i];
+      });
+    }
   },
 
   /** Lo que dura el impacto, en ms. Por debajo de `RITMO_IA` (620). */
@@ -1115,7 +2128,7 @@ window.Game.Screens.partida = {
 
     const g = vivo.golpe;
     const panelDe = (idx) =>
-      this.contenedor.querySelector(idx === 0 ? '#panel-jugador' : '#panel-rival');
+      this.contenedor.querySelector(idx === this.yoIdx ? '#panel-jugador' : '#panel-rival');
 
     const arrancar = (el, clase) => {
       if (!el) return;
@@ -1127,6 +2140,30 @@ window.Game.Screens.partida = {
     // La carta que encajó. Si murió ya no está en el DOM: entonces no hay a
     // quién sacudir y queda solo el destello de sangre.
     const panelDef = panelDe(g.defensorIdx);
+
+    // El atacante EMBISTE: se lanza hacia su objetivo —la carta que encajó, o
+    // la placa del rival si fue a la sangre o si el defensor ya cayó— y
+    // vuelve. El rumbo se mide una sola vez, en el primer pintado del golpe,
+    // y se guarda: en los repintados el defensor muerto ya no está.
+    const panelAtk = g.atacanteIdx >= 0 ? panelDe(g.atacanteIdx) : null;
+    const atk = panelAtk && g.atacanteUid
+      && panelAtk.querySelector(`[data-uid-personaje="${g.atacanteUid}"]`);
+    if (atk) {
+      if (!vivo.rumbo) {
+        const objetivo = (panelDef && g.defensorUid
+          && panelDef.querySelector(`[data-uid-personaje="${g.defensorUid}"]`))
+          || this.placaDe(g.defensorIdx).querySelector('.placa');
+        const a = atk.getBoundingClientRect();
+        const o = objetivo ? objetivo.getBoundingClientRect() : a;
+        vivo.rumbo = {
+          dx: (o.left + o.width / 2 - (a.left + a.width / 2)) * 0.55,
+          dy: (o.top + o.height / 2 - (a.top + a.height / 2)) * 0.55
+        };
+      }
+      atk.style.setProperty('--dx', `${Math.round(vivo.rumbo.dx)}px`);
+      atk.style.setProperty('--dy', `${Math.round(vivo.rumbo.dy)}px`);
+      arrancar(atk, 'embiste');
+    }
     if (panelDef && g.defensorUid) {
       arrancar(
         panelDef.querySelector(`[data-uid-personaje="${g.defensorUid}"]`),
@@ -1137,12 +2174,11 @@ window.Game.Screens.partida = {
     // La sangre destella en quien la perdió, que NO siempre es el defensor: el
     // reflejo del escudo sangra a quien atacó. Pueden encenderse los dos lados
     // en el mismo golpe, y es correcto.
-    if (g.danoSangre > 0 && panelDef) {
-      arrancar(panelDef.querySelector('.sangre-barra'), 'sangre-golpeada');
+    if (g.danoSangre > 0 && g.defensorIdx >= 0) {
+      arrancar(this.placaDe(g.defensorIdx).querySelector('.sangre-barra'), 'sangre-golpeada');
     }
-    if (g.danoReflejado > 0) {
-      const panelAtk = panelDe(g.atacanteIdx);
-      if (panelAtk) arrancar(panelAtk.querySelector('.sangre-barra'), 'sangre-golpeada');
+    if (g.danoReflejado > 0 && g.atacanteIdx >= 0) {
+      arrancar(this.placaDe(g.atacanteIdx).querySelector('.sangre-barra'), 'sangre-golpeada');
     }
   },
 
@@ -1163,7 +2199,9 @@ window.Game.Screens.partida = {
 
     const pestana = this.contenedor.querySelector('#pestana-recordatorios');
     if (pestana) {
-      pestana.textContent = lista.length ? `Recordatorios ${lista.length}` : 'Recordatorios';
+      const num = pestana.querySelector('.pestana-num');
+      num.textContent = lista.length || '';
+      num.hidden = !lista.length;
       pestana.classList.toggle('con-pendientes', lista.length > 0);
     }
 
@@ -1180,6 +2218,7 @@ window.Game.Screens.partida = {
             <span class="recordatorio-timing">${r.timing}</span>
             <p>${r.texto}</p>
             <p class="nota">${r.nota}</p>
+            ${this.botonAplicar(r)}
             <button class="recordatorio-hecho" type="button" data-clave="${r.clave}">
               Ya está aplicado
             </button>
@@ -1198,6 +2237,7 @@ window.Game.Screens.partida = {
         this.pintar();
       });
     });
+    this.conectarAplicar(cont);
 
     this.burbujaRecordatorio(lista);
   },
@@ -1208,19 +2248,31 @@ window.Game.Screens.partida = {
    * No pisa al tutorial —que enseña a jugar y va primero— ni interrumpe la
    * cadena de la IA, que se pinta fase a fase.
    */
+  /**
+   * Ya NO es una burbuja con botones que para el juego: es un aviso de una
+   * línea en lo alto de la mesa que se va solo. Lo automatizable ni llega
+   * aquí (se aplica solo, ver autoAplicar); lo que queda es lo que aplicas tú
+   * a mano, y para eso basta con saber que existe: el ⚡ de la carta y la
+   * pestaña de Recordatorios lo guardan. Tocar el aviso abre esa pestaña.
+   */
+  MS_AVISO_RECORDATORIO: 5000,
+
   burbujaRecordatorio(lista) {
-    if (this.burbujaViva) return;
     if (window.Game.Tutorial.activo) return;
 
     // En el turno del rival no se interrumpe la cadena de fases... salvo
     // cuando te ha declarado un ataque: ahí el turno es tuyo de hecho, y es
     // justo el momento en que las defensivas de «Fase de combate» importan.
     const m = this.motor;
-    const defendiendo = !!m.ataquePendiente && m.jugadorActivo.esIA;
-    if (!defendiendo && (this.iaEnCurso || m.jugadorActivo.esIA)) return;
+    const ajeno = m.jugadorActivo !== this.tu();
+    const defendiendo = !!m.ataquePendiente && ajeno;
+    if (!defendiendo && (this.iaEnCurso || ajeno)) return;
 
     const R = window.Game.Recordatorios;
-    const r = lista.find((x) => !R.yaVisto(x.clave));
+    // Las acciones que el juego aplica solo no necesitan aviso: ya ocurrirán.
+    const AI = window.Game.AccionesIA;
+    const r = lista.find((x) => !R.yaVisto(x.clave)
+      && !(x.zona === 'accion' && AI && AI.sabeUsar(x.cartaId)));
     if (!r) return;
 
     const objetivo = this.anclaDe(r);
@@ -1228,30 +2280,21 @@ window.Game.Screens.partida = {
 
     R.marcarVisto(r.clave);
 
-    const burbuja = document.createElement('div');
-    burbuja.className = 'recordatorio-burbuja';
-    burbuja.innerHTML = `
-      <h4>${r.timing}</h4>
-      <p><strong>${r.nombre}</strong></p>
-      <p>${r.texto}</p>
-      <p class="recordatorio-nota">${r.nota}</p>
-      <div class="recordatorio-pie">
-        <button class="recordatorio-luego" type="button">Luego</button>
-        <button class="btn-primario recordatorio-ok" type="button">Ya está</button>
-      </div>
-    `;
-    document.body.appendChild(burbuja);
-    this.burbujaViva = burbuja;
-    window.Game.Tutorial.colocar(burbuja, objetivo);
-
-    const cerrar = (aplicado) => {
-      burbuja.remove();
-      this.burbujaViva = null;
-      if (aplicado) R.descartar(r.clave);
-      this.pintar();
-    };
-    burbuja.querySelector('.recordatorio-ok').addEventListener('click', () => cerrar(true));
-    burbuja.querySelector('.recordatorio-luego').addEventListener('click', () => cerrar(false));
+    const tablero = this.contenedor.querySelector('.mesa-tablero');
+    tablero.querySelector('.recordatorio-aviso')?.remove();
+    const aviso = document.createElement('button');
+    aviso.type = 'button';
+    aviso.className = 'recordatorio-aviso';
+    aviso.title = r.texto;
+    aviso.innerHTML = `<span class="ra-rayo">⚡</span>
+      <strong>${r.nombre}</strong> · ${r.timing} <span class="ra-ver">Ver</span>`;
+    aviso.style.setProperty('--dur', `${this.MS_AVISO_RECORDATORIO}ms`);
+    aviso.addEventListener('click', () => {
+      aviso.remove();
+      this.contenedor.querySelector('#pestana-recordatorios')?.click();
+    });
+    tablero.appendChild(aviso);
+    setTimeout(() => aviso.remove(), this.MS_AVISO_RECORDATORIO);
   },
 
   /** La carta a la que se ancla la burbuja, según de dónde salga el aviso. */
@@ -1269,6 +2312,7 @@ window.Game.Screens.partida = {
 
   limpiarBurbujaRecordatorio() {
     document.querySelectorAll('.recordatorio-burbuja').forEach((b) => b.remove());
+    this.contenedor?.querySelector('.recordatorio-aviso')?.remove();
     this.burbujaViva = null;
   },
 
@@ -1281,7 +2325,9 @@ window.Game.Screens.partida = {
   pintarHerramientas() {
     const m = this.motor;
     const cont = this.contenedor.querySelector('#herramientas');
-    if (!cont) return;
+    // En remoto no hay Herramientas: todas las cartas se aplican solas y nadie
+    // toca la mesa del otro a mano.
+    if (!cont || this.remoto) return;
 
     // El panel se repinta en cada cambio de estado; sin esto perderías la
     // selección a media jugada.
@@ -1294,7 +2340,7 @@ window.Game.Screens.partida = {
       dado: cont.querySelector('#h-dado')?.textContent
     };
 
-    const [humano, rival] = m.jugadores;
+    const humano = this.tu(), rival = this.suyo();
     const M = window.Game.Manual;
 
     // Todas las cartas en posición, de ambos lados, para elegir objetivo.
@@ -1571,7 +2617,7 @@ window.Game.Screens.partida = {
       });
     });
 
-    const rival = m.jugadores[1];
+    const rival = this.suyo();
     cont.querySelector('[data-revelar]').addEventListener('click', () => {
       const sel = cont.querySelector('#h-carta');
       if (sel && sel.value) M.revelar(m, rival, sel.value, 'efecto manual');
@@ -1595,93 +2641,6 @@ window.Game.Screens.partida = {
 
   /* ------------------------- Combate en dos pasos ------------------------ */
 
-  /** Paso 1: eliges quién golpea y a quién, y declaras. */
-  cuerpoDeclararAtaque(humano, rival) {
-    const m = this.motor;
-    const listos = m.atacantesDisponibles(humano);
-
-    if (!listos.length) {
-      return `<p class="nota">${
-        humano.activos.length
-          ? 'Ninguno de tus personajes puede atacar ya este turno.'
-          : 'No tienes personajes en posición.'
-      }</p>`;
-    }
-
-    const nombre = (i) => window.Game.CHARACTERS_BY_ID[i.personaje].nombre;
-
-    const atacantes = listos
-      .map(
-        (i) =>
-          `<option value="${i.uid}">${nombre(i)} · ⚔ ${window.Game.Combat.ataqueEfectivo(
-            i
-          )}</option>`
-      )
-      .join('');
-
-    const objetivos = rival.activos.length
-      ? rival.activos
-          .map((i) => {
-            const postura = window.Game.Combat.postura(i);
-            const valor =
-              postura === 'ofensiva'
-                ? `⚔ ${window.Game.Combat.ataqueEfectivo(i)}`
-                : postura === 'defensiva'
-                  ? `🛡 ${window.Game.Combat.defensaEfectiva(i)}`
-                  : 'neutral';
-            // Un Eternal con esbirros vivos no es alcanzable: al declarar se
-            // interpone uno de ellos. Se avisa aquí para que el cambio de
-            // objetivo no parezca un fallo del juego.
-            const cubierto = m.eternalProtegido(rival, i);
-            return `<option value="${i.uid}">${nombre(i)} · ${valor}${
-              cubierto ? ' — cubierto por sus esbirros' : ''
-            }</option>`;
-          })
-          .join('')
-      : '<option value="">Campo vacío — daño directo</option>';
-
-    return `
-      <div class="controles-titulo">
-        Declara un ataque
-        ${listos.length > 1 ? `<span class="controles-pista">${listos.length} listos</span>` : ''}
-      </div>
-      <div class="ataque-selectores">
-        <label>Atacante <select id="sel-atacante">${atacantes}</select></label>
-        <span class="ataque-flecha">→</span>
-        <label>Objetivo <select id="sel-objetivo">${objetivos}</select></label>
-        <button class="btn-primario" id="btn-declarar">Declarar</button>
-      </div>`;
-  },
-
-  /**
-   * Paso 2: el ataque está declarado pero sin resolver. Aquí se ve la
-   * previsión en vivo, que cambia según apliques efectos desde Herramientas.
-   */
-  /**
-   * Qué activó la IA para ESTE ataque, si activó algo. Vive en la ventana de
-   * «ataque pendiente» —siempre visible mientras hay un ataque sin resolver—
-   * a propósito: es lo único de la mesa que no desaparece detrás de otra
-   * pestaña justo cuando declaran un ataque, así que es el único sitio donde
-   * un dado que cayó en «sin bonus» se distingue de una carta que no hizo
-   * nada. Lee `motor.ultimosEfectosIA.combate`, que pone `AccionesIA.aplicar()`.
-   */
-  efectoIAParaEsteAtaque(imp) {
-    const m = this.motor;
-    const e = (m.ultimosEfectosIA || {}).combate;
-    if (!e || e.turno !== m.numeroTurno) return '';
-    const implicado = [imp.atacante, imp.defensor]
-      .filter(Boolean)
-      .some((i) => i.uid === e.uid);
-    if (!implicado) return '';
-
-    return `
-      <div class="ap-efecto-ia">
-        <span class="ap-efecto-ia-titulo">✦ ${e.nombre} (IA)</span>
-        ${this.lineasDeEfecto(e).map((l) => `<span>${l}</span>`).join('')}
-      </div>
-    `;
-  },
-
   /**
    * Lo que la IA acaba de activar al ACOPLAR una carta.
    *
@@ -1701,7 +2660,7 @@ window.Game.Screens.partida = {
    */
   avisoEfectoEquipado() {
     const m = this.motor;
-    if (m.terminada || !m.jugadorActivo.esIA) return '';
+    if (m.terminada || m.jugadorActivo === this.tu()) return '';
     const e = (m.ultimosEfectosIA || {}).equipar;
     // El turno acota la vigencia sola: `numeroTurno` sube en cada turno de
     // cada bando, así que al pasar a tu turno el aviso se apaga sin borrarlo.
@@ -1728,123 +2687,6 @@ window.Game.Screens.partida = {
       .filter(Boolean);
   },
 
-  cuerpoAtaquePendiente() {
-    const m = this.motor;
-    const imp = m.implicadosAtaque();
-    const prev = m.previsionAtaque();
-    if (!imp || !prev) return '<p class="nota">Ataque inválido.</p>';
-
-    const nombre = (i) => window.Game.CHARACTERS_BY_ID[i.personaje].nombre;
-
-    // El mismo resultado se lee al revés según ataques o te ataquen.
-    const defiendo = m.jugadorActivo !== m.jugadores[0];
-    const veredicto = defiendo
-      ? {
-          choque_ganado: ['mal', 'Pierdes al defensor y te pasan daño'],
-          defensa_rota: ['mal', 'Rompen tu defensa: pierdes al defensor'],
-          atraviesa: ['mal', 'El golpe te atraviesa: todo a tu sangre'],
-          directo: ['mal', 'Daño directo a tu sangre'],
-          // Te atacan y tu escudo aguanta: el reflejo sangra a QUIEN ATACÓ.
-          escudo_refleja: ['bien', 'Tu escudo aguanta y le devuelve el golpe'],
-          fallido: ['bien', 'Aguantas: su ataque falla'],
-          sin_ataque: ['bien', 'No tiene ataque activado']
-        }[prev.resultado] || ['duda', prev.resultado]
-      : {
-          choque_ganado: ['bien', 'Destruyes al defensor y pasas daño'],
-          defensa_rota: ['bien', 'Destruyes al defensor, sin daño a la sangre'],
-          atraviesa: ['bien', 'El golpe lo atraviesa: todo a la sangre'],
-          directo: ['bien', 'Daño directo a la sangre'],
-          escudo_refleja: ['mal', 'Su escudo te supera: te devuelve el golpe'],
-          fallido: ['mal', 'Ataque fallido: nadie muere'],
-          sin_ataque: ['mal', 'Sin ataque activado']
-        }[prev.resultado] || ['duda', prev.resultado];
-
-    // El rótulo va DENTRO del bloque, no en una `.controles-titulo` propia:
-    // esa fila suelta costaba ~23 px de pie, que salen del tablero y lo
-    // obligaban a desplazarse justo cuando más falta hace verlo entero. La
-    // pista de «puedes responder» se cayó a propósito por redundante: cuando
-    // hay algo que aplicar, la tira de abajo ya se titula «Puedes responder
-    // con»; y cuando no lo hay, no había nada que anunciar.
-    return `
-      <div class="ataque-pendiente">
-        <span class="ap-rotulo">
-          ${defiendo ? 'Te atacan' : 'Ataque declarado'}
-          <em>sin resolver</em>
-        </span>
-        <div class="ap-lado">
-          <strong>${nombre(imp.atacante)}</strong>
-          <span class="ap-valor atk">⚔ ${prev.atacanteValor}</span>
-        </div>
-        <span class="ataque-flecha">vs</span>
-        <div class="ap-lado">
-          <strong>${imp.defensor ? nombre(imp.defensor) : 'Sangre rival'}</strong>
-          <span class="ap-valor def">${
-            imp.defensor ? prev.defensorValor : '—'
-          }</span>
-        </div>
-        <div class="ap-veredicto ${veredicto[0]}">
-          ${veredicto[1]}
-          ${prev.danoSangre > 0 ? `<span class="ap-dano">${prev.danoSangre} de daño</span>` : ''}
-          ${
-            // El reflejo se marca aparte y con su etiqueta: va contra el
-            // atacante, al revés que el resto del daño, y confundirlos sería
-            // leer el combate del lado equivocado.
-            prev.danoReflejado > 0
-              ? `<span class="ap-dano es-reflejo">${prev.danoReflejado} reflejado al atacante</span>`
-              : ''
-          }
-        </div>
-        ${this.efectoIAParaEsteAtaque(imp)}
-        ${this.bloqueRespuesta(defiendo)}
-        <div class="ap-botones">
-          <button class="btn-primario" id="btn-resolver">
-            ${defiendo ? 'Encajar el golpe' : 'Resolver'}
-          </button>
-          ${
-            // Solo puedes retirar TU propio ataque, no el del rival.
-            defiendo
-              ? ''
-              : '<button class="btn-secundario" id="btn-cancelar-ataque">Retirar</button>'
-          }
-        </div>
-      </div>`;
-  },
-
-  /**
-   * Lo que puedes aplicar sin salir de la ventana del ataque.
-   *
-   * Antes esto solo vivía en la pestaña de Recordatorios y el rótulo te
-   * mandaba «a Herramientas», que además está oculta detrás de otra pestaña:
-   * defenderse exigía adivinar dónde mirar mientras un golpe esperaba sin
-   * resolverse. Aquí van el texto impreso y el atajo al panel.
-   */
-  bloqueRespuesta(defiendo) {
-    const lista = this.recordatorios || [];
-    if (!lista.length) return '';
-
-    return `
-      <div class="ap-respuesta">
-        <span class="ap-respuesta-titulo">
-          ${defiendo ? 'Puedes responder con' : 'Por aplicar'}
-        </span>
-        ${lista
-          .map(
-            (r) => `
-          <span class="ap-respuesta-carta" title="${r.texto.replace(/"/g, '&quot;')}">
-            <strong>${r.nombre}</strong>
-            <span class="recordatorio-timing">${r.timing}</span>
-            <button class="recordatorio-hecho" type="button" data-clave="${r.clave}">
-              ya está
-            </button>
-          </span>`
-          )
-          .join('')}
-        <button class="ap-abrir-herramientas" type="button" id="btn-abrir-herramientas">
-          Herramientas →
-        </button>
-      </div>`;
-  },
-
   /**
    * Al declararse un ataque contra ti, saca la pestaña de Recordatorios sin
    * que tengas que buscarla: ahí está el texto impreso entero, que en la tira
@@ -1854,7 +2696,7 @@ window.Game.Screens.partida = {
    */
   abrirRecordatoriosSiTeAtacan() {
     const m = this.motor;
-    if (!m.ataquePendiente || !m.jugadorActivo.esIA) {
+    if (!m.ataquePendiente || m.jugadorActivo === this.tu()) {
       this.ataqueAnunciado = null;
       return;
     }
@@ -1875,159 +2717,314 @@ window.Game.Screens.partida = {
     this.contenedor.querySelector('[data-panel="recordatorios"]')?.click();
   },
 
-  /** Conecta los botones del bloque de respuesta, en cualquiera de sus sitios. */
-  conectarRespuesta(cont) {
-    cont.querySelectorAll('.recordatorio-hecho').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        window.Game.Recordatorios.descartar(btn.dataset.clave);
-        this.pintar();
+  /**
+   * ¿Este recordatorio se puede aplicar con un clic? Solo las cartas de ACCIÓN
+   * cuyo efecto ya sabe aplicar el juego (las mismas que usa la IA), y solo
+   * cuando aplicarlas tiene sentido: una defensiva de combate gastada fuera de
+   * un ataque no haría nada, así que el botón no se ofrece. En los demás casos
+   * queda el «ya está» y Herramientas, como siempre.
+   */
+  instParaAplicar(r) {
+    const m = this.motor;
+    if (!m || m.terminada || r.zona !== 'accion') return null;
+    const AI = window.Game.AccionesIA;
+    if (!AI || !AI.sabeUsar(r.cartaId) || m.accionesNegadas) return null;
+    const humano = this.tu();
+    const inst = humano.activos.find((i) => i.uid === r.uid && i.accion === r.cartaId);
+    if (!inst) return null;
+
+    const accion = window.Game.ACTIONS_BY_ID[r.cartaId];
+    if (AI.momentoDe(accion) === 'combate') {
+      const teAtacan = !!m.ataquePendiente && m.jugadorActivo !== humano;
+      if (accion.tipo === 'defensiva') {
+        const imp = teAtacan ? m.implicadosAtaque() : null;
+        if (!imp || !imp.defensor || imp.defensor.uid !== inst.uid) return null;
+      } else if (m.jugadorActivo !== humano || m.fase !== 'ataque') {
+        return null;
+      }
+    }
+    return inst;
+  },
+
+  botonAplicar(r) {
+    if (!this.instParaAplicar(r)) return '';
+    return `<button class="recordatorio-aplicar" type="button" data-clave="${r.clave}"
+                    title="Aplica el efecto impreso de la carta y lo deja en el registro">
+              Aplicar
+            </button>`;
+  },
+
+  /**
+   * Tus cartas de acción automatizadas se aplican SOLAS en su momento, igual
+   * que las de la IA: la ofensiva de combate al declarar tu ataque, la
+   * defensiva cuando te atacan a esa carta, la de «Acción equipada» al
+   * acoplarla. Antes salía una burbuja preguntando «¿aplicar?» por un efecto
+   * que es obligatorio. Las que el juego no sabe aplicar siguen siendo tuyas.
+   * Devuelve si aplicó algo (y por tanto ya repintó).
+   */
+  autoAplicar() {
+    if (this.aplicando) return false;
+    // Con una elección en el aire (Seluah, Yun…), nada se aplica encima: una
+    // segunda pregunta pisaría a la primera.
+    if (this.motor.eleccionPendiente) return false;
+    const m = this.motor;
+    const humano = this.tu();
+    for (const r of this.recordatorios || []) {
+      const inst = this.instParaAplicar(r);
+      if (!inst) continue;
+      const accion = window.Game.ACTIONS_BY_ID[r.cartaId];
+      const deCombate = window.Game.AccionesIA.momentoDe(accion) === 'combate';
+      // Tu ofensiva espera a que declares: aplicarla al entrar en la fase
+      // gastaría el dado antes de saber a quién atacas.
+      if (deCombate && accion.tipo !== 'defensiva'
+          && !(m.ataquePendiente && m.jugadorActivo === humano)) continue;
+      // Y la defensiva, cuando ya te han declarado el ataque: Escape, Campo
+      // caótico o Biomecánica necesitan saber quién te pega.
+      if (deCombate && accion.tipo === 'defensiva'
+          && !(m.ataquePendiente && m.jugadorActivo !== humano)) continue;
+      this.aplicarRecordatorio(r.clave);
+      return true;
+    }
+    return false;
+  },
+
+  /** Aplica la carta del recordatorio con el mismo código que usa la IA. */
+  aplicarRecordatorio(clave) {
+    const m = this.motor;
+    const r = (this.recordatorios || []).find((x) => x.clave === clave);
+    const inst = r && this.instParaAplicar(r);
+    if (!inst) return;
+    const humano = this.tu(), rival = this.suyo();
+
+    // Contexto que necesitan las de combate: a quién atacas, o quién te ataca.
+    const contexto = { defensor: rival };
+    if (m.ataquePendiente && m.jugadorActivo !== humano) {
+      const imp = m.implicadosAtaque();
+      Object.assign(contexto, {
+        atacanteInst: imp && imp.atacante,
+        atacanteJugador: m.jugadorActivo,
+        atacante: m.jugadorActivo
       });
-    });
-    cont.querySelector('#btn-abrir-herramientas')?.addEventListener('click', () => {
-      this.contenedor.querySelector('[data-panel="herramientas"]')?.click();
+    }
+    // Se da por hecho ANTES de aplicar: el dado del efecto notifica al motor y
+    // repinta a mitad, y ese repintado —con autoAplicar— la volvía a aplicar
+    // en cadena. Por lo mismo, el cerrojo. También evita el doble clic.
+    window.Game.Recordatorios.descartar(clave);
+    this.aplicando = true;
+    try {
+      // En el invitado la aplica el anfitrión, con el mismo código.
+      if (m.esEspejo) m.intento('aplicar', inst, r.cartaId);
+      else window.Game.AccionesIA.aplicarManual(m, humano, inst, contexto);
+    } finally {
+      this.aplicando = false;
+    }
+    this.pintar();
+  },
+
+  conectarAplicar(cont) {
+    cont.querySelectorAll('.recordatorio-aplicar').forEach((btn) => {
+      btn.addEventListener('click', () => this.aplicarRecordatorio(btn.dataset.clave));
     });
   },
 
   /* ---------------------------- Controles ------------------------------ */
 
+  /**
+   * Ya NO hay barra inferior. Lo que hay que ELEGIR va en tu «mano», dentro de
+   * tu lado de la mesa (a la derecha de tu carta, como el «Esperando» de la
+   * oleada en el suyo): los de la reserva en la fase de personaje, las
+   * acciones libres en la de acción y, fuera de esas fases, la reserva a la
+   * vista sin poder pulsarla. Los botones viven en la banda central: ⚔ Atacar
+   * o Resolver/Retirar en #mesa-atacar y Siguiente fase en #mesa-avanzar. Todo
+   * lo demás se cuenta con mensajes emergentes que se desvanecen (emergente).
+   * #mesa-controles es ahora la mano y va dentro del panel, que pintar()
+   * rehace justo antes de llamar aquí.
+   */
   pintarControles() {
     const m = this.motor;
-    const cont = this.contenedor.querySelector('#mesa-controles');
-    const humano = m.jugadores[0];
+    const c = this.contenedor;
+    const mano = c.querySelector('#mesa-controles');
+    const manoAcciones = c.querySelector('#mano-acciones');
+    const slotAtacar = c.querySelector('#mesa-atacar');
+    const slotAvanzar = c.querySelector('#mesa-avanzar');
+    const humano = this.tu();
+    const miTurno = m.jugadorActivo === humano;
 
     if (m.terminada) {
-      cont.innerHTML = '';
+      mano.innerHTML = '';
+      manoAcciones.innerHTML = '';
+      slotAtacar.innerHTML = '';
+      slotAvanzar.innerHTML = '';
       return;
     }
 
-    if (m.jugadorActivo !== humano) {
-      // Te está atacando: puedes defenderte antes de que se resuelva.
-      if (m.ataquePendiente) {
-        cont.innerHTML = `<div class="controles-cuerpo">${this.cuerpoAtaquePendiente()}</div>`;
-        cont.querySelector('#btn-resolver')?.addEventListener('click', () => {
-          m.resolverAtaque();
-        });
-        this.conectarRespuesta(cont);
-        return;
-      }
-      cont.innerHTML = '<p class="nota">Turno del rival…</p>';
-      return;
-    }
-
-    let cuerpo = '';
-
-    if (m.fase === 'personaje') {
-      // Sin atributo `disabled`: así las cartas inasequibles siguen
-      // respondiendo al hover y pueden verse en la lupa.
-      const opciones = humano.reserva
-        .map((i) => {
-          const p = window.Game.CHARACTERS_BY_ID[i.personaje];
-          const puede = m.puedeDesplegar(humano, i);
-          return `
-            <button class="opcion-carta ${puede ? '' : 'inasequible'}"
-                    data-uid="${i.uid}"
-                    data-lupa="${p.imagen}" data-lupa-nombre="${p.nombre}"
-                    title="${
-                      puede
-                        ? p.nombre
+    // --- La mano: personajes a la izquierda, acciones a la derecha ----------
+    // Con una pregunta tuya en el aire (Erem, Tilos…) el motor no deja jugar
+    // cartas: la mano se apaga para no parecer jugable (Oscar: «no puedo
+    // clicar la acción» contra el jefe, con la pregunta de Erem esperando).
+    const preguntaTuya = !!(m.eleccionPendiente && m.eleccionPendiente.jugadorIdx === this.yoIdx);
+    const eligePersonaje = miTurno && m.fase === 'personaje' && !preguntaTuya;
+    // Sin atributo disabled, para que las apagadas sigan respondiendo a la lupa.
+    mano.innerHTML = humano.reserva
+      .map((i) => {
+        const p = window.Game.CHARACTERS_BY_ID[i.personaje];
+        const puede = eligePersonaje && !m.desplegoEsteTurno && m.puedeDesplegar(humano, i);
+        return `
+          <button class="opcion-carta ${puede ? '' : 'inasequible'} ${eligePersonaje ? '' : 'pasiva'}"
+                  data-uid="${i.uid}"
+                  data-lupa="${p.imagen}" data-lupa-nombre="${p.nombre}"
+                  title="${
+                    !eligePersonaje || puede
+                      ? p.nombre
+                      : m.desplegoEsteTurno
+                        ? `${p.nombre} — ya desplegaste este turno`
                         : `${p.nombre} — necesitas ${p.coste} sangres derramadas`
-                    }">
-              <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
-              <span class="opcion-coste">${p.coste}</span>
-              <span class="opcion-stats">⚔${p.ataque} 🛡${p.defensa}</span>
-            </button>`;
-        })
-        .join('');
-      // Con alguien ya en posición, su efecto de «En posición» toca aplicarlo
-      // ahora desde Herramientas: el motor no lo ejecuta por su cuenta.
-      cuerpo = `
-        <div class="controles-titulo">
-          Pon o cambia tu personaje activo
-          <span class="controles-pista">energía disponible: ${m.energiaDe(humano)}</span>
-          ${
-            humano.activos.length
-              ? '<span class="controles-pista">activa efectos y resuelve</span>'
-              : ''
-          }
-        </div>
-        <div class="controles-opciones">${opciones || '<p class="nota">Sin reservas.</p>'}</div>`;
-    } else if (m.fase === 'accion') {
-      if (!humano.activos.length) {
-        cuerpo = '<p class="nota">Necesitas un personaje activo para acoplar una acción.</p>';
-      } else {
-        const opciones = m
-          .accionesDisponibles(humano)
-          .map((id) => window.Game.ACTIONS_BY_ID[id])
-          .map((a) => {
-            const inerte = a.razaRequerida && a.razaRequerida !== humano.raza;
-            return `
-            <button class="opcion-carta accion tipo-${a.tipo} ${inerte ? 'inerte' : ''}"
-                    data-accion="${a.id}"
-                    data-lupa="${a.imagen}" data-lupa-nombre="${a.nombre}"
-                    title="${a.nombre}${inerte ? ' — exige otra raza' : ''}">
-              <img src="${a.imagen}" alt="${a.nombre}" loading="lazy">
-              <span class="opcion-tipo tipo-${a.tipo}">${a.tipo[0].toUpperCase()}</span>
-            </button>`;
-          })
-          .join('');
-        // Igual que arriba: con una acción ya acoplada, su efecto impreso
-        // espera a que lo apliques tú.
-        const yaAcoplada = humano.activos.some((i) => i.accion);
-        cuerpo = `
-          <div class="controles-titulo">
-            Acopla una acción
-            ${
-              yaAcoplada
-                ? '<span class="controles-pista">activa efectos y resuelve</span>'
-                : ''
-            }
-          </div>
-          <div class="controles-opciones">${opciones}</div>`;
-      }
-    } else if (m.fase === 'ataque') {
-      cuerpo = m.ataquePendiente
-        ? this.cuerpoAtaquePendiente()
-        : this.cuerpoDeclararAtaque(humano, m.jugadores[1]);
-    } else {
-      cuerpo = '<p class="nota">Al cerrar el turno, ambos derramáis 1 sangre.</p>';
+                  }">
+            <img src="${p.imagen}" alt="${p.nombre}" loading="lazy">
+            <span class="opcion-coste">${p.coste}</span>
+            <span class="opcion-stats">⚔${p.ataque} 🛡${p.defensa}</span>
+            ${this.chipsEstado(i)}
+          </button>`;
+      })
+      .join('');
+
+    const eligeAccion = miTurno && m.fase === 'accion' && humano.activos.length > 0 && !preguntaTuya;
+    manoAcciones.innerHTML = m
+      .accionesDisponibles(humano)
+      .map((id) => window.Game.ACTIONS_BY_ID[id])
+      .map((a) => {
+        const inerte = a.razaRequerida && a.razaRequerida !== humano.raza;
+        return `
+        <button class="opcion-carta accion tipo-${a.tipo} ${inerte ? 'inerte' : ''} ${eligeAccion ? '' : 'pasiva'}"
+                data-accion="${a.id}"
+                data-lupa="${a.imagen}" data-lupa-nombre="${a.nombre}"
+                title="${a.nombre}${inerte ? ' — exige otra raza' : ''}">
+          <img src="${a.imagen}" alt="${a.nombre}" loading="lazy">
+          <span class="opcion-tipo tipo-${a.tipo}">${a.tipo[0].toUpperCase()}</span>
+        </button>`;
+      })
+      .join('');
+
+    // En abanico: cada carta se gira un poco desde el centro y baja según se
+    // aleja de él, como sostenidas en la mano. El orden de apilado sube hacia
+    // la derecha para que se lea el borde de cada una.
+    for (const caja of [mano, manoAcciones]) {
+      const cartas = [...caja.children];
+      const medio = (cartas.length - 1) / 2;
+      cartas.forEach((el, i) => {
+        const d = i - medio;
+        el.style.setProperty('--giro', `${(d * 6).toFixed(1)}deg`);
+        el.style.setProperty('--alto', `${(Math.abs(d) * Math.abs(d) * 2.2).toFixed(1)}px`);
+        el.style.zIndex = i + 1;
+      });
     }
-
-    const etiquetaAvance =
-      m.fase === 'fin' ? 'Finalizar turno' : 'Siguiente fase →';
-    // Con un ataque declarado no se avanza: primero resuélvelo o retíralo.
-    const avanceBloqueado = !!m.ataquePendiente;
-
-    cont.innerHTML = `
-      <div class="controles-cuerpo">${cuerpo}</div>
-      <button class="btn-primario" id="btn-avanzar" ${
-        avanceBloqueado ? 'disabled title="Resuelve o retira el ataque declarado"' : ''
-      }>${etiquetaAvance}</button>
-    `;
-
-    cont.querySelectorAll('[data-uid]').forEach((el) => {
+    mano.closest('.mano').classList.toggle('eligiendo', eligePersonaje && !m.desplegoEsteTurno);
+    // Lo que antes decía el pie: cuánta energía tienes. Sin ella no se entiende
+    // por qué unas cartas salen apagadas (coste mayor que tu energía).
+    mano.closest('.mano').querySelector('.mano-titulo').textContent = eligePersonaje
+      ? (m.desplegoEsteTurno ? 'Personajes · ya desplegaste' : `Personajes · energía ${m.energiaDe(humano)}`)
+      : 'Personajes';
+    manoAcciones.closest('.mano').classList.toggle('eligiendo', eligeAccion);
+    mano.querySelectorAll('[data-uid]').forEach((el) => {
       el.addEventListener('click', () => {
-        if (el.classList.contains('inasequible')) return;
+        if (preguntaTuya) return this.recordarEleccion();
+        if (el.classList.contains('inasequible') || el.classList.contains('pasiva')) return;
         m.desplegar(el.dataset.uid);
       });
     });
-    cont.querySelectorAll('[data-accion]').forEach((el) => {
-      el.addEventListener('click', () => m.equipar(el.dataset.accion));
+    manoAcciones.querySelectorAll('[data-accion]').forEach((el) => {
+      el.addEventListener('click', () => {
+        if (preguntaTuya) return this.recordarEleccion();
+        if (el.classList.contains('pasiva')) return;
+        m.equipar(el.dataset.accion);
+      });
     });
-    cont.querySelector('#btn-declarar')?.addEventListener('click', () => {
-      const a = cont.querySelector('#sel-atacante')?.value || null;
-      const d = cont.querySelector('#sel-objetivo')?.value || null;
-      m.declararAtaque(a, d || null);
-    });
-    cont.querySelector('#btn-resolver')?.addEventListener('click', () => {
-      m.resolverAtaque();
-    });
-    cont.querySelector('#btn-cancelar-ataque')?.addEventListener('click', () => {
-      m.cancelarAtaque();
-    });
-    cont.querySelector('#btn-avanzar').addEventListener('click', () => {
-      m.siguienteFase();
-    });
-    this.conectarRespuesta(cont);
+
+    // --- La banda central --------------------------------------------------
+    if (m.ataquePendiente) {
+      const defiendo = !miTurno;
+      const etiqueta = defiendo ? 'Encajar' : 'Resolver';
+      slotAtacar.innerHTML = `
+        <button class="btn-primario btn-banda" id="btn-resolver" data-etiqueta="${etiqueta}">${etiqueta}</button>
+        ${defiendo ? '' : '<button class="btn-secundario btn-banda" id="btn-cancelar-ataque">Retirar</button>'}`;
+      slotAtacar.querySelector('#btn-resolver').addEventListener('click', () => m.resolverAtaque());
+      slotAtacar.querySelector('#btn-cancelar-ataque')?.addEventListener('click', () => m.cancelarAtaque());
+    } else {
+      slotAtacar.innerHTML = this.botonAtacarMesa();
+    }
+
+    slotAvanzar.innerHTML = miTurno
+      ? `<button class="btn-primario btn-banda" id="btn-avanzar" ${
+          m.ataquePendiente ? 'disabled title="Resuelve o retira el ataque declarado"' : ''
+        }>${this.etiquetaAvanzar()}</button>`
+      : '';
+    slotAvanzar.querySelector('#btn-avanzar')?.addEventListener('click', () => m.siguienteFase());
+
+    this.avisarFase();
+  },
+
+  /**
+   * Mensaje emergente genérico: un rótulo que aparece, sube un poco y se
+   * desvanece, colgado del tablero (no de los paneles, que se rehacen). Si se
+   * da un elemento, sale sobre él; si no, en el centro de la banda.
+   * `clase`: 'efecto' (amarillo, lo aplicado solo), 'fase' (indicación),
+   * 'combate' (el golpe declarado).
+   */
+  MS_EMERGENTE: 2200,
+
+  emergente(texto, { sobre = null, clase = 'efecto', escalon = 0, ms = this.MS_EMERGENTE } = {}) {
+    const tab = this.contenedor && this.contenedor.querySelector('.mesa-tablero');
+    if (!tab) return;
+    // Los del centro de la banda se relevan: el nuevo quita al anterior en
+    // vez de pisarlo. Los de sobre una carta conviven (van escalonados).
+    if (!sobre) tab.querySelectorAll('.anuncio-efecto.en-banda').forEach((x) => x.remove());
+    // Los de la banda salen un poco por ENCIMA de ella, sobre la previsión:
+    // justo en la banda taparían Resolver y Siguiente fase.
+    const el = sobre || this.contenedor.querySelector('#mesa-veredicto') || this.contenedor.querySelector('.mesa-centro');
+    const rt = tab.getBoundingClientRect();
+    const re = el.getBoundingClientRect();
+    const n = document.createElement('div');
+    n.className = `anuncio-efecto es-${clase}${sobre ? '' : ' en-banda'}`;
+    n.textContent = texto;
+    n.style.setProperty('--dur', `${ms}ms`);
+    n.style.left = `${re.left - rt.left + tab.scrollLeft + re.width / 2}px`;
+    n.style.top = `${re.top - rt.top + tab.scrollTop + (sobre ? re.height * 0.15 : -26) - escalon * 30}px`;
+    tab.appendChild(n);
+    setTimeout(() => n.remove(), ms + 150);
+  },
+
+  /**
+   * Lo que antes decía el pie, ahora como emergente: qué toca en esta fase.
+   * Una vez por fase, solo en tu turno y solo si la fase pide algo (si ya
+   * está hecha, avanza sola y el mensaje sobraría).
+   */
+  TEXTO_FASE: {
+    personaje: 'Elige quién entra en posición',
+    accion: 'Acopla una acción a tu personaje',
+    ataque: 'Pulsa ⚔ Atacar o pasa de fase'
+  },
+
+  avisarFase() {
+    const m = this.motor;
+    if (m.jugadorActivo !== this.tu() || m.ataquePendiente) return;
+    const clave = `${m.numeroTurno}:${m.fase}`;
+    if (this.faseAvisada === clave) return;
+    this.faseAvisada = clave;
+    let texto = this.TEXTO_FASE[m.fase];
+    const etiqueta = this.etiquetaAvanzar();
+    if (etiqueta.startsWith('Mantener posición')) texto = 'Cambia a tu personaje o mantén la posición';
+    if (etiqueta.startsWith('Mantener acción')) texto = 'Cambia la acción o mantenla';
+    // Primer turno de quien abre: no se ataca. Se dice, o parecería un fallo.
+    if (m.fase === 'ataque' && m.numeroTurno === 1) texto = 'Primer turno: todavía no se puede atacar';
+    if (!texto || (this.faseCumplida() && !(m.fase === 'ataque' && m.numeroTurno === 1))) return;
+    if (m.fase === 'ataque' && m.numeroTurno !== 1 && !m.atacantesDisponibles(this.tu()).length) return;
+    // Al abrir el turno sale antes el aviso «Tu turno» en el mismo sitio: se
+    // espera a que se vaya, y si para entonces la fase ya cambió, no sale.
+    const espera = m.fase === 'personaje' ? 1200 : 0;
+    setTimeout(() => {
+      if (this.motor !== m || `${m.numeroTurno}:${m.fase}` !== clave || m.ataquePendiente) return;
+      this.emergente(texto, { clase: 'fase' });
+    }, espera);
   },
 
   /** Cuenta la partida y, si era un capítulo ganado, desbloquea el siguiente. */
@@ -2065,8 +3062,8 @@ window.Game.Screens.partida = {
           `mientras nada los devuelva.`;
     }
     return gano
-      ? `${quien} derramó sus 30 sangres.`
-      : `Derramaste tus 30 sangres.`;
+      ? `${quien} derramó todas sus sangres.`
+      : `Derramaste tus ${this.tu().sangreTotal} sangres.`;
   },
 
   /**
@@ -2106,7 +3103,7 @@ window.Game.Screens.partida = {
 
   pintarFin() {
     const m = this.motor;
-    const gano = m.ganador === m.jugadores[0];
+    const gano = m.ganador === this.tu();
     this.registrarResultado(gano);
 
     // La cinemática de la etapa superada va ANTES del cartel de Victoria: se
@@ -2125,6 +3122,10 @@ window.Game.Screens.partida = {
 
     const el = this.contenedor.querySelector('#mesa-fin');
     el.classList.remove('oculto');
+    if (this.remoto) {
+      this.finRemoto(el, gano);
+      return;
+    }
     // Al superar una etapa del calabozo se muestra la recompensa narrada.
     const recompensa =
       gano && this.etapa && this.etapa.recompensa
@@ -2158,7 +3159,7 @@ window.Game.Screens.partida = {
           })()
         : '';
 
-    const volverA = this.params.modo === 'historia' ? 'historia' : 'mainMenu';
+    const volverA = this.params.modo === 'historia' ? 'historia' : this.remoto ? 'remoto' : 'mainMenu';
 
     el.innerHTML = `
       <div class="fin-caja">
@@ -2169,7 +3170,7 @@ window.Game.Screens.partida = {
         <p class="fin-motivo">${this.textoMotivo(gano)}</p>
         ${recompensa}
         <button class="btn-primario" id="btn-fin-menu">
-          ${volverA === 'historia' ? 'Seguir la historia' : 'Volver al menú'}
+          ${volverA === 'historia' ? 'Seguir la historia' : volverA === 'remoto' ? 'Salir de la sala' : 'Volver al menú'}
         </button>
       </div>
     `;
@@ -2180,11 +3181,28 @@ window.Game.Screens.partida = {
 
   destruir() {
     clearTimeout(this.temporizador);
+    clearTimeout(this.temporizadorJefe);
+    // Una cuenta atrás de fase pendiente no puede disparar sobre otra pantalla.
+    this.cancelarAvance();
     window.Game.Tutorial.alCerrar = null;
     window.Game.Tutorial.limpiar();
     // La burbuja cuelga de `body`, así que vaciar el contenedor no se la lleva.
     this.limpiarBurbujaRecordatorio();
+    window.Game.Bocadillos?.parar();
     window.Game.Audio.quitarMusica();
+    // Duelo remoto: se suelta la red y se cierra la sala.
+    if (this.soltarRed) this.soltarRed();
+    if (this.soltarMensajesSala) this.soltarMensajesSala();
+    if (this.sesionRed) this.sesionRed.soltar();
+    if (this.motor && this.motor.esEspejo) this.motor.soltar();
+    // Revancha o vuelta a la sala: la conexión sigue viva.
+    if (this.remoto && !this.mantenerRed) window.Game.Red.cerrar({ silencio: true });
+    this.mantenerRed = false;
+    this.soltarMensajesSala = null;
+    this.soltarRed = null;
+    this.sesionRed = null;
+    this.desconexion = false;
+    window.Game.Recordatorios.yoIdx = null;
     this.iaEnCurso = false;
     this.recordatorios = [];
     this.motor = null;

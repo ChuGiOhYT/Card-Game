@@ -61,7 +61,7 @@ window.Game.CREATURES = [
   },
   {
     id: 'cri_uldar',
-    nombre: 'Üldar, eternal del bosque nocturno',
+    nombre: 'Iskar, eternal del bosque nocturno',
     raza: 'eternal',
     coste: 0,
     ataque: 10,

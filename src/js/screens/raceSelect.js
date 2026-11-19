@@ -24,16 +24,27 @@ window.Game.Screens.seleccionRaza = {
             ? `Etapa ${progreso} de ${total}`
             : 'Sin comenzar';
 
+      // El líder de la estirpe (el primero con quien empieza su calabozo),
+      // de pie sobre el tapete de su tierra. Cerrada, se ve en silueta.
+      const lider = cal && cal.personajesIniciales
+        .map((pid) => window.Game.CHARACTERS_BY_ID[pid])
+        .find((c) => c && c.imagenFlotante);
+
       return `
         <button class="raza-tarjeta ${disponible ? '' : 'bloqueada'}
                       ${completo ? 'completada' : ''}"
                 data-raza="${id}" data-disponible="${disponible ? '1' : '0'}"
                 style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
+          <span class="rt-tapete" style="background-image:url('assets/tapetes/${id}.webp')"></span>
+          ${lider ? `<img class="rt-lider" src="${lider.imagenFlotante}" alt="" draggable="false">` : ''}
           <span class="raza-orden">${i + 1}</span>
-          <span class="raza-sigil">${disponible ? r.sigil : '🔒'}</span>
-          <span class="raza-nombre">${r.nombre}</span>
-          <span class="raza-lema">${r.lema}</span>
-          <span class="raza-progreso">${estado}</span>
+          ${disponible ? '' : '<span class="rt-candado" aria-hidden="true">🔒</span>'}
+          <span class="rt-texto">
+            <span class="raza-sigil">${r.sigil}</span>
+            <span class="raza-nombre">${r.nombre}</span>
+            <span class="raza-lema">${r.lema}</span>
+            <span class="raza-progreso">${estado}</span>
+          </span>
           ${
             // La gema del Eternal caído. Se marca en la tarjeta porque es donde
             // se ve la campaña entera de un vistazo.
@@ -61,13 +72,17 @@ window.Game.Screens.seleccionRaza = {
 
         <div class="raza-rejilla">${tarjetas}</div>
 
-        ${this.bloqueGemas()}
+        <!-- La vitrina al LADO de la ficha: esta pantalla no se desplaza y la
+             ficha necesita su alto; encima de ella se lo comía. -->
+        <div class="raza-bajo">
+          ${this.bloqueGemas()}
 
-        <section class="raza-detalle" id="raza-detalle">
-          <p class="raza-detalle-vacio">
-            Selecciona una estirpe para ver su ficha.
-          </p>
-        </section>
+          <section class="raza-detalle" id="raza-detalle">
+            <p class="raza-detalle-vacio">
+              Selecciona una estirpe para ver su ficha.
+            </p>
+          </section>
+        </div>
 
         <footer class="pantalla-pie">
           <button class="btn-primario" id="btn-confirmar" disabled>
@@ -145,8 +160,8 @@ window.Game.Screens.seleccionRaza = {
           <div class="gema ${mia ? 'conseguida' : 'pendiente'}"
                title="${mia ? gema.mensaje : 'Derriba al Eternal de ' + r.nombre}"
                style="--raza-primario:${r.colorPrimario}">
-            <span class="gema-sigil">${mia ? gema.sigil : '·'}</span>
-            <span class="gema-nombre">${mia ? gema.nombre : '—'}</span>
+            <span class="gema-piedra"><span class="gema-sigil">${mia ? gema.sigil : '?'}</span></span>
+            <span class="gema-nombre">${mia ? gema.nombre : r.nombre}</span>
           </div>`;
       })
       .join('');

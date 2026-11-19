@@ -51,8 +51,8 @@ window.Game.Tutorial = {
       titulo: 'El lado del enemigo',
       texto:
         'Aquí sale la oleada del calabozo. Las criaturas entran de una en una ' +
-        'y, cuando cae una, sale la siguiente: el número que ves en «esperando» ' +
-        'es cuántas quedan por venir.'
+        'y, cuando cae una, sale la siguiente. Arriba, junto a su placa, su ' +
+        'mano boca abajo: cuántas quedan por venir y cuántas acciones tiene.'
     },
     {
       id: 't_lado_tuyo',
@@ -67,7 +67,7 @@ window.Game.Tutorial = {
     {
       id: 't_sangre',
       tour: true,
-      ancla: '#panel-jugador .sangre-marcadores',
+      ancla: '#placa-jugador .sangre-marcadores',
       titulo: 'La sangre lo es todo',
       texto:
         'Tienes 30 sangres repartidas en tres pilas. <strong>Vida</strong> es ' +
@@ -78,7 +78,7 @@ window.Game.Tutorial = {
     {
       id: 't_energia',
       tour: true,
-      ancla: '#panel-jugador .sm-energia',
+      ancla: '#placa-jugador .sm-energia',
       titulo: 'Recibir daño te da poder',
       texto:
         'Esto es lo que hace raro a AETERNUM: la sangre que pierdes se ' +
@@ -89,7 +89,7 @@ window.Game.Tutorial = {
     {
       id: 't_zonas',
       tour: true,
-      ancla: '#panel-jugador .sangre-zonas',
+      ancla: '#placa-jugador .sangre-zonas',
       titulo: 'Reserva y Hades',
       texto:
         '👥 son los personajes que te esperan en la reserva. ✖ los que han ' +
@@ -111,11 +111,11 @@ window.Game.Tutorial = {
       id: 't_controles',
       tour: true,
       ancla: '#mesa-controles',
-      titulo: 'Aquí juegas',
+      titulo: 'Tu mano',
       texto:
-        'Esta franja cambia con cada fase y es donde haces todo: poner ' +
-        'personajes, acoplarles una acción y declarar ataques. Ahora estás en ' +
-        'fase de personaje, así que te ofrece a los de tu reserva con su coste.'
+        'Aquí eliges: en la fase de personaje, a quién pones en posición; en ' +
+        'la de acción, qué acción le acoplas. Ahora te ofrece a los de tu ' +
+        'reserva con su coste.'
     },
     {
       id: 't_avanzar',
@@ -123,9 +123,8 @@ window.Game.Tutorial = {
       ancla: '#btn-avanzar',
       titulo: 'Pasar de fase',
       texto:
-        'Este botón te lleva a la fase siguiente y, al final, cierra el turno. ' +
-        'Se bloquea si dejas un ataque declarado sin resolver: el juego no te ' +
-        'deja perder un golpe por despiste.'
+        'Las fases pasan solas cuando ya no queda nada que hacer; este botón ' +
+        'las adelanta. Si tocas la mesa mientras cuenta, espera por ti.'
     },
     {
       id: 't_lupa',
@@ -246,12 +245,12 @@ window.Game.Tutorial = {
     },
     {
       id: 'ataque',
-      ancla: '#mesa-controles',
+      ancla: '#mesa-atacar',
       titulo: 'Atacar son dos pasos',
       texto:
-        'Primero declaras a quién golpeas y ves la previsión. Después ' +
-        'aplicas los efectos que quieras y pulsas Resolver. Así puedes usar ' +
-        'las cartas que modifican el daño durante el combate.',
+        'Pulsa ⚔ Atacar y verás la previsión en el centro. El golpe se ' +
+        'resuelve solo en un momento; si tocas la mesa, espera a que pulses ' +
+        'Resolver, por si quieres aplicar algo antes.',
       cuando: (m) =>
         window.Game.Tutorial.esMiTurno(m) && m.fase === 'ataque' && !m.ataquePendiente
     },
@@ -269,18 +268,17 @@ window.Game.Tutorial = {
       // Va ANTES de `combate` a propósito: cuando el golpe es del rival, lo
       // primero que hay que saber es que puedes responder, no cómo se calcula.
       id: 'defensa',
-      ancla: '#mesa-controles',
+      ancla: '#mesa-atacar',
       titulo: 'Te atacan: puedes responder',
       texto:
-        'El rival ha declarado y el golpe está en el aire. Este es tu momento ' +
-        'para aplicar defensas antes de encajarlo: tienes las cartas que ' +
-        'sirven ahí mismo, y el atajo a Herramientas al lado. Cuando termines, ' +
-        'pulsa «Encajar el golpe».',
+        'El rival ha declarado y el golpe está en el aire. Tus defensas ' +
+        'automáticas ya se aplicaron; si quieres ajustar algo más, toca la ' +
+        'mesa para pararlo y pulsa «Encajar» cuando termines.',
       cuando: (m) => !!m.ataquePendiente && m.jugadorActivo.esIA
     },
     {
       id: 'combate',
-      ancla: '#mesa-controles',
+      ancla: '#mesa-veredicto',
       titulo: 'Cómo se resuelve el golpe',
       texto:
         'Si el defensor está en ofensiva, se comparan ataques y la ' +

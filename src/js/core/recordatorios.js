@@ -119,6 +119,8 @@ window.Game.Recordatorios = {
 
   /** El lado que aplica efectos a mano. La IA no usa las Herramientas. */
   humano(motor) {
+    // Duelo remoto: los dos son humanos; la mesa dice cuál eres tú (yoIdx).
+    if (this.yoIdx != null && motor.jugadores[this.yoIdx]) return motor.jugadores[this.yoIdx];
     return motor.jugadores.find((j) => !j.esIA) || motor.jugadores[0];
   },
 
@@ -141,7 +143,7 @@ window.Game.Recordatorios = {
         // Dejar la posición re-arma sus recordatorios: si vuelve al campo, su
         // efecto de «En posición» vuelve a tocar.
         this.olvidar(uid);
-        if (j.esIA) return;
+        if (j !== this.humano(motor)) return;
 
         // Retirarse es volver a la reserva. Si acabó en el Hades lo mataron, y
         // que te maten no es retirarse.
@@ -181,6 +183,8 @@ window.Game.Recordatorios = {
     const anadir = (carta, { uid = null, zona, sufijo = null }) => {
       const regla = this.REGLAS[carta.timing];
       if (!regla) return;
+      // Lo que el juego aplica solo (efectosPersonaje) no se recuerda: ya pasó.
+      if (window.Game.EfectosPersonaje?.sabeUsar(carta.id)) return;
       const cola = sufijo || (regla.porTurno ? `t${motor.numeroTurno}` : 'x');
       const clave = `${uid || carta.id}:${carta.id}:${cola}`;
       if (this.descartados.has(clave)) return;

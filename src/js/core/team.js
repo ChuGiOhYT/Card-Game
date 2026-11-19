@@ -82,8 +82,47 @@ window.Game.Team = {
     return { valido: errores.length === 0, errores, avisos };
   },
 
-  /** Equipo jugable por defecto: los 5 más baratos de la raza + 8 acciones. */
+  /**
+   * Mazos por defecto de cada estirpe, con la identidad que pidió Oscar. Son
+   * los que juegan la IA del modo solo, el «Autocompletar» del constructor y
+   * el duelo remoto cuando no eliges un equipo guardado. La campaña NO los
+   * usa (va con equipoDeHistoria).
+   */
+  MAZOS_BASE: {
+    // Revelar lo del rival, resistir y pegar fuerte: Annia, Axel, Thiana,
+    // Investigar y Captura revelan; Lydia y Auram lo cobran en daño.
+    desterrado: {
+      personajes: ['des_annia', 'des_axel', 'des_thiana', 'des_lydia', 'des_auram'],
+      acciones: ['o_finta', 'o_captura', 'o_rompescudos', 'd_bloquear', 'd_acrobatico', 'd_escape', 'n_investigar', 'n_ruego']
+    },
+    // Jugar con la sangre propia y la del rival para sostener la vida, y
+    // resistir: Sadash desangra al rival; Ruego y Luna sangrienta mueven la
+    // propia; Devoción la recupera; Acompañantes y Seluah (5/5) aguantan, y
+    // Lirhym es su carta grande. (Con Errante y más neutrales ganaba el 15 %.)
+    lunaria: {
+      personajes: ['lun_sadash', 'lun_acompanantes', 'lun_delem', 'lun_seluah', 'lun_lirhym'],
+      acciones: ['o_luna_sangrienta', 'o_finta', 'o_captura', 'd_bloquear', 'd_acrobatico', 'd_escape', 'n_devocion', 'n_ruego']
+    },
+    // Defenderse y llegar rápido al jefe (Kratox, coste 10): Pip, Krag y las
+    // defensivas aguantan; Ruego acelera la energía; Diplomático compra turnos.
+    oxitron: {
+      personajes: ['oxi_pip', 'oxi_kaw', 'oxi_krag', 'oxi_brawl', 'oxi_kratox'],
+      acciones: ['n_ruego', 'n_diplomatico', 'd_bloquear', 'd_acrobatico', 'd_encadenar', 'd_escape', 'o_finta', 'o_sabotaje']
+    },
+    // Llenar su propio Hades cuanto antes: Luh, Vyla y Biomecánica mandan
+    // reanimados allí (Llamada los rescata); Ejército, Gurh y Thila crecen con
+    // él. Sabotaje y Rompescudos les apagan los dados y las defensas al rival:
+    // con Devoción e Inmolación ganaban el 5-8 % contra Oxitrones.
+    reanimado: {
+      personajes: ['rea_luh', 'rea_ejercito', 'rea_vyla', 'rea_gurh', 'rea_thila'],
+      acciones: ['o_sabotaje', 'd_biomecanica', 'o_rompescudos', 'o_finta', 'n_llamada', 'd_bloquear', 'n_ruego', 'd_acrobatico']
+    }
+  },
+
+  /** Equipo por defecto: el mazo de la estirpe; si no tiene, los 5 más baratos + 8 acciones. */
   equipoPredeterminado(razaId) {
+    const base = this.MAZOS_BASE[razaId];
+    if (base) return { personajes: [...base.personajes], acciones: [...base.acciones] };
     const personajes = window.Game.CHARACTERS.filter((c) => c.raza === razaId)
       .slice()
       .sort((a, b) => a.coste - b.coste)

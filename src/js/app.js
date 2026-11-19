@@ -13,6 +13,7 @@
   G.Router.registrar('modoSolo', G.Screens.modoSolo);
   G.Router.registrar('constructor', G.Screens.constructor);
   G.Router.registrar('partida', G.Screens.partida);
+  G.Router.registrar('remoto', G.Screens.remoto);
 
   G.Audio.precargar();
 

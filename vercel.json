@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo AETERNUM web: sin dependencias que instalar",
+  "buildCommand": "echo AETERNUM web: no hay nada que compilar",
+  "outputDirectory": "src",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+    }
+  ]
+}

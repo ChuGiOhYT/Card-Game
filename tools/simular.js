@@ -13,12 +13,20 @@
  *   node tools/simular.js --duelos 2000
  *   node tools/simular.js --contra pasivo    # contra un rival que no hace nada
  *   node tools/simular.js --semilla 7        # reproducible
+ *   node tools/simular.js --sin-mercenarios  # equipos de una sola raza,
+ *                                            # como los de la IA en el juego
  */
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
 const RAIZ = path.join(__dirname, '..');
+// Equipos de una sola raza, como los que lleva la IA en el juego
+// (Team.equipoPredeterminado). Ojo al leer el resultado: quitarle los
+// mercenarios SOLO a una raza la hace parecer mucho mejor (los Reanimados
+// pasaban del ~20% al ~45%) porque los demás seguían diluidos; sin
+// mercenarios para nadie, los Reanimados siguen en ~20-30%.
+const SIN_MERCENARIOS = process.argv.includes('--sin-mercenarios');
 
 /* --------------------------- Carga del motor --------------------------- */
 
@@ -36,6 +44,7 @@ const ARCHIVOS = [
   'core/combat.js',
   'core/bossAbilities.js',
   'core/accionesIA.js',
+  'core/efectosPersonaje.js',
   'core/turnEngine.js',
   'core/ai.js'
 ];
@@ -99,7 +108,7 @@ function equipoAleatorio(G, razaId, azar) {
   };
 
   const propios = G.CHARACTERS.filter(
-    (c) => c.raza === razaId || c.raza === 'mercenario'
+    (c) => c.raza === razaId || (c.raza === 'mercenario' && !SIN_MERCENARIOS)
   );
   // Se siembra con uno de coste 0: sin él no se puede desplegar en el turno 1
   // y `Team.validar` lo rechaza.

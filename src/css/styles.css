@@ -33,6 +33,18 @@ body {
   margin: 0;
 }
 
+/* --- Base común: tipografía de títulos y oros ------------------------
+   Letra con serifas para títulos y marcas. Va a fuentes del sistema
+   (Palatino Linotype y Book Antiqua vienen en Windows) para que el .exe no
+   dependa de internet; si algún día se incluye Cinzel en assets, ya está
+   la primera de la lista. */
+:root {
+  --fuente-titulo: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Book Antiqua', Constantia, Georgia, serif;
+  --oro-claro: #f6e3b0;
+  --oro-medio: #d8b968;
+  --oro-hondo: #8a6a2a;
+}
+
 body {
   background:
     radial-gradient(ellipse 80% 60% at 50% -10%, #1b2242 0%, transparent 60%),
@@ -52,17 +64,19 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 260ms ease both;
+  animation: fadeIn 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: scale(1.025);
+    filter: blur(3px);
   }
   to {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 
@@ -202,79 +216,31 @@ button:disabled {
 /* --------------------------- Menú principal --------------------------- */
 
 .menu-principal {
+  --px: 0;
+  --py: 0;
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 46px;
-  padding: 40px;
+  gap: clamp(22px, 4.5vh, 46px);
+  padding: 30px 40px 24px;
+  overflow: hidden;
 }
 
-.menu-marca {
-  text-align: center;
-}
-
-.menu-supra {
-  margin: 0;
-  font-size: 13px;
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: var(--texto-tenue);
-}
-
-.menu-titulo {
-  margin: 2px 0 0;
-  font-size: 76px;
-  font-weight: 300;
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
-  background: linear-gradient(180deg, #fff 20%, var(--acento) 130%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.menu-filete {
-  width: 190px;
-  height: 1px;
-  margin: 16px auto;
-  background: linear-gradient(90deg, transparent, var(--acento), transparent);
-}
-
-.menu-lema {
-  margin: 0;
-  font-size: 14px;
-  font-style: italic;
-  color: var(--texto-suave);
-}
-
-.menu-opciones {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: min(430px, 100%);
-}
-
-/* Vídeo de fondo tras los tres botones. Desborda la lista por los cuatro
-   lados para que el degradado de los bordes se apague sobre el fondo de la
-   página y no sobre los botones. Al ir en posición absoluta queda fuera del
-   flujo, así que no altera el `gap` de la columna. */
+/* El vídeo cubre toda la pantalla, con los bordes fundidos, y se desplaza un
+   poco al revés que el ratón (profundidad). */
 .menu-fondo {
   position: absolute;
-  inset: -110px -230px;
+  inset: -30px;
   z-index: 0;
-  overflow: hidden;
-  border-radius: 20px;
   pointer-events: none;
-  /* Dos degradados cruzados en vez de una elipse: así el desvanecido llega a
-     transparente en los cuatro bordes y se conserva más imagen en el centro.
-     Con una elipse de radios mayores que el medio ancho de la caja el
-     degradado no terminaba dentro y el vídeo se cortaba con un canto duro. */
+  transform: translate(calc(var(--px) * -18px), calc(var(--py) * -12px)) scale(1.04);
+  transition: transform 0.4s ease-out;
   mask-image:
-    linear-gradient(to right, transparent 0, #000 24%, #000 76%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 22%, #000 78%, transparent 100%);
+    linear-gradient(to right, transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 10%, #000 85%, transparent 100%);
   mask-composite: intersect;
 }
 
@@ -283,99 +249,260 @@ button:disabled {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
-/* Vela el vídeo para que el texto de los botones no compita con la imagen. */
 .menu-fondo-velo {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(
-      ellipse 62% 56% at 50% 50%,
-      rgba(11, 13, 23, 0.5),
-      transparent 72%
-    ),
-    linear-gradient(180deg, rgba(11, 13, 23, 0.32), rgba(11, 13, 23, 0.48));
+    radial-gradient(ellipse 60% 50% at 50% 55%, rgba(11, 13, 23, 0.25), transparent 70%),
+    linear-gradient(180deg, rgba(11, 13, 23, 0.55), rgba(11, 13, 23, 0.25) 40%, rgba(11, 13, 23, 0.7));
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .menu-fondo {
-    display: none;
-  }
-}
-
-.menu-btn {
-  position: relative;
+.menu-particulas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
+  pointer-events: none;
+  transform: translate(calc(var(--px) * 14px), calc(var(--py) * 10px));
+  transition: transform 0.4s ease-out;
+}
+
+.menu-marca,
+.menu-cartas,
+.menu-pie {
+  position: relative;
+  z-index: 2;
+}
+
+.menu-marca {
+  text-align: center;
+  transform: translate(calc(var(--px) * 8px), calc(var(--py) * 5px));
+  transition: transform 0.4s ease-out;
+}
+
+/* El logo: letra con serifas, dorado en degradado y un brillo que lo cruza
+   despacio. La sombra va en filter: con el texto recortado, un text-shadow
+   se vería a través de las letras. */
+.menu-titulo {
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  font-size: clamp(54px, 10vh, 92px);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: #e9cd84;
+  background:
+    linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%) 0 0 / 250% 100%,
+    linear-gradient(180deg, #fff6dc 0%, #ecd18a 40%, #b8913d 75%, #8a6a2a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 22px rgba(201, 169, 89, 0.25));
+  animation: logo-brillo 7s ease-in-out infinite;
+}
+
+@keyframes logo-brillo {
+  0%, 55% { background-position: 150% 0, 0 0; }
+  85%, 100% { background-position: -50% 0, 0 0; }
+}
+
+.menu-filete {
+  width: 220px;
+  height: 1px;
+  margin: 12px auto;
+  background: linear-gradient(90deg, transparent, var(--oro-medio), transparent);
+}
+
+.menu-lema {
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.75);
+}
+
+/* --- Los modos, como cartas en abanico ---------------------------------- */
+
+.menu-cartas {
   display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 17px 22px;
-  border: 1px solid var(--borde);
-  border-radius: var(--radio);
-  /* Algo de cuerpo, no `--fondo-panel`: el vídeo pasa por detrás y el texto
-     tiene que seguir leyéndose sobre cualquier fotograma. */
-  background: rgba(11, 13, 23, 0.5);
-  backdrop-filter: blur(3px);
-  text-align: left;
-  transition: all var(--transicion);
+  align-items: flex-end;
+  justify-content: center;
+  padding-top: 18px;
 }
 
-.menu-btn:hover {
-  border-color: var(--acento);
-  background: rgba(46, 38, 18, 0.62);
-  transform: translateX(5px);
+.menu-carta {
+  --ancho: clamp(140px, 22vh, 196px);
+  position: relative;
+  width: var(--ancho);
+  aspect-ratio: 1191 / 1646;
+  margin: 0 calc(var(--ancho) * -0.06);
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(216, 185, 104, 0.7);
+  background: #0b0d17;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 0 4px rgba(216, 185, 104, 0.3),
+    0 18px 30px -12px rgba(0, 0, 0, 0.9);
+  transform-origin: 50% 140%;
+  transform: translateY(var(--alto, 0)) rotate(var(--giro, 0));
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, filter 0.25s;
+  text-align: center;
+  cursor: pointer;
 }
 
-/* El de la web va marcado como salida: borde discontinuo y la flecha de
-   «esto abre otra cosa». No compite con las tres opciones del juego. */
-.menu-btn-externo {
-  border-style: dashed;
+.menu-carta:hover:not(.bloqueado),
+.menu-carta:focus-visible:not(.bloqueado) {
+  z-index: 5;
+  transform: translateY(calc(var(--alto, 0) - 22px)) rotate(0) scale(1.06);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 0 4px rgba(255, 220, 140, 0.6),
+    0 0 26px rgba(255, 205, 110, 0.45), 0 26px 40px -14px rgba(0, 0, 0, 0.95);
 }
 
-.menu-btn-fuera {
-  margin-left: auto;
-  font-size: 15px;
-  color: var(--texto-tenue);
-  transition: color var(--transicion), transform var(--transicion);
+/* El reflejo: una franja de luz que cruza la carta al pasar el ratón. */
+.menu-carta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 245, 210, 0.35) 48%, transparent 60%);
+  background-size: 260% 100%;
+  background-position: 120% 0;
+  mix-blend-mode: screen;
+  transition: background-position 0.7s ease;
 }
 
-.menu-btn-externo:hover .menu-btn-fuera {
-  color: var(--acento);
-  transform: translate(2px, -2px);
+.menu-carta:hover:not(.bloqueado)::after {
+  background-position: -40% 0;
 }
 
-.menu-btn-error {
-  border-style: solid;
+.mc-arte {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(0.9) brightness(0.75);
+}
+
+.mc-figura {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 115%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.8));
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+}
+
+/* Crea tu equipo: tres cartas reales en abanico pequeño. */
+.mc-abanico {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  width: 0;
+  height: 0;
+}
+
+.mc-abanico img {
+  position: absolute;
+  width: calc(var(--ancho) * 0.42);
+  border-radius: 5px;
+  transform-origin: 50% 130%;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+}
+
+.mc-abanico img:nth-child(1) { transform: translateX(-90%) rotate(-14deg); }
+.mc-abanico img:nth-child(2) { transform: translateX(-50%) translateY(-6px); z-index: 1; }
+.mc-abanico img:nth-child(3) { transform: translateX(-10%) rotate(14deg); }
+
+.menu-carta-externa .mc-arte {
+  filter: none;
+}
+
+/* El rótulo, sobre una franja oscura al pie de la carta. */
+.mc-texto {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 26px 10px 12px;
+  background: linear-gradient(to top, rgba(5, 6, 12, 0.96) 55%, transparent);
+}
+
+.mc-texto .menu-btn-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(13px, 2vh, 16px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #f3dda0;
+}
+
+.mc-texto .menu-btn-sub {
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: rgba(232, 222, 200, 0.7);
+}
+
+/* Cerradas: apagadas, con cadenas cruzadas y el candado. */
+.menu-carta.bloqueado {
+  cursor: not-allowed;
+}
+
+.menu-carta.bloqueado .mc-arte,
+.menu-carta.bloqueado .mc-figura,
+.menu-carta.bloqueado .mc-abanico {
+  filter: grayscale(0.85) brightness(0.4);
+}
+
+.mc-cadenas {
+  position: absolute;
+  inset: -20%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(150, 140, 120, 0.85) 0 7px, rgba(60, 55, 45, 0.85) 7px 9px, transparent 9px 13px)
+      center / 100% 9px no-repeat;
+  transform: rotate(35deg);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
+}
+
+.mc-cadenas-x {
+  transform: rotate(-35deg);
+}
+
+.mc-candado {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+}
+
+.menu-carta .menu-btn-candado {
+  font-size: 9.5px;
+}
+
+.menu-carta.menu-btn-error {
   border-color: var(--error);
 }
 
-.menu-btn-error .menu-btn-sub {
+.menu-carta.menu-btn-error .menu-btn-sub {
   color: var(--error);
 }
 
-.menu-btn-sigil {
-  font-size: 22px;
-  color: var(--acento);
-  width: 26px;
-  text-align: center;
-}
-
-.menu-btn-cuerpo {
-  display: flex;
-  flex-direction: column;
-}
-
-.menu-btn-titulo {
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.menu-btn-sub {
-  font-size: 12.5px;
-  color: var(--texto-tenue);
-}
+/* --- Pie: los números y los iconos redondos ----------------------------- */
 
 .menu-pie {
   display: flex;
@@ -389,14 +516,40 @@ button:disabled {
   opacity: 0.5;
 }
 
-.menu-salir {
-  color: var(--texto-tenue);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.menu-pie-iconos {
+  display: flex;
+  gap: 8px;
+  margin-left: 14px;
 }
 
-.menu-salir:hover {
+.menu-icono {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(216, 185, 104, 0.45);
+  border-radius: 50%;
+  background: rgba(11, 13, 23, 0.7);
+  color: var(--texto-suave);
+  font-size: 15px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.menu-icono:hover {
+  border-color: var(--oro-medio);
+  background: rgba(60, 48, 20, 0.75);
+  color: var(--texto);
+}
+
+.menu-icono-salir:hover {
+  border-color: var(--error);
   color: var(--error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-titulo { animation: none; }
+  .menu-carta, .menu-carta::after { transition: none; }
 }
 
 /* --------------------------- Pantalla base --------------------------- */
@@ -418,13 +571,72 @@ button:disabled {
 
 .pantalla-titulo {
   margin: 0;
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: 0.06em;
+  font-family: var(--fuente-titulo);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #e9cd84;
+  background: linear-gradient(180deg, #fff6dc 0%, #ecd18a 45%, #a7802f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
 }
 
+/* Con tinte manda el color de la estirpe, pero con la misma letra. */
 .pantalla-titulo.tinte {
+  background: none;
+  -webkit-text-fill-color: currentColor;
   color: var(--raza-primario);
+}
+
+/* Marco con esquinas doradas para los paneles: cuatro escuadras finas en un
+   ::after, encima del panel y sin recibir clics. Así no hay que tocar el
+   fondo de cada panel (cada uno trae el suyo). */
+.raza-tarjeta,
+.raza-detalle,
+.etapa,
+.capitulo,
+.solo-tarjeta,
+.placa-etapa,
+.calabozo-mapa .mapa-calabozo {
+  position: relative;
+  border-color: rgba(216, 185, 104, 0.22);
+}
+
+.raza-tarjeta::after,
+.raza-detalle::after,
+.etapa::after,
+.capitulo::after,
+.solo-tarjeta::after,
+.placa-etapa::after,
+.calabozo-mapa .mapa-calabozo::after {
+  --l: 14px;
+  --g: 1.5px;
+  --c: rgba(216, 185, 104, 0.75);
+  content: '';
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / var(--l) var(--g),
+    linear-gradient(var(--c), var(--c)) top left / var(--g) var(--l),
+    linear-gradient(var(--c), var(--c)) top right / var(--l) var(--g),
+    linear-gradient(var(--c), var(--c)) top right / var(--g) var(--l),
+    linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--g),
+    linear-gradient(var(--c), var(--c)) bottom left / var(--g) var(--l),
+    linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--g),
+    linear-gradient(var(--c), var(--c)) bottom right / var(--g) var(--l);
+  background-repeat: no-repeat;
+}
+
+/* Los botones dorados, con un brillo interior más de pieza de metal. */
+.btn-primario {
+  font-family: var(--fuente-titulo);
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 210, 0.5), inset 0 -2px 0 rgba(80, 55, 15, 0.45),
+    0 4px 14px -6px rgba(0, 0, 0, 0.8);
 }
 
 .pantalla-sub {
@@ -918,16 +1130,67 @@ button:disabled {
   margin-bottom: 10px;
 }
 
+/* Redondas con su icono; la activa se estira en cápsula y dice su nombre. */
 .pestana {
-  flex: 1;
-  padding: 5px 8px;
+  position: relative;
+  flex: 0 0 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 1px solid var(--borde);
-  border-radius: var(--radio-s);
+  border-radius: 999px;
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--texto-tenue);
   transition: all var(--transicion);
+}
+
+.pestana:hover {
+  border-color: var(--acento);
+}
+
+.pestana-ico {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.pestana-txt {
+  display: none;
+  white-space: nowrap;
+}
+
+.pestana.activa {
+  flex: 1;
+  padding: 0 14px;
+}
+
+.pestana.activa .pestana-txt {
+  display: inline;
+}
+
+/* La cuenta de recordatorios, como pastilla en la esquina del redondo. */
+.pestana-num {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--acento);
+  color: #1a1508;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 17px;
+}
+
+.pestana.activa .pestana-num {
+  position: static;
 }
 
 .pestana.activa {
@@ -1849,11 +2112,13 @@ button:disabled {
 /* Acceso desde la mesa, junto a «Abandonar». */
 .mesa-sonido {
   margin-left: 10px;
-  padding: 2px 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: 1px solid var(--borde);
-  border-radius: 999px;
+  border-radius: 50%;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1;
   opacity: 0.75;
   transition: all var(--transicion);
 }
@@ -2010,6 +2275,26 @@ button:disabled {
   background: rgba(201, 169, 89, 0.14);
 }
 
+/* «Aplicar»: la acción principal del recordatorio cuando el juego sabe hacer
+   la carta por ti. Relleno dorado para que se distinga del «ya está», que solo
+   marca. */
+.recordatorio-aplicar {
+  margin-top: 4px;
+  margin-right: 6px;
+  padding: 3px 12px;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  background: var(--acento);
+  color: #14110a;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.recordatorio-aplicar:hover {
+  filter: brightness(1.12);
+}
+
 /* Bloque de respuesta dentro de la ventana del ataque: lo que puedes aplicar
    sin irte a buscar otra pestaña mientras el golpe espera. */
 .ap-respuesta {
@@ -2112,7 +2397,8 @@ button:disabled {
   color: var(--texto-suave);
 }
 
-.menu-btn.sacudir {
+.menu-btn.sacudir,
+.menu-carta.sacudir {
   animation: sacudida 340ms ease;
 }
 
@@ -2766,7 +3052,9 @@ button:disabled {
   /* Lateral ancho: la lupa es donde se lee la carta, y a 260 px el texto
      impreso quedaba ilegible. */
   grid-template-columns: 1fr 310px;
-  grid-template-rows: auto 1fr auto;
+  /* Poco aire entre la mesa y el lateral: la mesa llega hasta él. */
+  column-gap: 10px;
+  grid-template-rows: auto 1fr;
   /* En ventanas bajas se recuperan los márgenes antes que encoger las cartas. */
   gap: clamp(8px, 1.6vh, 18px);
   padding-top: clamp(16px, 3vh, 34px);
@@ -2800,15 +3088,31 @@ button:disabled {
 
 .mesa-tablero {
   position: relative;
+  /* Sin barra visible: la mesa ya cabe, y lo que sobresale un instante (el
+     embiste, un número de golpe, un emergente) la hacía parpadear. Sigue
+     desplazándose con la rueda si alguna ventana muy baja no cupiera. */
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   /* `safe` evita el recorte por los dos extremos: cuando el contenido no
      cabe, deja de centrar y se alinea al principio, de modo que siempre se
      puede llegar a todo con el scroll. */
   justify-content: safe center;
-  gap: clamp(5px, 1.1vh, 14px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* La mesa vista en diagonal: el plano se inclina hacia el fondo y el lado
+   rival queda más lejos y más pequeño. Es un transform, así que los clics,
+   las burbujas ancladas y los números de golpe (que se colocan con
+   getBoundingClientRect) siguen cayendo donde se ve cada cosa. */
+.mesa-plano {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 1.1vh, 14px);
+  transform: perspective(var(--mesa-perspectiva, 1300px)) rotateX(var(--mesa-inclinacion, 20deg));
+  transform-origin: 50% 70%;
 }
 
 /* --- Retratos flotantes de quien está en posición --- */
@@ -3187,6 +3491,79 @@ button:disabled {
   color: var(--raza-primario);
 }
 
+/* --- Placa del jugador: avatar redondo, emblema y nombre --- */
+
+.placa {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 18px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--raza-primario) 45%, transparent);
+  background: linear-gradient(90deg, rgba(8, 10, 16, 0.86), rgba(8, 10, 16, 0.5));
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.9);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.placa.en-turno {
+  border-color: rgba(232, 196, 106, 0.85);
+  box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.35), 0 0 22px -4px rgba(232, 196, 106, 0.55);
+}
+
+.placa-avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: clamp(48px, 7.4vh, 64px);
+  height: clamp(48px, 7.4vh, 64px);
+}
+
+.placa-foto {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #c9a959;
+  background: radial-gradient(circle at 50% 35%,
+    color-mix(in srgb, var(--raza-secundario) 70%, #222), #05060a 75%);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.placa-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  display: block;
+}
+
+/* Los retratos flotantes son bustos con fondo transparente: un poco más de
+   cerca para que la cara llene el círculo. */
+.placa-foto.es-busto img {
+  transform: scale(1.35);
+  transform-origin: 50% 18%;
+}
+
+.placa-sigil {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #c9a959;
+  background: #0c101a;
+  color: var(--raza-primario);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.placa-texto strong {
+  display: block;
+  font-size: 15px;
+}
+
 .lado-info strong {
   display: block;
   font-size: 15px;
@@ -3236,14 +3613,14 @@ button:disabled {
 }
 
 .sg-flecha {
-  width: 18px;
-  height: 15px;
+  width: 19px;
+  height: 19px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(201, 169, 89, 0.5);
-  border-radius: 4px;
+  border-radius: 50%;
   background: rgba(12, 16, 26, 0.9);
   color: var(--acento);
   font-size: 10px;
@@ -3415,75 +3792,118 @@ button:disabled {
    lo mismo que no estar. Es la misma cura que pide la nota del ⚡: subir el
    control, nunca bajar el retrato. */
 .campo-atajos {
+  --abanico-r: 44px;
   position: relative;
   z-index: 8;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
+  /* El sitio del abanico se reserva SIEMPRE: .lado-campo desplaza en
+     horizontal, así que lo que sobresale se recortaba (y sacaba una barra de
+     scroll); y reservarlo solo al abrir movería las cartas al centrarlas. */
+  margin-right: calc(var(--abanico-r) + 2px);
 }
 
-.ct-fila {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+/* El redondo. Dorado cuando la carta lleva modificadores puestos a mano. */
+.ct-gatillo {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 169, 89, 0.6);
+  background: rgba(12, 16, 26, 0.94);
+  color: var(--acento);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  transition: transform 0.18s, background 0.12s, border-color 0.12s;
 }
 
-.ct-icono {
-  width: 16px;
-  font-size: 12px;
-  text-align: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+.ct-gatillo:hover {
+  border-color: var(--acento);
+  background: rgba(40, 34, 18, 0.96);
 }
 
-/* 20x17 y no menos: son para pulsarlos varias veces seguidas. La carta mide
-   ~104px de alto y esta columna ~40, así que agrandarlos no le cuesta nada al
-   tablero —`.campo-par` es una fila, esto crece a lo ancho—. */
+.ct-gatillo.modificado {
+  border-color: var(--acento);
+  box-shadow: 0 0 0 2px rgba(201, 169, 89, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.ctg-abierto,
+.campo-atajos.abierto .ctg-cerrado {
+  display: none;
+}
+
+.campo-atajos.abierto .ctg-abierto {
+  display: inline;
+}
+
+.campo-atajos.abierto .ct-gatillo {
+  transform: rotate(90deg);
+}
+
+/* Los pequeños esperan escondidos DETRÁS del redondo y salen en arco. */
 .ct-btn {
-  width: 20px;
-  height: 17px;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(201, 169, 89, 0.55);
-  border-radius: 4px;
-  background: rgba(12, 16, 26, 0.92);
+  border: 1px solid rgba(201, 169, 89, 0.6);
+  border-radius: 50%;
+  background: rgba(12, 16, 26, 0.94);
   color: var(--acento);
-  font-size: 9px;
+  font-size: 9.5px;
+  letter-spacing: -0.04em;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(0, 0) scale(0.4);
+  transition: transform 0.22s cubic-bezier(0.2, 1.4, 0.4, 1), opacity 0.16s,
+    background 0.12s, border-color 0.12s;
+  transition-delay: calc(var(--i, 0) * 22ms), calc(var(--i, 0) * 22ms), 0s, 0s;
+}
+
+.campo-atajos.abierto .ct-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(calc(var(--cx) * var(--abanico-r)), calc(var(--cy) * var(--abanico-r))) scale(1);
 }
 
 .ct-btn:hover:not(:disabled) {
   border-color: var(--acento);
-  background: rgba(201, 169, 89, 0.18);
+  background: rgba(60, 50, 24, 0.97);
   color: var(--texto);
 }
 
 .ct-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  filter: brightness(1.3);
 }
 
-/* Apagado cuando no hay modificadores que quitar, igual que las flechas de
-   sangre: un botón que no responde confunde más que uno claramente inactivo. */
+/* Apagado cuando no hay modificadores que quitar: un botón que no responde
+   confunde más que uno claramente inactivo. */
 .ct-btn:disabled {
   border-color: var(--borde);
-  background: rgba(255, 255, 255, 0.03);
   color: var(--texto-tenue);
   cursor: default;
 }
 
-/* El deshacer ocupa la fila entera bajo ⚔ y 🛡: no es un tercer valor que
-   ajustar, es la salida de los otros dos. */
-.ct-fila-limpiar {
-  justify-content: flex-end;
+.campo-atajos.abierto .ct-btn:disabled {
+  opacity: 0.55;
 }
 
-.ct-limpiar {
-  width: 43px;
-  font-size: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .ct-btn,
+  .ct-gatillo {
+    transition: none;
+  }
 }
 
 /* El dado de la mesa, al final de la banda central. */
@@ -3495,19 +3915,58 @@ button:disabled {
 }
 
 .mesa-dado-btn {
-  padding: 2px 7px;
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-s);
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 15px;
-  line-height: 1.2;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  border-radius: 9px;
+  /* Sombra redonda y blanda bajo el dado. */
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.6));
+  transition: filter 0.3s;
 }
 
-.mesa-dado-btn:hover {
-  border-color: var(--acento);
-  background: rgba(201, 169, 89, 0.18);
+/* El dado: cara de marfil con bordes redondeados y 3×3 huecos para los
+   puntos; cada valor enciende los suyos (data-v). */
+.dado {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 34px;
+  height: 34px;
+  padding: 5px;
+  border-radius: 9px;
+  background: radial-gradient(circle at 30% 25%, #fffaf0, #e8dcc4 60%, #c9b896);
+  box-shadow: inset 0 -3px 0 rgba(120, 95, 50, 0.45), inset 0 2px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dado i {
+  place-self: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5a1e1e, #1d0606);
+  opacity: 0;
+}
+
+.dado[data-v="1"] i:nth-child(5),
+.dado[data-v="2"] i:nth-child(3), .dado[data-v="2"] i:nth-child(7),
+.dado[data-v="3"] i:nth-child(3), .dado[data-v="3"] i:nth-child(5), .dado[data-v="3"] i:nth-child(7),
+.dado[data-v="4"] i:nth-child(1), .dado[data-v="4"] i:nth-child(3),
+.dado[data-v="4"] i:nth-child(7), .dado[data-v="4"] i:nth-child(9),
+.dado[data-v="5"] i:nth-child(1), .dado[data-v="5"] i:nth-child(3), .dado[data-v="5"] i:nth-child(5),
+.dado[data-v="5"] i:nth-child(7), .dado[data-v="5"] i:nth-child(9),
+.dado[data-v="6"] i:nth-child(1), .dado[data-v="6"] i:nth-child(3), .dado[data-v="6"] i:nth-child(4),
+.dado[data-v="6"] i:nth-child(6), .dado[data-v="6"] i:nth-child(7), .dado[data-v="6"] i:nth-child(9) {
+  opacity: 1;
+}
+
+.mesa-dado-btn:hover .dado {
+  background: radial-gradient(circle at 30% 25%, #ffffff, #f1e6cf 60%, #d6c49f);
+}
+
+/* Al caer: un brillo dorado suave que se apaga solo. */
+.mesa-dado-btn.dorado {
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px rgba(255, 205, 90, 0.95));
 }
 
 /* El tumbo. La duración la manda el JS por `--dado-giro` (ver `MS_DADO` en
@@ -3548,6 +4007,1153 @@ button:disabled {
   .mesa-dado-valor.nuevo {
     animation: none;
   }
+}
+
+/* --- Travesía por el calabozo ------------------------------------------ */
+
+/* Tu personaje de pie en el mapa del lateral, en la última etapa superada. */
+.mapa-viajero {
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.8));
+}
+
+.btn-avanzar {
+  width: 100%;
+  margin: 4px 0 10px;
+}
+
+/* La capa de la travesía: el mapa en grande, encima de todo. */
+.travesia {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(4, 5, 10, 0.88);
+  cursor: pointer;
+  animation: fadeIn 260ms ease both;
+}
+
+/* Animación de salida propia: el `fadeIn ... both` de la entrada fija la
+   opacidad a 1 y una simple transición no la vencería. */
+.travesia.saliendo {
+  animation: travesia-sale 320ms ease forwards;
+}
+
+@keyframes travesia-sale {
+  to { opacity: 0; }
+}
+
+.travesia-marco {
+  height: 86vh;
+  max-width: 92vw;
+  aspect-ratio: 400 / 672;
+  border: 1px solid rgba(201, 169, 89, 0.45);
+  border-radius: var(--radio-s);
+  overflow: hidden;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
+}
+
+.travesia-marco svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* El tramo que se recorre, encendido. */
+.travesia-ruta {
+  fill: none;
+  stroke: rgba(240, 210, 130, 0.85);
+  stroke-width: 4;
+  stroke-dasharray: 10 8;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(240, 200, 110, 0.9));
+}
+
+.travesia-viajero image {
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.85));
+}
+
+/* Los enemigos salen del suelo, crecen y se sacuden un instante. */
+.travesia-enemigo {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: enemigo-sale 520ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  filter: drop-shadow(0 0 8px rgba(240, 90, 90, 0.75)) drop-shadow(0 5px 5px rgba(0, 0, 0, 0.8));
+}
+
+@keyframes enemigo-sale {
+  0% { opacity: 0; transform: translateY(18px) scale(0.3); }
+  60% { opacity: 1; transform: translateY(-4px) scale(1.08) rotate(-3deg); }
+  80% { transform: scale(1) rotate(2deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+.travesia-pista {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .travesia-enemigo {
+    animation: fadeIn 260ms ease both;
+  }
+}
+
+/* --- Escenario 2D: avanzar por el calabozo de lado --------------------- */
+
+.escenario2d {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #020403;
+  cursor: pointer;
+  animation: fadeIn 300ms ease both;
+}
+
+.escenario2d.saliendo {
+  animation: travesia-sale 320ms ease forwards;
+}
+
+/* 16:9, lo más grande que quepa. */
+.esc2d-marco {
+  position: relative;
+  width: min(96vw, calc(90vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radio-s);
+  overflow: hidden;
+  box-shadow: 0 10px 60px rgba(0, 0, 0, 0.8);
+}
+
+.esc2d-marco canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* El mapa del calabozo en una esquina, con un punto que avanza: «estás aquí». */
+.esc2d-mini {
+  position: absolute;
+  top: 3%;
+  right: 2%;
+  height: 34%;
+  aspect-ratio: 400 / 672;
+  border: 1px solid rgba(201, 169, 89, 0.6);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+  opacity: 0.92;
+}
+
+.esc2d-mini-nodo {
+  fill: rgba(10, 10, 10, 0.7);
+  stroke: rgba(201, 169, 89, 0.9);
+  stroke-width: 3;
+}
+
+.esc2d-mini-ruta {
+  fill: none;
+  stroke: rgba(240, 200, 110, 0.9);
+  stroke-width: 5;
+  stroke-dasharray: 10 8;
+}
+
+.esc2d-mini-punto {
+  fill: #ffe9a8;
+  stroke: #3a2a10;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(255, 220, 140, 0.95));
+}
+
+/* Bocadillo de la conversación al andar: sobre la cabeza de quien habla. El
+   JS lo coloca en % del marco y escribe el texto letra a letra. */
+.esc2d-globo {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 36%;
+  min-width: 14%;
+  padding: 10px 16px 12px;
+  border: 1px solid rgba(201, 169, 89, 0.55);
+  border-radius: 12px;
+  background: rgba(10, 12, 26, 0.88);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.esc2d-globo[hidden] {
+  display: none;
+}
+
+.esc2d-globo::after {
+  content: '';
+  position: absolute;
+  left: calc(50% + var(--cola, 0px));
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid rgba(201, 169, 89, 0.55);
+  border-bottom: 1px solid rgba(201, 169, 89, 0.55);
+  background: rgba(10, 12, 26, 0.88);
+}
+
+.esc2d-globo strong {
+  font-size: clamp(10px, 0.9vw, 13px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.esc2d-globo span {
+  font-size: clamp(14px, 1.35vw, 19px);
+  line-height: 1.4;
+  color: #eef0f8;
+}
+
+/* Rótulo del encuentro: aparece cuando salen los enemigos. */
+.esc2d-rotulo {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 26px;
+  border: 1px solid rgba(240, 110, 110, 0.6);
+  border-radius: var(--radio-s);
+  background: rgba(10, 6, 6, 0.75);
+  color: #f3d9a0;
+  font-size: clamp(16px, 2.2vw, 26px);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 350ms ease, transform 350ms ease;
+  pointer-events: none;
+}
+
+.esc2d-rotulo span {
+  font-size: 0.5em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f08a8a;
+}
+
+.esc2d-rotulo.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.esc2d-pista {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+/* --- Entrada de cartas y números de golpe ------------------------------ */
+
+/* Carta que entra en posición: sube, crece un poco y destella en dorado. La
+   duración la manda el JS por --dur (MS_ENTRADA). */
+.mini-carta.entra-campo {
+  animation: entra-campo var(--dur, 460ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes entra-campo {
+  0% { opacity: 0; transform: translateY(12px) scale(0.84); }
+  55% {
+    opacity: 1;
+    transform: scale(1.05);
+    box-shadow: 0 0 22px 4px rgba(201, 169, 89, 0.75);
+  }
+  100% { transform: none; box-shadow: none; }
+}
+
+/* Acción que se acopla: cae sobre su sitio con un destello azul. */
+.mini-carta.acopla-accion {
+  animation: acopla-accion var(--dur, 460ms) ease-out both;
+}
+
+@keyframes acopla-accion {
+  0% { opacity: 0; transform: translateY(-16px) rotate(-6deg); }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) rotate(1deg);
+    box-shadow: 0 0 18px 3px rgba(126, 192, 240, 0.7);
+  }
+  100% { transform: none; box-shadow: none; }
+}
+
+/* Número flotante del golpe, colgado del tablero (no de los paneles). */
+.numero-golpe {
+  position: absolute;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: clamp(22px, 3.6vh, 34px);
+  font-weight: 800;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 0 2px #000;
+  animation: numero-golpe var(--dur, 1100ms) ease-out forwards;
+}
+
+.numero-golpe.es-dano { color: #ff6b6b; }
+
+.numero-golpe.es-destruido {
+  color: #ff4d4d;
+  font-size: clamp(18px, 3vh, 28px);
+  letter-spacing: 0.04em;
+}
+
+.numero-golpe.es-reflejo {
+  color: var(--acento);
+  font-size: clamp(16px, 2.6vh, 24px);
+}
+
+.numero-golpe.es-nulo {
+  color: var(--texto-suave);
+  font-size: clamp(14px, 2.2vh, 20px);
+}
+
+@keyframes numero-golpe {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -60%) scale(1.15); }
+  30% { transform: translate(-50%, -70%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+}
+
+/* La mano, bajo la mesa y plana: personajes a la izquierda, acciones a la
+   derecha. Cada lado brilla cuando toca elegir en él; el resto del tiempo
+   está a la vista y apagado. */
+.mesa-manos {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-shrink: 0;
+  /* La mano asoma por encima del borde inferior de tu lado, como sostenida
+     delante de la mesa: así no suma su alto entero al tablero (con cartas en
+     los dos lados se pasaba 30-37 px). Las manos van a los lados y tus cartas
+     en juego al centro, así que no se pisan. */
+  margin-top: clamp(-56px, -6vh, -30px);
+  pointer-events: none;
+}
+
+.mesa-manos .mano {
+  pointer-events: auto;
+}
+
+.mano {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 9px 7px;
+  border-radius: 12px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.mano-acciones {
+  align-items: flex-end;
+}
+
+.mano-titulo {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.mano.eligiendo {
+  background: rgba(201, 169, 89, 0.08);
+  box-shadow: 0 0 0 1px rgba(201, 169, 89, 0.45), 0 0 18px rgba(201, 169, 89, 0.18);
+}
+
+.mano.eligiendo .mano-titulo {
+  color: var(--acento);
+}
+
+.mano-cartas {
+  display: flex;
+  min-height: 20px;
+  padding: 6px 10px 0;
+}
+
+/* En abanico: solapadas, giradas desde abajo (--giro y --alto los pone el JS
+   según el sitio de cada una). Al pasar el ratón la carta sube, se endereza y
+   se pone delante. */
+.mano .opcion-carta {
+  width: clamp(48px, 7.6vh, 72px);
+  margin-left: calc(clamp(48px, 7.6vh, 72px) * -0.28);
+  transform-origin: 50% 130%;
+  transform: translateY(var(--alto, 0)) rotate(var(--giro, 0));
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.55);
+  transition: transform 0.18s ease-out, box-shadow 0.18s, border-color 0.18s, filter 0.18s;
+}
+
+.mano .opcion-carta:first-child {
+  margin-left: 0;
+}
+
+.mano .opcion-carta:hover {
+  z-index: 30 !important;
+  /* Crece desde su borde de ABAJO, que se queda donde estaba (conserva el
+     --alto del abanico): si se levantaba, con el cursor cerca del borde
+     inferior la carta se iba de debajo, perdía el hover, bajaba, lo
+     recuperaba… y el clic caía en el contenedor de la mano y no hacía nada. */
+  transform-origin: 50% 100%;
+  transform: translateY(var(--alto, 0)) rotate(0) scale(1.22);
+  box-shadow: 0 12px 26px -8px rgba(0, 0, 0, 0.95);
+}
+
+/* Las que puedes jugar ahora brillan; las que no, se apagan del todo. */
+.mano.eligiendo .opcion-carta:not(.inasequible):not(.pasiva):not(.inerte) {
+  border-color: rgba(255, 214, 120, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 214, 120, 0.6), 0 0 16px rgba(255, 200, 90, 0.55),
+    -4px 4px 10px rgba(0, 0, 0, 0.55);
+  animation: carta-jugable 1.8s ease-in-out infinite;
+}
+
+@keyframes carta-jugable {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
+
+.mano .opcion-carta.pasiva {
+  cursor: default;
+  filter: brightness(0.62) saturate(0.7);
+}
+
+.mano .opcion-carta.pasiva:hover {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mano .opcion-carta { transition: none; }
+  .mano.eligiendo .opcion-carta { animation: none !important; }
+}
+
+/* Botones de la banda central (Resolver, Retirar, Siguiente fase). */
+.mesa-avanzar:empty {
+  display: none;
+}
+
+.btn-banda {
+  padding: 7px 18px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.mesa-atacar {
+  display: flex;
+  gap: 8px;
+}
+
+/* Efecto de personaje aplicado solo: rótulo amarillo que sube y se va. */
+.anuncio-efecto {
+  position: absolute;
+  z-index: 11;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(30, 24, 4, 0.78);
+  color: #ffd84a;
+  font-size: clamp(13px, 2.1vh, 17px);
+  font-weight: 750;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 14px rgba(255, 216, 74, 0.35);
+  animation: anuncio-efecto var(--dur, 2200ms) ease-out forwards;
+}
+
+/* Indicación de fase y golpe declarado: mismos emergentes, otro color. */
+.anuncio-efecto.es-fase {
+  color: var(--texto);
+  background: rgba(10, 14, 24, 0.85);
+  box-shadow: 0 0 0 1px rgba(201, 169, 89, 0.5);
+}
+
+.anuncio-efecto.es-combate {
+  color: #ffb3a1;
+  background: rgba(30, 8, 6, 0.85);
+  box-shadow: 0 0 14px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes anuncio-efecto {
+  0% { opacity: 0; transform: translate(-50%, -20%) scale(0.85); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  22% { transform: translate(-50%, -55%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -150%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anuncio-efecto { animation-name: numero-quieto; }
+}
+
+@keyframes numero-quieto {
+  0%, 100% { opacity: 0; }
+  12%, 80% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-carta.entra-campo,
+  .mini-carta.acopla-accion {
+    animation: none;
+  }
+
+  .numero-golpe {
+    animation-name: numero-quieto;
+  }
+}
+
+/* --- «⚔ Atacar» en la banda central ------------------------------------ */
+
+.mesa-atacar {
+  flex-shrink: 0;
+}
+
+.mesa-atacar:empty {
+  display: none;
+}
+
+.btn-atacar-mesa {
+  position: relative;
+  z-index: 8;
+  padding: 7px 22px;
+  border: 1px solid #f3d48a;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e8c46a, #b98a34);
+  color: #1d1408;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 rgba(232, 196, 106, 0.6);
+  animation: atacar-late 1.8s ease-in-out infinite;
+}
+
+.btn-atacar-mesa:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes atacar-late {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 196, 106, 0.55); }
+  50% { box-shadow: 0 0 0 8px rgba(232, 196, 106, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-atacar-mesa { animation: none; }
+}
+
+/* --- Aviso de recordatorio: una línea que se va sola --------------------- */
+
+.recordatorio-aviso {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 80%;
+  padding: 6px 14px;
+  border: 1px solid rgba(232, 176, 74, 0.7);
+  border-radius: 999px;
+  background: rgba(20, 15, 6, 0.92);
+  color: var(--texto-suave);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+  animation: aviso-recordatorio var(--dur, 5000ms) ease both;
+}
+
+.recordatorio-aviso strong {
+  color: var(--acento);
+}
+
+.ra-ver {
+  color: var(--texto-tenue);
+  text-decoration: underline;
+}
+
+@keyframes aviso-recordatorio {
+  0% { opacity: 0; transform: translate(-50%, -8px); }
+  6%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
+}
+
+/* --- Botones redondos de la mesa ---------------------------------------- */
+
+/* Abandonar: un círculo con la flecha que se abre en cápsula al pasar el
+   ratón, para que el nombre aparezca justo cuando vas a pulsarlo. */
+.btn-salir-mesa {
+  position: absolute;
+  top: clamp(10px, 2vh, 22px);
+  left: 0;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  color: var(--texto-tenue);
+  font-size: 14px;
+  transition: all var(--transicion);
+}
+
+.bsm-txt {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 13px;
+  opacity: 0;
+  transition: max-width 0.22s, opacity 0.18s, margin 0.22s;
+}
+
+.btn-salir-mesa:hover,
+.btn-salir-mesa:focus-visible {
+  border-color: var(--acento);
+  color: var(--texto);
+}
+
+.btn-salir-mesa:hover .bsm-txt,
+.btn-salir-mesa:focus-visible .bsm-txt {
+  max-width: 100px;
+  margin-left: 7px;
+  opacity: 1;
+}
+
+/* Siguiente fase y el resto de botones de la mesa, en cápsula. */
+.mesa .btn-primario,
+.mesa .btn-secundario,
+.recordatorio-burbuja button {
+  border-radius: 999px;
+}
+
+/* --- Avance automático de fases --------------------------------------- */
+
+/* «Pasando a Acción…»: la barra se llena durante la cuenta atrás. Pulsarlo
+   avanza ya; tocar otra cosa de la mesa lo cancela. */
+#btn-avanzar.auto,
+#btn-resolver.auto,
+#btn-aviso-seguir.auto {
+  position: relative;
+  overflow: hidden;
+}
+
+#btn-avanzar.auto::after,
+#btn-resolver.auto::after,
+#btn-aviso-seguir.auto::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(20, 16, 8, 0.65);
+  transform-origin: left;
+  animation: avance-auto var(--auto-ms, 1400ms) linear var(--auto-desde, 0ms) both;
+}
+
+@keyframes avance-auto {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* --- Aviso de cambio de turno ------------------------------------------ */
+
+/* Centrado sobre el tablero, por encima de retratos (7) y atajos (8). No
+   recibe clics: es un aviso, la partida sigue debajo. */
+.aviso-turno {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 34px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio-s);
+  background: rgba(10, 12, 20, 0.86);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.aviso-turno strong {
+  font-size: clamp(20px, 3.4vh, 30px);
+  letter-spacing: 0.06em;
+  color: var(--acento);
+}
+
+.aviso-turno span {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+/* El del rival, en rojo apagado: se distingue sin leerlo. */
+.aviso-turno.es-rival {
+  border-color: rgba(240, 110, 110, 0.7);
+}
+
+.aviso-turno.es-rival strong {
+  color: #f08a8a;
+}
+
+/* 1,1 s en total: entra, se sostiene y se va antes de que la IA haya jugado
+   dos fases (RITMO_IA = 620 ms), así no tapa lo que pasa. */
+.aviso-turno.visible {
+  animation: aviso-turno 1100ms ease both;
+}
+
+@keyframes aviso-turno {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+  28% { transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Con movimiento reducido: solo aparece y se va, sin crecer. */
+@keyframes aviso-turno-quieto {
+  0%, 100% { opacity: 0; }
+  15%, 75% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso-turno.visible {
+    animation-name: aviso-turno-quieto;
+  }
+}
+
+/* --- Tapete de la mesa y sus zonas ------------------------------------ */
+
+/* El plano inclinado lleva el suelo de la estirpe (el url va en línea). Los
+   lados dejan de ser rectángulos translúcidos: son el propio tapete. */
+.mesa-plano {
+  background-size: cover;
+  background-position: center;
+  border-radius: 18px;
+  border: 1px solid rgba(201, 169, 89, 0.28);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.75), 0 24px 40px -18px rgba(0, 0, 0, 0.85);
+  padding: clamp(6px, 1.2vh, 12px) 16px;
+}
+
+/* La mesa ocupa TODO el hueco: crece hasta arriba (antes quedaba centrada con
+   aire encima) y los dos lados se reparten el alto, el rival pegado arriba y
+   tú abajo. La perspectiva es más suave para que las esquinas del fondo no se
+   encojan tanto y la mesa llegue de verdad hasta el lateral. */
+.mesa-tablero {
+  justify-content: flex-start;
+  /* Ya cabe todo en las tres ventanas medidas: lo único que asomaba (8 px)
+     eran las cartas de los extremos del abanico al girarse, y recortarlas o
+     desplazar la mesa por eso era peor. Dibujan sobre el margen inferior. */
+  overflow: visible;
+}
+
+.mesa-plano {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: space-between;
+  --mesa-perspectiva: 2200px;
+  --mesa-inclinacion: 17deg;
+  /* Desde ARRIBA: el borde del fondo se queda pegado a la placa del rival y
+     el de abajo se abre hacia ti. Inclinada desde abajo, el borde de arriba
+     se hundía y dejaba una franja vacía bajo la placa. */
+  transform-origin: 50% 0%;
+}
+
+
+.mesa-plano .mesa-lado {
+  background: none;
+  border-color: transparent;
+  /* Sin caja propia ya no necesitan tanto relleno: el sobrante desbordaba
+     el tablero unos 8 px al crecer la mesa hasta arriba. */
+  padding-top: clamp(2px, 0.6vh, 6px);
+  padding-bottom: clamp(2px, 0.6vh, 6px);
+}
+
+/* La fila del rival: su mano oculta y su placa, asomando sobre el borde de
+   arriba de la mesa como la tuya sobre el de abajo. Los rótulos van debajo
+   de sus cartas (es el espejo). */
+/* Las dos filas de manos en rejilla de tres: las placas quedan centradas
+   aunque una mano tenga más cartas que la otra. */
+.mesa-manos {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.mesa-manos .mano-acciones {
+  justify-self: end;
+}
+
+.mesa-manos .mano:not(.mano-acciones) {
+  justify-self: start;
+}
+
+/* El tapete deja aire arriba: ahí asoma la placa del rival. */
+.mesa-plano {
+  padding-top: clamp(18px, 3.2vh, 32px);
+}
+
+.mesa-manos.mesa-manos-rival {
+  margin-top: 0;
+  margin-bottom: clamp(-34px, -3.6vh, -18px);
+  align-items: flex-start;
+}
+
+.mesa-manos-rival .placa-slot {
+  pointer-events: auto;
+  align-self: flex-start;
+}
+
+.mano-rival {
+  flex-direction: column-reverse;
+}
+
+.mano-rival .mano-titulo {
+  opacity: 0.8;
+}
+
+/* El reverso contra la IA: oscuro, marco dorado, runas y el emblema de la
+   estirpe. El arte oficial (assets/cartas/reverso.webp) es para las partidas
+   contra jugadores. */
+.dorso-carta {
+  position: relative;
+  flex-shrink: 0;
+  width: clamp(32px, 5vh, 46px);
+  aspect-ratio: 1191 / 1646;
+  margin-left: calc(clamp(32px, 5vh, 46px) * -0.3);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 5px;
+  border: 1px solid rgba(201, 169, 89, 0.75);
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--raza-primario) 35%, #10131f), #07080e 72%);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.6), inset 0 0 0 3px rgba(201, 169, 89, 0.35),
+    -3px 4px 8px rgba(0, 0, 0, 0.55);
+  /* Cuelgan hacia la mesa: giro desde ARRIBA. */
+  transform-origin: 50% -30%;
+  transform: translateY(var(--alto, 0)) rotate(var(--giro, 0));
+}
+
+.dorso-carta:first-child {
+  margin-left: 0;
+}
+
+/* Revelada: boca arriba en la mano del rival. */
+.dorso-carta.revelada {
+  pointer-events: auto;
+  background: #07080e;
+}
+
+.dorso-carta.revelada img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Mientras eliges qué revelar: los reversos elegibles laten y se pinchan. */
+.dorso-carta.elegible {
+  pointer-events: auto;
+  cursor: pointer;
+  border-color: var(--oro-claro, #f3d98b);
+  box-shadow: 0 0 0 2px rgba(243, 217, 139, 0.85), 0 0 14px rgba(243, 217, 139, 0.7);
+  animation: dorso-elegible 1.1s ease-in-out infinite alternate;
+}
+
+.dorso-carta.elegible:hover {
+  z-index: 50 !important;
+  transform: translateY(6px) rotate(0) scale(1.25);
+  animation: none;
+}
+
+@keyframes dorso-elegible {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dorso-carta.elegible { animation: none; }
+}
+
+.dorso-carta .runas {
+  position: absolute;
+  width: 92%;
+  aspect-ratio: 1;
+  color: rgba(201, 169, 89, 0.45);
+}
+
+.dorso-sigil {
+  position: relative;
+  font-size: clamp(11px, 1.8vh, 16px);
+  color: var(--raza-primario);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+/* Placas fuera de la mesa: la del rival arriba, la tuya entre las manos. */
+.placa-slot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+
+
+.mesa-manos .placa-slot {
+  pointer-events: auto;
+  align-self: flex-end;
+  /* Un poco más abajo que las manos: así no roza tus cartas en juego. */
+  margin-bottom: -12px;
+}
+
+/* Compacta: nombre y estirpe en una línea, las tres pilas en fila (número y
+   rótulo lado a lado), la barra fina. Unos 60 px de alto: si crece, la tuya
+   tapa tus cartas (la mano y su placa asoman sobre el borde de la mesa). */
+.placa-marco .placa {
+  gap: 10px;
+  padding: 4px 14px 4px 4px;
+  border-radius: 36px;
+}
+
+.placa-marco .placa-avatar {
+  width: clamp(40px, 6.2vh, 52px);
+  height: clamp(40px, 6.2vh, 52px);
+}
+
+.placa-marco .placa-texto {
+  display: block;
+  line-height: 1.2;
+}
+
+.placa-marco .placa-texto strong {
+  display: inline;
+  font-size: 13px;
+  margin-right: 6px;
+}
+
+.placa-marco .mesa-raza {
+  font-size: 10px;
+}
+
+.placa-marco .sangre {
+  margin: 3px 0 0;
+  min-width: 0;
+}
+
+.placa-marco .sangre-marcadores {
+  gap: 3px;
+  margin-bottom: 3px;
+  align-items: center;
+}
+
+.placa-marco .sm {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 7px;
+}
+
+.placa-marco .sm-num {
+  font-size: clamp(13px, 2vh, 16px);
+}
+
+.placa-marco .sm-lbl {
+  margin-top: 0;
+  font-size: 7.5px;
+}
+
+.placa-marco .sg-flecha {
+  width: 16px;
+  height: 16px;
+}
+
+.placa-marco .sangre-barra {
+  height: 4px;
+}
+
+.placa-marco .sangre-pie {
+  margin-top: 1px;
+  font-size: 9.5px;
+}
+
+/* El círculo de runas, pintado en el suelo bajo tu personaje. */
+.zona-runas {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.zona-runas .runas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* Elipse más ancha que la carta: asoma a los dos lados (por arriba y abajo
+     la recortaría la fila del campo) y, con la mesa inclinada, se lee como
+     un círculo pintado en el suelo. */
+  width: 185%;
+  height: 92%;
+  transform: translate(-50%, -50%);
+  color: rgba(201, 169, 89, 0.38);
+  pointer-events: none;
+  transition: color 0.3s, filter 0.3s;
+}
+
+.zona-runas > .mini-carta {
+  position: relative;
+  z-index: 1;
+}
+
+.zona-runas.encendida .runas {
+  color: rgba(255, 214, 120, 0.95);
+  filter: drop-shadow(0 0 6px rgba(255, 200, 90, 0.8));
+}
+
+/* Sin nadie en posición: el círculo solo, del tamaño de una carta. */
+.zona-runas.vacia {
+  width: clamp(76px, 11.5vh, 104px);
+  aspect-ratio: 1191 / 1646;
+}
+
+.zona-rotulo {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.6);
+}
+
+.zona-runas.encendida .zona-rotulo {
+  color: #ffd27a;
+}
+
+/* Un solo puesto por bando en todos los modos: la fila del campo ya no
+   necesita desplazarse, y recortaba el círculo de runas (y sacaba una barra
+   de scroll bajo él). */
+.mesa-plano .lado-campo {
+  overflow: visible;
+}
+
+.mini-carta.hueco-accion span {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+/* El hueco de la acción, marcado en el tapete. */
+.mini-carta.hueco-accion {
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed rgba(201, 169, 89, 0.45);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.5);
+  cursor: default;
+}
+
+.mini-carta.hueco-accion.encendida {
+  border: 1px solid rgba(255, 214, 120, 0.9);
+  box-shadow: 0 0 14px rgba(255, 200, 90, 0.5);
+  color: #ffd27a;
+}
+
+/* El Hades, siempre con su casilla. */
+.casilla-hades.vacia {
+  min-width: 56px;
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(180, 120, 120, 0.45);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* --- Brillo foil: la carta se inclina hacia el cursor ------------------ */
+
+.campo-par .mini-carta.foil,
+.lupa img.foil {
+  transform: perspective(700px) rotateX(var(--ry, 0)) rotateY(var(--rx, 0)) scale(1.04);
+  transition: transform 0.08s linear;
+}
+
+/* El reflejo: un foco blanco donde está el cursor y una franja irisada que se
+   desliza con él. color-dodge lo hace brillar sobre el arte sin taparlo. */
+.campo-par .mini-carta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.5), transparent 42%),
+    linear-gradient(115deg, transparent 22%, rgba(255, 120, 200, 0.22) 36%,
+      rgba(120, 220, 255, 0.22) 50%, rgba(255, 230, 120, 0.24) 64%, transparent 78%);
+  background-size: 100% 100%, 260% 260%;
+  background-position: center, var(--mx, 50%) var(--my, 50%);
+  mix-blend-mode: color-dodge;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.campo-par .mini-carta.foil::after {
+  opacity: 0.8;
+}
+
+/* --- El atacante embiste hacia su objetivo y vuelve --------------------- */
+
+.mini-carta.embiste {
+  position: relative;
+  z-index: 9;
+  animation: embiste var(--impacto, 380ms) cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+@keyframes embiste {
+  0% { transform: translate(0, 0) scale(1); }
+  38% {
+    transform: translate(var(--dx, 0), var(--dy, 0)) scale(1.14);
+    box-shadow: 0 0 18px 4px rgba(255, 196, 90, 0.85);
+    filter: brightness(1.25);
+  }
+  100% { transform: translate(0, 0) scale(1); box-shadow: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-carta.embiste { animation: none; }
 }
 
 /* --- Impacto de un ataque ---------------------------------------------- */
@@ -3871,7 +5477,7 @@ button:disabled {
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--borde);
-  padding-left: 18px;
+  padding-left: 12px;
   font-size: 12px;
 }
 
@@ -3958,6 +5564,11 @@ button:disabled {
    no en los `clamp` generales para no encoger nada en la ventana por defecto,
    donde ya cabía todo. Medido: 1024x700 pasa de desbordar 15 px a 0. */
 @media (max-height: 760px) {
+  /* La fila de cartas recorta en vertical: el abanico se cierra un poco. */
+  .campo-atajos {
+    --abanico-r: 36px;
+  }
+
   .campo-par .mini-carta.personaje {
     width: clamp(66px, 10.2vh, 104px);
   }
@@ -4392,4 +6003,1344 @@ button:disabled {
 .confirmar-peligro:hover {
   background: #ff8a8a;
   border-color: #ff8a8a;
+}
+
+
+/* ===================== Calabozo: mapa, placa y lupa ===================== */
+
+.calabozo-cuerpo.calabozo-v2 {
+  grid-template-columns: auto minmax(0, 1fr) clamp(200px, 22vw, 260px);
+  gap: clamp(14px, 2vw, 26px);
+  min-height: 0;
+}
+
+/* El mapa: lo más alto posible, enmarcado como una pieza. */
+.calabozo-mapa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+}
+
+.calabozo-mapa {
+  height: 100%;
+}
+
+.calabozo-mapa .mapa-calabozo {
+  /* Alto definido (la columna lo es por la rejilla) para que el SVG, con su
+     aspect-ratio en línea, saque de ahí su ancho. Si no, la columna «auto» y
+     el mapa se esperaban el uno al otro y salía diminuto. */
+  height: calc(100% - 34px);
+  display: flex;
+  padding: 6px;
+  border: 1px solid rgba(216, 185, 104, 0.45);
+  border-radius: 14px;
+  background: rgba(5, 6, 12, 0.6);
+  box-shadow: 0 18px 36px -16px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.calabozo-mapa .mapa-calabozo svg {
+  height: 100%;
+  width: auto;
+  max-height: none;
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+.calabozo-mapa .mapa-resumen {
+  margin: 8px 0 0;
+  font-family: var(--fuente-titulo);
+  letter-spacing: 0.08em;
+  color: rgba(232, 214, 170, 0.75);
+}
+
+/* Las etapas como medallones: disco oscuro con aro dorado y el número en la
+   letra de los títulos. La que toca late; la elegida lleva un anillo. */
+.calabozo-v2 .mapa-nodo .disco {
+  fill: #0d0f18;
+  stroke: #d8b968;
+  stroke-width: 2.6;
+}
+
+.calabozo-v2 .mapa-nodo .marca {
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  fill: #f3dda0;
+}
+
+.calabozo-v2 .mapa-nodo.hecha .disco {
+  fill: #1d2a17;
+  stroke: #9fd08a;
+}
+
+.calabozo-v2 .mapa-nodo.cerrada .disco {
+  fill: #0b0c12;
+  stroke: rgba(216, 185, 104, 0.35);
+}
+
+.calabozo-v2 .mapa-nodo.cerrada .marca {
+  fill: rgba(232, 214, 170, 0.4);
+}
+
+.calabozo-v2 .mapa-nodo.actual .disco {
+  stroke: #ffe39a;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 110, 0.9));
+}
+
+.calabozo-v2 .mapa-nodo.seleccionada .halo {
+  fill: none;
+  stroke: #ffe39a;
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+  opacity: 1;
+}
+
+.calabozo-v2 .mapa-nodo {
+  cursor: pointer;
+}
+
+/* Medallones más grandes ahora que el mapa es grande (r es propiedad CSS en
+   los círculos de SVG). */
+.calabozo-v2 .mapa-nodo .disco { r: 18px; }
+.calabozo-v2 .mapa-nodo .halo { r: 23px; }
+.calabozo-v2 .mapa-nodo.es-jefe .disco { r: 23px; }
+.calabozo-v2 .mapa-nodo.es-jefe .halo { r: 28px; }
+.calabozo-v2 .mapa-nodo.es-jefe .aro { r: 32px; }
+.calabozo-v2 .mapa-nodo .marca { font-size: 17px; }
+/* El rótulo «JEFE» se calculaba con el radio viejo y ahora se metía bajo el
+   medallón agrandado; el jefe ya se distingue por su aro y su tamaño. */
+.calabozo-v2 .mapa-nodo .rotulo { display: none; }
+
+/* --- La placa de la etapa --- */
+
+.calabozo-ficha {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.placa-etapa {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 18px);
+  padding: clamp(14px, 2.4vh, 24px) clamp(16px, 2vw, 26px);
+  border: 1px solid rgba(216, 185, 104, 0.35);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 0%, color-mix(in srgb, var(--raza-primario) 18%, transparent), transparent 70%),
+    rgba(7, 8, 14, 0.82);
+  box-shadow: 0 20px 40px -18px rgba(0, 0, 0, 0.9);
+  animation: placa-entra 0.28s ease-out;
+}
+
+@keyframes placa-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pe-cab {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pe-medalla {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #d8b968;
+  background: radial-gradient(circle at 40% 35%, #262014, #0b0c12 70%);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5), 0 0 16px rgba(216, 185, 104, 0.35);
+  font-family: var(--fuente-titulo);
+  font-size: 22px;
+  font-weight: 700;
+  color: #f3dda0;
+}
+
+.placa-etapa.completada .pe-medalla {
+  border-color: #9fd08a;
+  color: #c9f0b8;
+}
+
+.placa-etapa.es-jefe .pe-medalla {
+  width: 60px;
+  height: 60px;
+  border-color: #ffb36b;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5), 0 0 22px rgba(255, 150, 80, 0.5);
+}
+
+.pe-nombre {
+  flex: 1;
+  min-width: 0;
+}
+
+.pe-sup {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.65);
+}
+
+.pe-titulo {
+  margin: 2px 0 0;
+  font-family: var(--fuente-titulo);
+  font-size: clamp(20px, 3.2vh, 28px);
+  font-weight: 600;
+  color: #f3dda0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.pe-flecha {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(216, 185, 104, 0.45);
+  background: rgba(11, 13, 23, 0.7);
+  color: var(--texto-suave);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.pe-flecha:hover:not(:disabled) {
+  border-color: var(--oro-medio);
+  color: var(--texto);
+}
+
+.pe-flecha:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pe-narracion {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--texto-suave);
+}
+
+.pe-bloques {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(14px, 3vw, 40px);
+}
+
+.pe-rotulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.65);
+}
+
+.pe-abanico {
+  display: flex;
+  padding: 4px 6px 8px;
+}
+
+.pe-carta {
+  width: clamp(58px, 9vh, 84px);
+  aspect-ratio: 1191 / 1646;
+  margin-left: calc(clamp(58px, 9vh, 84px) * -0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: -3px 5px 12px rgba(0, 0, 0, 0.7);
+  transform-origin: 50% 130%;
+  transform: translateY(var(--alto, 0)) rotate(var(--giro, 0));
+  transition: transform 0.18s ease-out;
+}
+
+.pe-carta:first-child {
+  margin-left: 0;
+}
+
+.pe-carta:hover {
+  z-index: 3;
+  transform-origin: 50% 100%;
+  transform: translateY(var(--alto, 0)) rotate(0) scale(1.15);
+}
+
+.pe-carta img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Recompensa de una etapa cerrada: se intuye, no se ve. */
+.pe-abanico.velado .pe-carta img {
+  filter: blur(4px) brightness(0.45);
+}
+
+.pe-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px solid rgba(216, 185, 104, 0.15);
+}
+
+.btn-entrar {
+  padding: 13px 38px;
+  font-size: 17px;
+  border-radius: 999px;
+}
+
+.pe-candado {
+  font-size: 13px;
+  color: rgba(232, 214, 170, 0.6);
+}
+
+/* La lupa, a toda la altura de su columna. */
+.calabozo-lupa {
+  min-height: 0;
+  display: flex;
+}
+
+.calabozo-lupa .lupa {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  margin: 0;
+}
+
+
+/* ======================= Estirpes: cartas y vitrina ===================== */
+
+/* Cartas altas: el tapete de su tierra, el líder de pie y el texto al pie
+   sobre una franja oscura. La elegida se levanta y brilla con su color. */
+.raza-rejilla {
+  gap: clamp(10px, 1.6vw, 18px);
+}
+
+.raza-tarjeta {
+  height: clamp(150px, 26vh, 230px);
+  padding: 0;
+  overflow: hidden;
+  justify-content: flex-end;
+  border-color: rgba(216, 185, 104, 0.4);
+  border-radius: 14px;
+  background: #07080e;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.5), 0 14px 28px -14px rgba(0, 0, 0, 0.9);
+}
+
+.raza-tarjeta:hover {
+  transform: translateY(-5px);
+}
+
+.raza-tarjeta.activa {
+  transform: translateY(-8px);
+  border-color: var(--raza-primario);
+  background: #07080e;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--raza-primario),
+    0 0 28px -4px color-mix(in srgb, var(--raza-primario) 70%, transparent),
+    0 20px 34px -14px rgba(0, 0, 0, 0.95);
+}
+
+.rt-tapete {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.75);
+  transition: filter 0.3s;
+}
+
+.raza-tarjeta.activa .rt-tapete,
+.raza-tarjeta:hover .rt-tapete {
+  filter: brightness(1);
+}
+
+.rt-lider {
+  position: absolute;
+  left: 50%;
+  bottom: 30%;
+  height: 76%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.85));
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  transition: transform 0.3s ease-out;
+}
+
+.raza-tarjeta.activa .rt-lider,
+.raza-tarjeta:not(.bloqueada):hover .rt-lider {
+  transform: translateX(-50%) scale(1.05);
+}
+
+.rt-texto {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 30px 10px 12px;
+  background: linear-gradient(to top, rgba(5, 6, 12, 0.96) 58%, transparent);
+}
+
+.rt-texto .raza-sigil {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.rt-texto .raza-nombre {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(15px, 2.4vh, 19px);
+  font-weight: 600;
+  color: #f3dda0;
+}
+
+.rt-texto .raza-lema {
+  min-height: 0;
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.raza-orden {
+  z-index: 3;
+  background: rgba(5, 6, 12, 0.8);
+}
+
+/* Cerrada: el líder en silueta, el candado y la tarjeta apagada. */
+.raza-tarjeta.bloqueada {
+  opacity: 1;
+}
+
+.raza-tarjeta.bloqueada .rt-tapete {
+  filter: grayscale(0.8) brightness(0.35);
+}
+
+.raza-tarjeta.bloqueada .rt-lider {
+  filter: brightness(0) drop-shadow(0 0 1px rgba(216, 185, 104, 0.6));
+  opacity: 0.85;
+}
+
+.raza-tarjeta.bloqueada .rt-texto .raza-nombre {
+  color: rgba(232, 214, 170, 0.55);
+}
+
+.rt-candado {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.9));
+}
+
+/* --- Abajo: vitrina de cristales al lado de la ficha --- */
+
+.raza-bajo {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: clamp(190px, 22vw, 250px) minmax(0, 1fr);
+  gap: clamp(12px, 1.6vw, 18px);
+  margin-top: 14px;
+}
+
+.raza-bajo .gemas,
+.raza-bajo .raza-detalle {
+  margin: 0;
+  min-height: 0;
+}
+
+.raza-bajo .gemas {
+  overflow-y: auto;
+  border-color: rgba(216, 185, 104, 0.3);
+  background: rgba(7, 8, 14, 0.75);
+}
+
+.raza-bajo .gemas.es-completa {
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.raza-bajo .gemas-cab strong {
+  font-family: var(--fuente-titulo);
+  color: #f3dda0;
+}
+
+/* Los cuatro huecos, de dos en dos. */
+.raza-bajo .gemas-fila {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 8px;
+}
+
+.raza-bajo .gema {
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  opacity: 1;
+  text-align: center;
+}
+
+/* La piedra: un octaedro tallado (clip-path) con facetas de luz. Conseguida,
+   del color de su estirpe y brillando; pendiente, un hueco oscuro. */
+.gema-piedra {
+  position: relative;
+  width: 44px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 100% 30%, 100% 70%, 50% 100%, 0 70%, 0 30%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0 18%, transparent 18% 50%,
+      rgba(0, 0, 0, 0.35) 50% 70%, transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--raza-primario) 85%, #fff), var(--raza-primario) 55%,
+      color-mix(in srgb, var(--raza-primario) 55%, #000));
+}
+
+.gema.conseguida .gema-piedra {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--raza-primario) 80%, transparent));
+  animation: gema-late 3.2s ease-in-out infinite;
+}
+
+@keyframes gema-late {
+  0%, 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--raza-primario) 60%, transparent)); }
+  50% { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--raza-primario) 95%, transparent)); }
+}
+
+.gema.pendiente .gema-piedra {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 18%, transparent 18% 50%,
+      rgba(0, 0, 0, 0.4) 50% 70%, transparent 70%),
+    linear-gradient(180deg, #1a1c26, #0b0c12);
+  box-shadow: inset 0 0 0 1px rgba(216, 185, 104, 0.3);
+}
+
+.gema-piedra .gema-sigil {
+  font-size: 17px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.gema.pendiente .gema-piedra .gema-sigil {
+  color: rgba(232, 214, 170, 0.35);
+}
+
+.raza-bajo .gema-nombre {
+  font-size: 10.5px;
+}
+
+.raza-bajo .raza-detalle {
+  border-color: rgba(216, 185, 104, 0.3);
+  background: rgba(7, 8, 14, 0.78);
+}
+
+.raza-bajo .detalle-nombre {
+  font-family: var(--fuente-titulo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gema.conseguida .gema-piedra { animation: none; }
+}
+
+/* La ficha, más estrecha al lado de la vitrina, tiene que caber sin
+   desplazarse (medido: se pasaba 94 px a 1194×728 y 131 a 1024×700). */
+.raza-bajo .raza-detalle {
+  gap: 20px;
+  padding: 14px 18px;
+}
+
+.raza-bajo .detalle-pasiva {
+  padding: 9px 12px;
+  margin-bottom: 8px;
+}
+
+.raza-bajo .detalle-pasiva p {
+  display: none;
+}
+
+.raza-bajo .detalle-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+}
+
+.raza-bajo .detalle-desc {
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+
+.raza-bajo .gemas {
+  padding: 10px 12px;
+}
+
+.raza-bajo .gemas-pie {
+  display: none;
+}
+
+.raza-bajo .gemas-fila {
+  gap: 6px 8px;
+}
+
+.raza-bajo .gema-piedra {
+  width: 36px;
+  height: 42px;
+}
+
+
+/* ======================= Elecciones y estados =========================== */
+
+/* La elección: una placa sobre la mesa, con una opción por botón. No tapa
+   la pantalla entera: la mesa se sigue viendo para decidir. */
+.eleccion {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 25;
+  transform: translate(-50%, -50%);
+  animation: eleccion-entra 0.22s ease-out;
+}
+
+.eleccion.oculto {
+  display: none;
+}
+
+@keyframes eleccion-entra {
+  from { opacity: 0; transform: translate(-50%, -44%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.eleccion-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 300px;
+  padding: 16px 22px 18px;
+  border: 1px solid rgba(216, 185, 104, 0.7);
+  border-radius: 16px;
+  background: rgba(8, 9, 16, 0.95);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.4), 0 0 34px rgba(216, 185, 104, 0.25),
+    0 24px 50px -16px rgba(0, 0, 0, 0.95);
+}
+
+.eleccion-sup {
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(232, 214, 170, 0.6);
+}
+
+.eleccion-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: 19px;
+  color: #f3dda0;
+}
+
+.eleccion-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.eleccion-op {
+  padding: 10px 18px;
+  border: 1px solid rgba(216, 185, 104, 0.6);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(60, 48, 20, 0.9), rgba(25, 20, 10, 0.95));
+  color: #f3dda0;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.eleccion-op:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(255, 210, 110, 0.45);
+}
+
+/* Estados con duración, como pastillas en la carta. */
+.estado-chips {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 3;
+  display: flex;
+  gap: 3px;
+}
+
+.estado-chip {
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(160, 200, 255, 0.7);
+  background: rgba(8, 12, 26, 0.9);
+  color: #cfe2ff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.veredicto-paz {
+  color: #b9e4c9;
+}
+
+/* La placa de elección se sacude si pulsas una carta antes de responder. */
+.eleccion-caja.sacude { animation: eleccion-sacude 0.45s ease; }
+@keyframes eleccion-sacude {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: reduce) { .eleccion-caja.sacude { animation: none; } }
+.eleccion-aviso {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: #f3c96b;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Bocadillos: los personajes hablan en los duelos de campaña ---- */
+.bocadillo {
+  position: fixed;
+  z-index: 60;
+  max-width: min(300px, 70vw);
+  padding: 8px 12px 9px;
+  border-radius: 14px;
+  background: rgba(16, 13, 9, 0.94);
+  border: 1px solid var(--oro-medio, #c9a24a);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  color: #f3ead6;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  pointer-events: none;
+  animation: bocadillo-entra 0.22s ease-out both;
+}
+.bocadillo::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--cola, 50%) - 7px);
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-right: 1px solid var(--oro-medio, #c9a24a);
+  border-bottom: 1px solid var(--oro-medio, #c9a24a);
+  transform: rotate(45deg);
+}
+.bocadillo.abajo::after { bottom: auto; top: -7px; transform: rotate(225deg); }
+.bocadillo.de-rival { border-color: #b0563f; }
+.bocadillo.de-rival::after { border-color: #b0563f; }
+.bocadillo-nombre {
+  display: block;
+  font-family: var(--fuente-titulo, serif);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--oro-claro, #f3d58a);
+  margin-bottom: 2px;
+}
+.bocadillo.de-rival .bocadillo-nombre { color: #f0a58c; }
+.bocadillo.acotacion .bocadillo-texto { font-style: italic; color: #d9cdb4; }
+.bocadillo.se-va { animation: bocadillo-sale 0.26s ease-in both; }
+@keyframes bocadillo-entra {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bocadillo-sale { to { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .bocadillo, .bocadillo.se-va { animation: none; }
+}
+
+/* Mezclador: voz del narrador (apagado / normal / suave). */
+.mez-opciones { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.mez-opcion {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 162, 74, 0.45);
+  background: rgba(0, 0, 0, 0.25);
+  color: #e8dcc0;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.mez-opcion:hover { border-color: var(--oro-medio, #c9a24a); }
+.mez-opcion.activa {
+  background: linear-gradient(180deg, #e7c779, #b88b33);
+  color: #1d150a;
+  border-color: #f3d58a;
+  font-weight: 600;
+}
+.mez-fila.mez-narrador { grid-template-columns: 1fr auto; }
+.mez-narrador .mez-opciones { flex-wrap: nowrap; }
+
+/* ------------------------- Duelo remoto (tanda 1) ------------------------- */
+
+.mc-duelo img:nth-child(1) { transform: translateX(-85%) rotate(-12deg); }
+.mc-duelo img:nth-child(2) { transform: translateX(-15%) rotate(12deg); }
+
+.remoto .oculto { display: none !important; }
+
+.remoto-cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.remoto-nombre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--texto-suave);
+}
+
+.remoto input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-s);
+  color: var(--texto);
+  padding: 8px 12px;
+  font: inherit;
+}
+
+.remoto input:focus {
+  outline: none;
+  border-color: var(--oro-medio);
+}
+
+.remoto-opciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 320px));
+  gap: 18px;
+}
+
+.remoto-caja,
+.remoto-sala {
+  background: var(--fondo-panel);
+  border: 1px solid rgba(216, 185, 104, 0.35);
+  border-radius: var(--radio);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.remoto-caja h3 {
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  color: var(--oro-claro);
+}
+
+.remoto-caja p,
+.remoto-nota {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+.remoto-unirse {
+  display: flex;
+  gap: 8px;
+}
+
+.remoto-unirse input {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+
+.remoto-sala {
+  width: min(560px, 100%);
+  align-items: center;
+  text-align: center;
+}
+
+.remoto-codigo-grande {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.remoto-codigo-rotulo {
+  color: var(--texto-suave);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.remoto-codigo-grande strong {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(30px, 6vh, 46px);
+  letter-spacing: 0.16em;
+  color: var(--oro-claro);
+  text-shadow: 0 0 18px rgba(216, 185, 104, 0.45);
+  user-select: all;
+}
+
+.remoto-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--texto);
+}
+
+.remoto-luz {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--oro-medio);
+  box-shadow: 0 0 8px var(--oro-medio);
+  animation: remoto-latido 1s ease-in-out infinite alternate;
+}
+
+.remoto-sala[data-estado='conectado'] .remoto-luz { background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: none; }
+.remoto-sala[data-estado='error'] .remoto-luz,
+.remoto-sala[data-estado='cerrado'] .remoto-luz { background: var(--error); box-shadow: 0 0 8px var(--error); animation: none; }
+
+@keyframes remoto-latido {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+.remoto-ping {
+  color: var(--texto-tenue);
+  font-size: 13px;
+}
+
+.remoto-rival strong { color: var(--oro-claro); }
+
+.remoto-chat {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remoto-chat-lineas {
+  height: 150px;
+  overflow-y: auto;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.remoto-chat-lineas p { margin: 2px 0; }
+.remoto-chat-lineas .mio strong { color: var(--oro-medio); }
+.remoto-chat-lineas .suyo strong { color: #8fc7ff; }
+
+.remoto-chat-form {
+  display: flex;
+  gap: 8px;
+}
+
+.remoto-chat-form input { flex: 1; min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .remoto-luz { animation: none; }
+}
+
+/* Duelo remoto: el reverso oficial en la mano del rival. */
+.dorso-carta.dorso-oficial {
+  background: #07080e;
+}
+
+.dorso-carta.dorso-oficial img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remoto-lobby {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.remoto-razas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.remoto-raza {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--raza-primario) 55%, transparent);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--texto-suave);
+  cursor: pointer;
+  font: inherit;
+}
+
+.remoto-raza.activa {
+  color: var(--texto);
+  background: color-mix(in srgb, var(--raza-primario) 28%, #0b0d17);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--raza-primario) 55%, transparent);
+}
+
+.remoto-raza-sigil {
+  color: var(--raza-primario);
+}
+
+/* En la sala: estirpe y «Comenzar» antes que el chat (que no los empuje fuera). */
+.remoto-lobby { order: 1; }
+.remoto-chat { order: 2; }
+.remoto-sala #btn-salir-sala { order: 3; }
+.remoto-chat-lineas { height: 90px; }
+
+/* Tanda 4: equipo, relé, reconexión y revancha. */
+.remoto-equipo,
+.remoto-avanzado label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--texto-suave);
+}
+
+.remoto select {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-s);
+  color: var(--texto);
+  padding: 6px 10px;
+  font: inherit;
+}
+
+.remoto-avanzado {
+  width: min(660px, 100%);
+  color: var(--texto-suave);
+  font-size: 14px;
+  background: var(--fondo-panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 10px 16px;
+}
+
+.remoto-avanzado summary {
+  cursor: pointer;
+  color: var(--oro-medio);
+}
+
+.remoto-avanzado[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remoto-avanzado label span { width: 80px; }
+.remoto-avanzado label input { flex: 1; min-width: 0; }
+
+.remoto-avanzado-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aviso-red {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 6, 12, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.aviso-red-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 26px;
+  border-radius: var(--radio);
+  border: 1px solid rgba(216, 185, 104, 0.5);
+  background: #0b0d17;
+  color: var(--texto);
+  text-align: center;
+}
+
+.aviso-red-caja small { color: var(--texto-suave); }
+
+.fin-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ==================== Teléfono (html.movil, ver plataforma.js) ==================== */
+/* En el teléfono la página se diseña a ~540 px de alto (y se escala para caber):
+   lo que más alto roba son los márgenes y las cabeceras grandes del PC. */
+html.movil .pantalla {
+  padding: 12px 22px 10px;
+}
+
+html.movil .pantalla-cabecera {
+  padding-top: 22px;
+  margin-bottom: 10px;
+}
+
+html.movil .pantalla-titulo {
+  font-size: 26px;
+}
+
+/* La entradilla, en dos líneas como mucho (la del calabozo es larga). */
+html.movil .pantalla-sub {
+  max-width: 900px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Calabozo: el pie de la placa («Entrar») pegado abajo, siempre a la vista
+   aunque la narración de la etapa obligue a desplazar. */
+html.movil .placa-etapa .pe-pie {
+  position: sticky;
+  bottom: -1px;
+  z-index: 2;
+  margin: 0 -12px -12px;
+  padding: 8px 12px 10px;
+  background: linear-gradient(to top, rgba(7, 8, 14, 0.98) 70%, rgba(7, 8, 14, 0));
+}
+
+/* Constructor: con poco alto, las dos rejillas encogidas pisaban sus filas.
+   En el teléfono la columna entera se desplaza y cada rejilla toma su alto. */
+html.movil .constructor-pool {
+  overflow-y: auto;
+}
+
+html.movil .pool-lista,
+html.movil .pool-acciones {
+  flex: none;
+  overflow: visible;
+}
+
+/* Mesa: en el teléfono el lateral es SOLO la carta (Oscar): sin registro, ni
+   herramientas, ni recordatorios (lo que importa ya sale en emergentes sobre
+   la mesa). La lupa ocupa la columna entera; la grande sigue con «mantener
+   pulsado». Ancho pensado para que la carta casi llene el alto. */
+html.movil .mesa {
+  grid-template-columns: 1fr 270px;
+  padding-bottom: 4px;
+}
+
+html.movil .mesa-lateral .lateral-pestanas,
+html.movil .mesa-lateral .lateral-panel {
+  display: none !important;
+}
+
+html.movil .mesa-lateral .lupa {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  margin-bottom: 0;
+}
+
+
+/* ------------------- Hades y destierro: zonas de la mesa ------------------- */
+/* Un hueco del tamaño de una carta con las últimas en abanico. El Hades arde
+   en morado y rojo; el destierro (el vacío) es frío, punteado y más apagado:
+   está un paso más lejos. */
+.zonas-fuera {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.4vh, 14px);
+  flex-shrink: 0;
+  /* A la IZQUIERDA del personaje en posición y FUERA del reparto de la fila:
+     el retrato flotante va corrido a la derecha de la carta
+     (.flotantes-lado) y ahí las tapaba (Oscar); y metidas en la fila
+     empujaban la carta bajo el retrato. Así la carta no se mueve. El Hades
+     queda pegado a la carta y el destierro un paso más afuera, como en las
+     reglas (solo se llega a él desde el Hades). */
+  position: absolute;
+  right: calc(100% + clamp(10px, 1.6vw, 22px));
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: row-reverse;
+  /* Por si un retrato ancho llega a rozarlas: por encima de su capa (z 7). */
+  z-index: 8;
+}
+
+.lado-fila .lado-campo {
+  position: relative;
+}
+
+.zona-fuera {
+  --zf-w: clamp(44px, 7.2vh, 64px);
+  --zf-color: 190, 110, 210;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Lo que dejaba la casilla vieja, fuera. */
+.zona-fuera.casilla-hades.vacia,
+.zona-fuera.es-vacio {
+  min-width: 0;
+  min-height: 0;
+  border: none;
+  background: none;
+  opacity: 1;
+}
+
+.zf-pila {
+  position: relative;
+  width: calc(var(--zf-w) * 1.7);
+  height: calc(var(--zf-w) * 1.48);
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--zf-color), 0.45);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 60%, rgba(var(--zf-color), 0.22), transparent 70%),
+    rgba(6, 4, 12, 0.55);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.75), 0 0 14px rgba(var(--zf-color), 0.18);
+}
+
+.zf-hades {
+  --zf-color: 200, 80, 150;
+}
+
+.zf-hades .zf-pila {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 85%, rgba(220, 70, 60, 0.28), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 40%, rgba(150, 60, 190, 0.22), transparent 70%),
+    rgba(10, 4, 10, 0.6);
+}
+
+.zf-destierro {
+  --zf-color: 110, 140, 220;
+}
+
+.zf-destierro .zf-pila {
+  border-style: dashed;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.9) 0 18%, rgba(70, 100, 200, 0.2) 45%, transparent 72%),
+    rgba(4, 6, 14, 0.6);
+}
+
+.zf-icono {
+  font-size: calc(var(--zf-w) * 0.55);
+  color: rgba(var(--zf-color), 0.35);
+  text-shadow: 0 0 12px rgba(var(--zf-color), 0.35);
+}
+
+.zf-carta {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--zf-w);
+  aspect-ratio: 1191 / 1646;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--zf-color), 0.6);
+  box-shadow: -2px 3px 8px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  --d: calc(var(--k) - (var(--n) - 1) / 2);
+  transform: translate(calc(-50% + var(--d) * var(--zf-w) * 0.22), -50%) rotate(calc(var(--d) * 6deg));
+  transition: transform var(--transicion), box-shadow var(--transicion);
+  z-index: calc(var(--k) + 1);
+}
+
+.zf-carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(0.45) brightness(0.8) sepia(0.2);
+}
+
+.zf-destierro .zf-carta img {
+  filter: grayscale(0.85) brightness(0.65) hue-rotate(190deg) saturate(1.6);
+}
+
+.zf-carta:hover {
+  z-index: 20;
+  transform: translate(calc(-50% + var(--d) * var(--zf-w) * 0.22), -58%) rotate(0deg) scale(1.15);
+  box-shadow: 0 0 14px rgba(var(--zf-color), 0.7);
+}
+
+.zf-carta:hover img {
+  filter: none;
+}
+
+.zf-rotulo {
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--zf-color), 0.5);
+  background: rgba(var(--zf-color), 0.14);
+  color: rgb(var(--zf-color));
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  filter: brightness(1.35);
+}
+
+.zf-rotulo b {
+  margin-left: 3px;
+  color: #fff;
+}
+
+.zona-fuera.vacia .zf-rotulo {
+  opacity: 0.6;
+}
+
+/* En TU lado, un poco más arriba que la carta: centradas, la pastilla del
+   destierro rozaba la caja de tu mano, que asoma por la esquina de abajo. */
+.mesa-lado.es-jugador .zonas-fuera {
+  top: 0;
+  transform: translateY(-40%);
+}
+
+/* ------------------------- Web (html.web, plataforma.js) ------------------------- */
+/* Una página no se cierra a sí misma: sin botón «Salir». */
+html.web .menu-icono-salir {
+  display: none;
+}
+
+/* Teléfono en vertical (solo pasa en el navegador: la APK va fija en
+   horizontal): la mesa no cabe, se pide girarlo. */
+@media (orientation: portrait) {
+  html.movil body::after {
+    content: '⟳  Gira el teléfono para jugar';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    padding: 40px;
+    background: #0b0d17;
+    color: #f6e3b0;
+    font: 600 64px/1.3 'Palatino Linotype', Georgia, serif;
+    text-align: center;
+  }
 }

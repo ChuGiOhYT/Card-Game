@@ -242,6 +242,11 @@ window.Game.Cinematica = {
     // Dos a la vez no tiene sentido y dejaría una capa huérfana encima.
     this.cortar();
 
+    // El narrador (ui/narrador.js), si está encendido y hay voz para este
+    // texto: arranca cuando el texto ya se ve y la escena dura lo que la voz.
+    const voz = window.Game.Narrador?.leer(texto, { retraso: this.FUNDIDO_ENTRADA });
+    if (voz && voz.dur) segundos = Math.max(segundos, voz.dur - this.APARICION / 1000 + 0.8);
+
     return new Promise((resolve) => {
       const capa = document.createElement('div');
       capa.className = 'cinematica';
@@ -275,6 +280,7 @@ window.Game.Cinematica = {
       const salir = (duracion) => {
         if (!this.capa) return;
         clearTimeout(espera);
+        window.Game.Narrador?.parar(duracion);
         document.removeEventListener('keydown', alPulsarTecla, true);
         capa.removeEventListener('click', alHacerClic);
 

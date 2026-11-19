@@ -14,3 +14,14 @@ npm-debug.log*
 # La partida guardada NO vive aquí (va en %APPDATA%\aeternum\savegame.json),
 # pero por si alguna prueba deja una copia suelta en el proyecto.
 savegame.json
+
+# APK (movil/): dependencias, compilados y la copia del juego que mete `cap sync`.
+movil/node_modules/
+movil/android/.gradle/
+movil/android/build/
+movil/android/app/build/
+movil/android/app/src/main/assets/public/
+movil/android/app/src/main/assets/capacitor.config.json
+movil/android/app/src/main/assets/capacitor.plugins.json
+movil/android/capacitor-cordova-android-plugins/
+movil/android/local.properties

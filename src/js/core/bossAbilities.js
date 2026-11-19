@@ -9,7 +9,7 @@
  * distintos, indexados por nombre:
  *
  *   Convocar   los cuatro          Aplacar     Brahma y A'tar
- *   Revelar / Ocultar   Üldar      Burlar / Adaptación   Tarh Akh
+ *   Revelar / Ocultar   Iskar      Burlar / Adaptación   Tarh Akh
  *   Cegar      Brahma              Intimidar   A'tar
  *   Tenebres / Purgatorio / Luminaria / Devastar  — el golpe al grupo
  *
@@ -215,7 +215,7 @@ window.Game.Jefes = {
       );
     },
 
-    /* --- Üldar --- */
+    /* --- Iskar --- */
 
     Revelar(motor) {
       const rival = this._rival(motor);

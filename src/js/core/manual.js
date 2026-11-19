@@ -77,8 +77,64 @@ window.Game.Manual = {
         ? ` (${bruto} ${modificador > 0 ? '+' : ''}${modificador})`
         : '';
     motor.log(`🎲 ${motivo}: ${resultado}${extra}.`);
+    // La última tirada, sea de quien sea (botón, Finta, la IA…): la pantalla
+    // la hace rodar en el dado de la mesa. `n` distingue dos tiradas iguales.
+    motor.ultimaTirada = { n: ((motor.ultimaTirada && motor.ultimaTirada.n) || 0) + 1, resultado };
     motor.notificar();
     return { bruto, resultado };
+  },
+
+  /**
+   * La tirada de un EFECTO: sabe quién tira y si el dado es de una carta de
+   * acción, y con eso aplica lo que tocan otras cartas:
+   *  - Sabotaje del rival acoplado a su personaje en posición: −2.
+   *  - Yun tuyo (revelado o en posición), solo con dados de ACCIÓN: ±1, a
+   *    elegir. Te pregunta a ti (puede esperar) y la IA elige con `valor`
+   *    (lo bueno de cada resultado para ESA carta: Bloquear prefiere 1 y 6).
+   * Por eso el resultado llega en `alTener(resultado)` y no de vuelta: con
+   * una pregunta en medio, llega después. Sin pregunta, llega en el acto.
+   * El dado de la mesa (botón) sigue usando dado(): es una herramienta, no
+   * una carta, y no lo toca nada.
+   */
+  tirar(motor, { jugador = null, motivo = 'tirada', deAccion = false, valor = (n) => n } = {}, alTener) {
+    const EP = window.Game.EfectosPersonaje;
+    const bruto = 1 + Math.floor(Math.random() * 6);
+    const notas = [];
+    let r = bruto;
+    if (jugador && EP && EP.saboteado(motor, jugador)) {
+      r -= 2;
+      notas.push('Sabotaje −2');
+    }
+    const fijar = (n) => Math.max(1, Math.min(6, n));
+    r = fijar(r);
+
+    const terminar = (mod) => {
+      const final = fijar(r + mod);
+      if (mod) notas.push(`Yun ${mod > 0 ? '+1' : '−1'}`);
+      motor.log(`🎲 ${motivo}: ${final}${notas.length ? ` (salió ${bruto}; ${notas.join(', ')})` : ''}.`);
+      motor.ultimaTirada = { n: ((motor.ultimaTirada && motor.ultimaTirada.n) || 0) + 1, resultado: final };
+      motor.notificar();
+      alTener(final);
+    };
+
+    if (jugador && deAccion && EP && EP.tieneYun(motor, jugador)) {
+      const opciones = [-1, 0, 1]
+        .filter((d) => d === 0 || fijar(r + d) !== r)
+        .map((d) => ({
+          id: String(d),
+          texto: d === 0 ? `Dejar el ${r}` : `${d > 0 ? '+1' : '−1'} → ${fijar(r + d)}`
+        }));
+      motor.elegir({
+        jugador,
+        titulo: `Yun · ${motivo}: salió ${r}`,
+        opciones,
+        ia: (ops) => ops.map((o) => o.id)
+          .sort((a, b) => valor(fijar(r + Number(b))) - valor(fijar(r + Number(a))))[0],
+        alElegir: (id) => terminar(Number(id))
+      });
+      return;
+    }
+    terminar(0);
   },
 
   /* --------------------------- Información ------------------------------ */
@@ -93,7 +149,7 @@ window.Game.Manual = {
     return true;
   },
 
-  /** Vuelve a ocultar una carta revelada (Ocultamiento, Üldar). */
+  /** Vuelve a ocultar una carta revelada (Ocultamiento, Iskar). */
   ocultar(motor, jugador, cartaId, motivo = 'efecto de carta') {
     if (!jugador.revelados.has(cartaId)) return false;
     // Lo que está en el Hades es zona abierta: no se puede volver a tapar.
@@ -135,7 +191,16 @@ window.Game.Manual = {
 
   estaBloqueada(motor, jugador, cartaId) {
     const idx = motor.jugadores.indexOf(jugador);
-    return motor.bloqueos.some((b) => b.jugador === idx && b.cartaId === cartaId);
+    return motor.bloqueos.some((b) => b.jugador === idx && b.cartaId === cartaId
+      // «Mientras esta carta permanezca en posición» (Lirhym): vale solo
+      // mientras esa instancia siga en posición en su bando.
+      && (!b.mientras || motor.jugadores.some((j) => j.activos.some((i) => i.uid === b.mientras))));
+  },
+
+  /** Bloqueo atado a que un personaje siga en posición (Lirhym). */
+  bloquearMientras(motor, jugador, cartaId, uid, motivo) {
+    motor.bloqueos.push({ jugador: motor.jugadores.indexOf(jugador), cartaId, turnos: Infinity, mientras: uid });
+    motor.log(`⛓ «${this.nombreCarta(cartaId)}» bloqueada mientras ${motivo} siga en posición.`);
   },
 
   liberar(motor, jugador, cartaId) {

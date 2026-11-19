@@ -33,28 +33,41 @@
 window.Game = window.Game || {};
 
 window.Game.Combat = {
+  /**
+   * La acción que cuenta: la carta acoplada o, si no hay, Tilos equipado como
+   * acción (ofensiva o defensiva), que además suma su ataque o su defensa.
+   */
+  _accion(inst) {
+    const real = window.Game.ACTIONS_BY_ID[inst.accion];
+    if (real) return { tipo: real.tipo, extra: 0 };
+    if (!inst.tilos) return null;
+    const T = window.Game.CHARACTERS_BY_ID.mer_tilos;
+    return { tipo: inst.tilos.tipo, extra: inst.tilos.tipo === 'ofensiva' ? T.ataque : T.defensa };
+  },
+
   /** Ataque efectivo: 0 salvo que tenga una acción ofensiva equipada. */
   ataqueEfectivo(inst) {
     if (!inst) return 0;
-    const accion = window.Game.ACTIONS_BY_ID[inst.accion];
+    const accion = this._accion(inst);
     if (!accion || accion.tipo !== 'ofensiva') return 0;
-    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque;
-    return Math.max(0, base + (inst.modificadores?.ataque || 0));
+    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque + accion.extra;
+    // `pasivo`: los efectos que se recalculan solos (efectosPersonaje).
+    return Math.max(0, base + (inst.modificadores?.ataque || 0) + (inst.pasivo?.ataque || 0));
   },
 
   /** Defensa efectiva: 0 salvo que tenga una acción defensiva equipada. */
   defensaEfectiva(inst) {
     if (!inst) return 0;
-    const accion = window.Game.ACTIONS_BY_ID[inst.accion];
+    const accion = this._accion(inst);
     if (!accion || accion.tipo !== 'defensiva') return 0;
-    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].defensa;
-    return Math.max(0, base + (inst.modificadores?.defensa || 0));
+    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].defensa + accion.extra;
+    return Math.max(0, base + (inst.modificadores?.defensa || 0) + (inst.pasivo?.defensa || 0));
   },
 
   /** Postura del personaje: 'ofensiva' | 'defensiva' | 'neutral'. */
   postura(inst) {
     if (!inst) return 'neutral';
-    const accion = window.Game.ACTIONS_BY_ID[inst.accion];
+    const accion = this._accion(inst);
     return accion ? accion.tipo : 'neutral';
   },
 

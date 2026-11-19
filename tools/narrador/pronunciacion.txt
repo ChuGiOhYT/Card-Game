@@ -1,0 +1,10 @@
+# Pronunciación del narrador: «escrito = dicho». Solo cambia la VOZ;
+# el texto en pantalla queda igual. Una regla por línea; # es comentario.
+# Al cambiar algo aquí, vuelve a correr GENERAR_NARRACION.bat: solo se
+# rehacen los textos afectados.
+#
+# Ejemplos (quita el # para activarlos y escribe cómo lo dices tú):
+# Aether’Num = Éter Num
+# A’tar = Atar
+# Aj’Khul = Ajkul
+# Tarh Akh = Tar Ak

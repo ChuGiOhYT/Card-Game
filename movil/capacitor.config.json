@@ -1,0 +1,8 @@
+{
+  "appId": "com.chugioh.aeternum",
+  "appName": "AETERNUM",
+  "webDir": "../src",
+  "android": {
+    "backgroundColor": "#0b0d17"
+  }
+}

@@ -52,6 +52,17 @@ window.Game.Mezclador = {
           Al 100% suena como está mezclado de fábrica. Se guarda solo.
         </p>
         ${filas}
+        <div class="mez-fila mez-narrador">
+          <div class="mez-etiqueta">
+            <strong>Voz del narrador</strong>
+            <span class="nota">Lee las escenas de la campaña</span>
+          </div>
+          <div class="mez-opciones" role="radiogroup" aria-label="Voz del narrador">
+            ${Object.entries(window.Game.Narrador ? window.Game.Narrador.MODOS : {}).map(([id, t]) => `
+              <button type="button" class="mez-opcion${window.Game.Narrador.modo() === id ? ' activa' : ''}"
+                      data-narrador="${id}" role="radio" aria-checked="${window.Game.Narrador.modo() === id}">${t}</button>`).join('')}
+          </div>
+        </div>
         <div class="mez-pie">
           <button class="mez-restablecer" type="button">Restablecer</button>
           <button class="btn-primario mez-cerrar" type="button">Cerrar</button>
@@ -61,7 +72,7 @@ window.Game.Mezclador = {
     document.body.appendChild(capa);
     this.capa = capa;
 
-    capa.querySelectorAll('.mez-fila').forEach((fila) => {
+    capa.querySelectorAll('.mez-fila[data-grupo]').forEach((fila) => {
       const grupo = fila.dataset.grupo;
       const mando = fila.querySelector('.mez-mando');
       const valor = fila.querySelector('.mez-valor');
@@ -88,6 +99,17 @@ window.Game.Mezclador = {
       this.refrescar();
     });
 
+    capa.querySelectorAll('[data-narrador]').forEach((b) => {
+      b.addEventListener('click', () => {
+        window.Game.Narrador.ponerModo(b.dataset.narrador);
+        capa.querySelectorAll('[data-narrador]').forEach((x) => {
+          const si = x === b;
+          x.classList.toggle('activa', si);
+          x.setAttribute('aria-checked', String(si));
+        });
+      });
+    });
+
     capa.querySelector('.mez-cerrar').addEventListener('click', () => this.cerrar());
     // Pinchar fuera del panel cierra; dentro, no.
     capa.addEventListener('click', (ev) => {
@@ -106,7 +128,7 @@ window.Game.Mezclador = {
   refrescar() {
     if (!this.capa) return;
     const A = window.Game.Audio;
-    this.capa.querySelectorAll('.mez-fila').forEach((fila) => {
+    this.capa.querySelectorAll('.mez-fila[data-grupo]').forEach((fila) => {
       const pct = Math.round(A.nivel(fila.dataset.grupo) * 100);
       fila.querySelector('.mez-mando').value = pct;
       fila.querySelector('.mez-valor').textContent = `${pct}%`;
