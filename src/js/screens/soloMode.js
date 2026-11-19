@@ -12,7 +12,7 @@ window.Game.Screens.modoSolo = {
     contenedor.innerHTML = `
       <div class="pantalla">
         <header class="pantalla-cabecera">
-          <button class="btn-volver" id="btn-volver">← Volver</button>
+          <button class="btn-volver" id="btn-volver" aria-label="Volver"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Volver</span></button>
           <h2 class="pantalla-titulo">Partida rápida</h2>
           <p class="pantalla-sub">
             Elige con quién juegas y contra quién. Sin progreso, sin castigo.

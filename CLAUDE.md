@@ -277,6 +277,16 @@ mal, se corrige ahí y se regenera.
   a su versión de una línea (343 → 38 px) y la ficha sube a 298. Si añades algo
   permanente a esta pantalla, mide la ficha antes de darlo por bueno.
 
+  **Desde el 19-nov ya no es una casilla: es una VENTANA GRANDE** (Oscar: en
+  la casilla no se podían revisar las recompensas). `bloqueRecompensaFinal`
+  pinta `#recompensa-final` (`.rf-velo`, fija sobre la pantalla) con los
+  cristales, las seis cartas grandes (tocar una la amplía con
+  `Lupa.ampliar`) y los dos modos que se abren. Se cierra con «Entendido»,
+  Esc (en captura: con una carta ampliada, Esc cierra solo la carta) o
+  tocando fuera. Como ya no ocupa la vitrina, ésta pasa a compacta en cuanto
+  la historia está leída. Lo de abajo sobre sustituir la sección en caliente
+  ya no aplica a este aviso.
+
   Y ojo con repintar aquí: `render()` relee la estirpe del **perfil**, donde solo
   está la confirmada con «Comenzar historia». Un `render()` a media navegación
   borra la ficha que el jugador estaba mirando; por eso cerrar el aviso sustituye
@@ -558,6 +568,17 @@ tras el título del menú (`EMBLEMA` en mainMenu.js: filetes de oro, nodos en
 los vértices, orbes violeta y cian) y el filete con rombo y nodos. Logo en
 `assets/marca/` (también de favicon). Cinzel es más ancha que Palatino: los
 títulos ocupan más; medir si algo se parte.
+
+**Volver** (todas las pantallas con `.btn-volver`): círculo dorado con una
+flecha curva hacia atrás y el nombre al lado (Oscar: «más visible»). La flecha
+es un SVG EN EL HTML (`.volver-ico`): como máscara `data:` en el CSS no se
+pinta, porque la CSP (`default-src 'self'`) bloquea las imágenes `data:`.
+
+**Estirpes: el líder SALE de la carta** por arriba (`.raza-tarjeta` con
+`overflow: visible`, el tapete recortado con su propio radio, `.rt-lider` al
+92 %, y la rejilla baja un poco para dejarle sitio). Medido en 1024×700 y
+1194×728: la ficha sigue sin desbordar (a 6vh de margen se pasaba 7 px). En el
+teléfono asoma menos (84 %) y el botón es más chico, para no pisar el texto.
 
 ## Aviso de la condición de victoria
 

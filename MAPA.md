@@ -515,7 +515,7 @@ Una por archivo. Reciben `(contenedor, params)` y pintan.
 
 Expone: `Game.Screens`
 
-### `src/js/screens/raceSelect.js`  ·  354 líneas
+### `src/js/screens/raceSelect.js`  ·  375 líneas
 
 Expone: `Game.Screens`
 

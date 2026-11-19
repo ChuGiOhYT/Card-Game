@@ -174,7 +174,7 @@ window.Game.Screens.historia = {
       contenedor.innerHTML = `
         <div class="pantalla" style="--raza-primario:${r.colorPrimario}">
           <header class="pantalla-cabecera">
-            <button class="btn-volver" id="btn-volver">← Cambiar estirpe</button>
+            <button class="btn-volver" id="btn-volver" aria-label="Cambiar estirpe"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Cambiar estirpe</span></button>
             <h2 class="pantalla-titulo tinte">${r.sigil} ${r.nombre}</h2>
             <p class="pantalla-sub">${pendiente ? pendiente.nombre : 'Calabozo'}</p>
           </header>
@@ -201,7 +201,7 @@ window.Game.Screens.historia = {
       <div class="pantalla calabozo"
            style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
         <header class="pantalla-cabecera">
-          <button class="btn-volver" id="btn-volver">← Cambiar estirpe</button>
+          <button class="btn-volver" id="btn-volver" aria-label="Cambiar estirpe"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Cambiar estirpe</span></button>
           <h2 class="pantalla-titulo tinte">${cal.nombre}</h2>
           <p class="pantalla-sub">${cal.intro}</p>
         </header>

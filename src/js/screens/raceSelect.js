@@ -62,7 +62,7 @@ window.Game.Screens.seleccionRaza = {
       <div class="fondo-estirpe" id="fondo-estirpe" aria-hidden="true"></div>
       <div class="pantalla">
         <header class="pantalla-cabecera">
-          <button class="btn-volver" id="btn-volver">← Volver</button>
+          <button class="btn-volver" id="btn-volver" aria-label="Volver"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Volver</span></button>
           <h2 class="pantalla-titulo">Elige tu estirpe</h2>
           <p class="pantalla-sub">
             La campaña es lineal: cada estirpe se abre al terminar la
@@ -84,6 +84,8 @@ window.Game.Screens.seleccionRaza = {
           </section>
         </div>
 
+        ${this.bloqueRecompensaFinal()}
+
         <footer class="pantalla-pie">
           <button class="btn-primario" id="btn-confirmar" disabled>
             Comenzar historia
@@ -103,18 +105,31 @@ window.Game.Screens.seleccionRaza = {
       window.Game.Router.ir('mainMenu');
     });
 
-    contenedor.querySelector('#btn-recompensa-vista')?.addEventListener('click', () => {
-      window.Game.State.marcarRecompensaAnunciada();
-      // Se sustituye SOLO esta sección por su versión de una línea, sin repintar
-      // la pantalla: `render()` relee la estirpe elegida del perfil, y ahí solo
-      // está la confirmada con «Comenzar historia». Repintando aquí se perdería
-      // la ficha que el jugador estaba mirando, que es justo lo que se quiere
-      // arreglar. Cambiar la sección se lleva de paso el aviso, que va dentro.
-      const seccion = contenedor.querySelector('.gemas');
-      if (!seccion) return;
-      seccion.outerHTML = this.bloqueGemasCompacto(window.Game.gemasTotales());
-      this.conectarHistoriaFinal(contenedor, params);
-    });
+    // La ventana de la recompensa: se cierra con «Entendido», con Esc o
+    // tocando fuera, y no vuelve (marcarRecompensaAnunciada).
+    const ventana = contenedor.querySelector('#recompensa-final');
+    if (ventana) {
+      const cerrar = () => {
+        window.Game.State.marcarRecompensaAnunciada();
+        ventana.classList.add('cerrando');
+        setTimeout(() => ventana.remove(), 260);
+        document.removeEventListener('keydown', alTeclear, true);
+      };
+      // En captura, para ver la lupa ANTES de que su propio Esc la cierre:
+      // con una carta ampliada, Esc cierra solo la carta.
+      const alTeclear = (e) => {
+        const lupa = document.getElementById('lupa-grande');
+        if (e.key === 'Escape' && !(lupa && !lupa.classList.contains('oculto'))) cerrar();
+      };
+      document.addEventListener('keydown', alTeclear, true);
+      // Tocar una carta la amplía para leerla entera.
+      ventana.querySelectorAll('.rf-carta').forEach((f) => f.addEventListener('click', () => {
+        const img = f.querySelector('img');
+        window.Game.Lupa.ampliar(img.getAttribute('src'), img.alt);
+      }));
+      ventana.querySelector('#btn-recompensa-vista').addEventListener('click', cerrar);
+      ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
+    }
 
     this.conectarHistoriaFinal(contenedor, params);
 
@@ -148,7 +163,7 @@ window.Game.Screens.seleccionRaza = {
     // desplaza —`.pantalla` es `overflow: hidden`— y lo único flexible es la
     // ficha de la estirpe, que es para lo que se entra aquí. Medido: la versión
     // completa se comía 161 px y dejaba la ficha en 157 de los 322 que necesita.
-    if (S.historiaFinalDesbloqueada() && !S.recompensaPorAnunciar()) {
+    if (S.historiaFinalDesbloqueada() && S.historiaFinalVista()) {
       return this.bloqueGemasCompacto(todas);
     }
 
@@ -186,8 +201,7 @@ window.Game.Screens.seleccionRaza = {
                  <button class="btn-primario" id="btn-historia-final" type="button">
                    ${S.historiaFinalVista() ? 'Leerla de nuevo' : 'Leer la historia secreta'}
                  </button>
-               </div>
-               ${this.bloqueRecompensaFinal()}`
+               </div>`
             : `<p class="nota gemas-pie">
                  Cada Eternal derribado deja el suyo. Los cuatro juntos abren
                  una última historia.
@@ -250,28 +264,35 @@ window.Game.Screens.seleccionRaza = {
       .map((id) => window.Game.CHARACTERS_BY_ID[id])
       .filter(Boolean);
 
+    const gemas = window.Game.gemasTotales()
+      .map(({ raza, gema }) => `<span class="rf-gema" title="${gema.nombre}"
+        style="--raza-primario:${window.Game.RACES[raza].colorPrimario}">${gema.sigil}</span>`)
+      .join('');
+
+    // Ventana grande (Oscar: en una casilla pequeña no se podían revisar).
     return `
-      <div class="gemas-recompensa">
-        <span class="gemas-recompensa-titulo">Recompensa recibida</span>
-        <div class="gemas-recompensa-cartas">
-          ${mercenarios
-            .map(
-              (c) => `
-            <div class="mini-carta" data-lupa="${c.imagen}" data-lupa-nombre="${c.nombre}"
-                 title="${c.nombre}">
-              <img src="${c.imagen}" alt="${c.nombre}" loading="lazy">
-            </div>`
-            )
-            .join('')}
+      <div class="rf-velo" id="recompensa-final" role="dialog" aria-modal="true" aria-labelledby="rf-titulo">
+        <div class="rf-caja">
+          <div class="rf-gemas">${gemas}</div>
+          <h2 class="rf-titulo" id="rf-titulo">Recompensa recibida</h2>
+          <p class="rf-sub">Los cuatro cristales están reunidos. Los mercenarios se unen a tu causa y pueden acompañar a cualquier estirpe. Toca una carta para leerla entera.</p>
+          <div class="rf-cartas">
+            ${mercenarios
+              .map(
+                (c, i) => `
+              <figure class="rf-carta" style="--i:${i}">
+                <img src="${c.imagen}" alt="${c.nombre}" draggable="false">
+                <figcaption>${c.nombre}</figcaption>
+              </figure>`
+              )
+              .join('')}
+          </div>
+          <div class="rf-modos">
+            <div class="rf-modo"><span class="rf-modo-ico">⚔</span><div><strong>Modo solo</strong><span>Duelos rápidos contra la máquina con cualquier estirpe.</span></div></div>
+            <div class="rf-modo"><span class="rf-modo-ico">🃏</span><div><strong>Constructor de equipos</strong><span>Arma tus propios mazos de 5 personajes y 8 acciones.</span></div></div>
+          </div>
+          <button class="btn-primario rf-ok" id="btn-recompensa-vista" type="button">Entendido</button>
         </div>
-        <p class="nota">
-          Los mercenarios se unen a tu causa y pueden acompañar a cualquier
-          estirpe. Con ellos se abren el <strong>modo solo</strong> y el
-          <strong>constructor de equipos</strong>.
-        </p>
-        <button class="btn-primario" id="btn-recompensa-vista" type="button">
-          Entendido
-        </button>
       </div>`;
   },
 
