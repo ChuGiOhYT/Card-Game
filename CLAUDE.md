@@ -755,6 +755,19 @@ pantalla todavía:
   el aviso de fallo sugiere relé o Radmin VPN / Tailscale.
 - Prueba: `medir-tanda4.js` en el scratchpad.
 
+## Versión web (Vercel, dentro de aeternumtcgchile.fun/juego)
+
+- `vercel.json` (raíz): Vercel publica `src/` tal cual, sin instalar
+  dependencias (Electron pesa) ni compilar. Proyecto de Vercel aparte, desde
+  el repo `ChuGiOhYT/Card-Game`; el sitio principal lo muestra en `/juego`
+  con una regla de rewrite (más una redirección `/juego` → `/juego/`: las
+  rutas del juego son relativas y sin la barra final no cargaría nada).
+- `plataforma.js` en el navegador: `html.web`, guardado en localStorage, sin
+  botón Salir, TCG Arena en otra pestaña; en un teléfono (táctil y pantalla
+  pequeña) la misma escala que la APK y un aviso de girarlo en vertical.
+- El duelo remoto funciona igual entre navegador, .exe y APK (mismo código).
+- Probar en local: configuración `aeternum-web` del panel (puerto 8840).
+
 ## APK para Android (`movil/` + `COMPILAR_APK.bat`)
 
 - **El juego es el MISMO `src/`**: `movil/` solo es el envoltorio Capacitor 7
