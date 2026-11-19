@@ -21,6 +21,7 @@ scripts, que también es el orden de dependencias.
 | `Game.Audio` | módulo | `src/js/core/audio.js:13` |
 | `Game.Bocadillos` | módulo | `src/js/ui/bocadillos.js:28` |
 | `Game.calabozoDe` | función | `src/js/data/dungeons.js:1130` |
+| `Game.CanalRele` | dato | `src/js/core/red.js:678` |
 | `Game.CHARACTERS` | dato | `src/js/data/characters.js:7` |
 | `Game.CHARACTERS_BY_ID` | dato | `src/js/data/characters.js:424` |
 | `Game.CHARACTERS_BY_ID` | dato | `src/js/data/creatures.js:337` |
@@ -55,7 +56,7 @@ scripts, que también es el orden de dependencias.
 | `Game.RACE_ORDER` | dato | `src/js/data/races.js:117` |
 | `Game.RACES` | módulo | `src/js/data/races.js:13` |
 | `Game.Recordatorios` | módulo | `src/js/core/recordatorios.js:19` |
-| `Game.Red` | módulo | `src/js/core/red.js:34` |
+| `Game.Red` | módulo | `src/js/core/red.js:40` |
 | `Game.Router` | módulo | `src/js/core/router.js:7` |
 | `Game.SANGRE_TOTAL` | dato | `src/js/core/turnEngine.js:18` |
 | `Game.Screens` | dato | `src/js/screens/mainMenu.js:3` |
@@ -444,45 +445,47 @@ Expone: `Game.AI`
 | `AI.puntuarAccion(…)` | 376 |
 | `AI.elegirAccion(…)` | 423 |
 
-### `src/js/core/red.js`  ·  508 líneas
+### `src/js/core/red.js`  ·  679 líneas
 
-Expone: `Game.Red`
+Expone: `Game.Red`, `Game.CanalRele`
 
 | Función | Línea |
 |---|---|
-| `Red.on(…)` | 64 |
-| `Red._emitir(…)` | 69 |
-| `Red._poner(…)` | 75 |
-| `Red.conectado()` | 81 |
-| `Red.ponerRele(…)` | 84 |
-| `Red._iceServers()` | 88 |
-| `Red.textoSinDirecto()` | 97 |
-| `Red.nuevoCodigo()` | 106 |
-| `Red.normalizar(…)` | 115 |
-| `Red.mostrarCodigo(…)` | 120 |
-| `Red.crearSala(…)` | 124 |
-| `Red.unirse(…)` | 133 |
-| `Red._abrirSenal(…)` | 153 |
-| `Red._carga(…)` | 190 |
-| `Red._aSenal(…)` | 196 |
-| `Red._cerrarSenal()` | 200 |
-| `Red._deSenal(…)` | 207 |
-| `Red._nuevaPc(…)` | 273 |
-| `Red._ofrecer()` | 293 |
-| `Red._vaciarColaIce()` | 305 |
-| `Red._recibirOferta(…)` | 309 |
-| `Red._recibirRespuesta(…)` | 330 |
-| `Red._enganchar(…)` | 342 |
-| `Red._deCanal(…)` | 381 |
-| `Red._enviarInterno(…)` | 408 |
-| `Red.enviar(…)` | 417 |
-| `Red._perdida()` | 424 |
-| `Red._volverASenal()` | 442 |
-| `Red._reintentar()` | 448 |
-| `Red._soltarCanal()` | 456 |
-| `Red._fallar(…)` | 467 |
-| `Red._soltar()` | 472 |
-| `Red.cerrar(…)` | 483 |
+| `Red.on(…)` | 74 |
+| `Red._emitir(…)` | 79 |
+| `Red._poner(…)` | 85 |
+| `Red.conectado()` | 91 |
+| `Red.ponerRele(…)` | 94 |
+| `Red._iceServers()` | 98 |
+| `Red.textoSinDirecto()` | 107 |
+| `Red.nuevoCodigo()` | 116 |
+| `Red.normalizar(…)` | 125 |
+| `Red.mostrarCodigo(…)` | 130 |
+| `Red.crearSala(…)` | 134 |
+| `Red.unirse(…)` | 143 |
+| `Red._abrirSenal(…)` | 163 |
+| `Red._carga(…)` | 200 |
+| `Red._aSenal(…)` | 206 |
+| `Red._cerrarSenal()` | 210 |
+| `Red._deSenal(…)` | 217 |
+| `Red._nuevaPc(…)` | 283 |
+| `Red._ofrecer()` | 310 |
+| `Red._vaciarColaIce()` | 322 |
+| `Red._recibirOferta(…)` | 326 |
+| `Red._recibirRespuesta(…)` | 347 |
+| `Red._hayRespaldo()` | 357 |
+| `Red._aRespaldo()` | 362 |
+| `Red._enganchar(…)` | 381 |
+| `Red._deCanal(…)` | 420 |
+| `Red._enviarInterno(…)` | 447 |
+| `Red.enviar(…)` | 456 |
+| `Red._perdida()` | 463 |
+| `Red._volverASenal()` | 481 |
+| `Red._reintentar()` | 487 |
+| `Red._soltarCanal()` | 495 |
+| `Red._fallar(…)` | 506 |
+| `Red._soltar()` | 511 |
+| `Red.cerrar(…)` | 523 |
 
 ### `src/js/core/sincro.js`  ·  182 líneas
 

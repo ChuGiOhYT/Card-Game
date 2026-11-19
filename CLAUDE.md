@@ -834,6 +834,30 @@ pantalla todavía:
   el aviso de fallo sugiere relé o Radmin VPN / Tailscale.
 - Prueba: `medir-tanda4.js` en el scratchpad.
 
+**Respaldo por Supabase Realtime (19-nov).** Entre un teléfono y un PC lo
+directo fallaba siempre, en la misma wifi o no («No se pudo conectar»): wifi
+que aísla a los dispositivos (el PC estaba en 192.168.137.x, una red
+compartida desde Windows) o datos móviles con NAT compartido. Las pruebas de
+las tandas eran entre dos ventanas del MISMO PC, donde lo directo siempre
+funciona. Ahora, si en `MS_DIRECTO` (9 s) no hay canal directo, o el ICE da
+`failed`, los dos pasan solos a `CanalRele`: Supabase Realtime (broadcast,
+protocolo Phoenix a mano, sin librería) con el tema `aeternum-<código>`. Imita
+a un RTCDataChannel, así que `_enganchar`, la partida, la revancha y la
+reconexión no cambian. Se abre cuando cada uno oye el saludo del otro; al
+cerrarse avisa (`adios-rele`). La conexión dice «(por el servidor de
+respaldo)». **Cifrado de extremo a extremo**: cada lado manda una clave
+pública ECDH (P-256) en su saludo y los dos derivan una AES-GCM que solo ellos
+conocen; Supabase y quien sepa el código ven solo texto cifrado (como el canal
+directo, que ya cifra WebRTC). Cifrar/descifrar es asíncrono: colas para no
+desordenar, y lo que llega antes de abrir espera (`_abierto`; si no, el
+«hola» con el nombre se perdía). Proyecto de Supabase de Oscar
+`ywgxhqwrhexocpygjtlh`, clave PUBLICABLE (`sb_publishable_…`, va en la URL;
+como no es un JWT NO se manda como `access_token`). Medido contra el real:
+conectan en ~5 s, ping ~250-290 ms. Configuración: `Red.SUPABASE = { url, clave }` (la clave «anon»,
+pública por diseño); sin ella no hay respaldo y sale el aviso de siempre. La
+CSP permite `wss://*.supabase.co`. Prueba: `probar-rele.js` del scratchpad,
+con un imitador local de Realtime y los CANDIDATE tirados (conectan en ~4 s).
+
 ## Versión web (Vercel, dentro de aeternumtcgchile.fun/juego)
 
 - `vercel.json` (raíz): Vercel publica `src/` tal cual, sin instalar

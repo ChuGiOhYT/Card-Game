@@ -26,8 +26,14 @@
  * resincroniza sola: el invitado pide la foto con `listo`).
  *
  * RELÉ (TURN) opcional: `ponerRele({ url, usuario, clave })` (lo guarda la
- * sala en el perfil). Sin él, las redes que no dejan conectar directo fallan
- * con un aviso que lo explica.
+ * sala en el perfil).
+ *
+ * RESPALDO POR SUPABASE (19-nov): entre un teléfono y un PC lo directo falla
+ * a menudo (wifi que aísla a los dispositivos, datos móviles con NAT
+ * compartido). Si en MS_DIRECTO no hay canal directo, los dos pasan a un canal
+ * de Supabase Realtime (`CanalRele`, abajo) con el tema `aeternum-<código>`.
+ * Ese canal imita a un RTCDataChannel (readyState, send, onopen, onmessage,
+ * onclose, close), así que `_enganchar` y todo lo de encima no cambian.
  */
 window.Game = window.Game || {};
 
@@ -49,6 +55,10 @@ window.Game.Red = {
   MS_SIN_RESPUESTA: 8000,
   MS_RECONEXION: 60000,
   MS_REINTENTO: 2500,
+  /** Tiempo para lograr el canal directo antes de pasar al respaldo. */
+  MS_DIRECTO: 9000,
+  /** Proyecto de Supabase para el respaldo (la clave «anon» es pública por diseño). */
+  SUPABASE: { url: 'https://ywgxhqwrhexocpygjtlh.supabase.co', clave: 'sb_publishable_0qJZhYasUvQCIEWgEAq61Q_-rZ0FN5k' },
   /** Relé TURN opcional (ver ponerRele). */
   rele: null,
 
@@ -278,10 +288,17 @@ window.Game.Red = {
     pc.onicecandidate = (ev) => {
       if (ev.candidate) this._aSenal('CANDIDATE', otro, this._carga({ candidate: ev.candidate.toJSON() }));
     };
+    // Si lo directo no llega a tiempo, al respaldo (los dos lados lo deciden
+    // solos con el mismo plazo).
+    clearTimeout(this._tDirecto);
+    if (this._hayRespaldo()) {
+      this._tDirecto = setTimeout(() => { if (this._pc === pc && !this._dc?.esRele && this._dc?.readyState !== 'open') this._aRespaldo(); }, this.MS_DIRECTO);
+    }
     pc.onconnectionstatechange = () => {
       if (this._pc !== pc) return;
       if (pc.connectionState === 'failed') {
-        if (this._huboConexion) this._perdida();
+        if (this._hayRespaldo()) this._aRespaldo();
+        else if (this._huboConexion) this._perdida();
         else this._fallar(this.textoSinDirecto());
       } else if (pc.connectionState === 'disconnected' && this.estado === 'conectado') {
         this._poner('conectado', 'La conexión va inestable…');
@@ -337,6 +354,28 @@ window.Game.Red = {
     }
   },
 
+  _hayRespaldo() {
+    return !!(this.SUPABASE.url && this.SUPABASE.clave && typeof WebSocket !== 'undefined');
+  },
+
+  /** Lo directo no llegó: el duelo sigue por el canal de Supabase. */
+  _aRespaldo() {
+    if (this._dc?.esRele) return;
+    clearTimeout(this._tDirecto);
+    const pc = this._pc;
+    this._pc = null;
+    if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; try { pc.close(); } catch { /* */ } }
+    if (this.estado !== 'reconectando') this._poner('negociando', 'Sin camino directo: conectando por el servidor de respaldo…');
+    // El invitado tenía 25 s para entrar; por el respaldo se le dan otros tantos.
+    if (this.rol === 'invitado') {
+      clearTimeout(this._tEspera);
+      this._tEspera = setTimeout(() => {
+        if (this.estado !== 'conectado' && this.estado !== 'reconectando') this._fallar('No se pudo conectar ni directo ni por el servidor de respaldo.');
+      }, this.MS_ESPERA_UNIRSE);
+    }
+    this._enganchar(new CanalRele(this.SUPABASE, `aeternum-${this.codigo}`, this._miId));
+  },
+
   /* --------------------------- El canal de datos ------------------------ */
 
   _enganchar(dc) {
@@ -351,7 +390,7 @@ window.Game.Red = {
       this._huboConexion = true;
       if (this.rol === 'anfitrion') this._rivalSenal = this._otro;
       this._ultimaSenalDeVida = performance.now();
-      this._poner('conectado', volvio ? 'Reconectado.' : 'Conectado.');
+      this._poner('conectado', `${volvio ? 'Reconectado' : 'Conectado'}${dc.esRele ? ' (por el servidor de respaldo)' : ''}.`);
       this._enviarInterno({ t: 'hola', nombre: this.nombre, protocolo: this.PROTOCOLO });
       clearInterval(this._tPing);
       this._tPing = setInterval(() => {
@@ -471,6 +510,7 @@ window.Game.Red = {
 
   _soltar() {
     clearTimeout(this._tEspera);
+    clearTimeout(this._tDirecto);
     clearTimeout(this._tReconexion);
     clearTimeout(this._tReintento);
     clearInterval(this._tPing);
@@ -505,3 +545,134 @@ window.Game.Red = {
     else this.estado = 'apagado';
   }
 };
+
+
+/**
+ * Un «canal de datos» por Supabase Realtime (broadcast), hablado a mano con
+ * su protocolo Phoenix (sin librería): unirse al tema, latido cada 25 s y
+ * mensajes `broadcast`. Imita lo que `_enganchar` usa de un RTCDataChannel.
+ *
+ * CIFRADO DE EXTREMO A EXTREMO: cada lado genera un par ECDH (P-256) y manda
+ * su clave pública en el saludo; con la del otro se deriva una clave AES-GCM
+ * que solo conocen los dos. Así ni Supabase ni quien sepa el código de la sala
+ * pueden leer la partida ni el chat (como en el canal directo, que ya va
+ * cifrado por WebRTC). El canal se abre cuando hay clave compartida, y a
+ * partir de ahí solo escucha a ese otro. Cifrar y descifrar son asíncronos:
+ * van en colas para no desordenar los mensajes.
+ */
+function CanalRele({ url, clave }, tema, miId) {
+  this.esRele = true;
+  this.readyState = 'connecting';
+  this.onopen = this.onmessage = this.onclose = null;
+  this._yo = miId;
+  this._otro = null;
+  this._ref = 0;
+  this._tema = `realtime:${tema}`;
+  this._colaSalida = Promise.resolve();
+  this._colaEntrada = Promise.resolve();
+  // Lo que llega mientras aún se calcula la clave espera a que el canal abra.
+  this._abierto = new Promise((r) => { this._alAbrir = r; });
+  const sutil = crypto.subtle;
+  this._par = sutil.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey'])
+    .then(async (par) => ({ par, publica: await sutil.exportKey('jwk', par.publicKey) }));
+  const ws = new WebSocket(`${url.replace(/^http/, 'ws')}/realtime/v1/websocket?apikey=${encodeURIComponent(clave)}&vsn=1.0.0`);
+  this._ws = ws;
+  const mandar = (topic, event, payload) => {
+    if (ws.readyState === 1) ws.send(JSON.stringify({ topic, event, payload, ref: String(++this._ref), join_ref: '1' }));
+  };
+  this._mandar = mandar;
+  const saludar = async () => {
+    const { publica } = await this._par;
+    this._emitir({ k: 'hola-rele', pub: { x: publica.x, y: publica.y } });
+  };
+  ws.onopen = () => {
+    // Las claves nuevas («sb_publishable_…») no son un JWT: van solo en la URL.
+    const union = { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [], private: false } };
+    if (/^eyJ/.test(clave)) union.access_token = clave;
+    mandar(this._tema, 'phx_join', union);
+    this._latido = setInterval(() => mandar('phoenix', 'heartbeat', {}), 25000);
+    this._saludo = setInterval(saludar, 1000);
+    saludar();
+  };
+  ws.onmessage = (ev) => {
+    let m;
+    try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.event !== 'broadcast' || !m.payload || m.payload.event !== 'm') return;
+    const p = m.payload.payload || {};
+    if (!p.de || p.de === this._yo) return;
+    if (this._otro && p.de !== this._otro) return; // un tercero con el mismo código
+    if (p.k === 'hola-rele' && !this._otro && p.pub) {
+      this._otro = p.de;
+      this._clave = this._par.then(({ par }) => sutil.importKey('jwk',
+        { kty: 'EC', crv: 'P-256', x: p.pub.x, y: p.pub.y, ext: true }, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
+        .then((suya) => sutil.deriveKey({ name: 'ECDH', public: suya }, par.privateKey,
+          { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])));
+      this._clave.then(() => {
+        if (this.readyState !== 'connecting') return;
+        this.readyState = 'open';
+        // Un último saludo, por si el otro aún no nos oyó.
+        saludar();
+        clearInterval(this._saludo);
+        if (this.onopen) this.onopen();
+        this._alAbrir();
+      }).catch(() => this._cerrado());
+      return;
+    }
+    if (p.k === 'adios-rele') { this._cerrado(); return; }
+    if (p.k === 'd' && this._clave) {
+      this._colaEntrada = this._colaEntrada.then(async () => {
+        const k = await this._clave;
+        await this._abierto;
+        const claro = await sutil.decrypt({ name: 'AES-GCM', iv: _deB64(p.iv) }, k, _deB64(p.c));
+        if (this.readyState === 'open' && this.onmessage) this.onmessage({ data: new TextDecoder().decode(claro) });
+      }).catch(() => { /* un mensaje que no se descifra (de otro, o roto): se ignora */ });
+    }
+  };
+  ws.onclose = () => this._cerrado();
+  ws.onerror = () => {};
+}
+
+function _aB64(buf) {
+  let s = '';
+  for (const b of new Uint8Array(buf)) s += String.fromCharCode(b);
+  return btoa(s);
+}
+function _deB64(t) {
+  return Uint8Array.from(atob(t), (c) => c.charCodeAt(0));
+}
+
+CanalRele.prototype._emitir = function (extra) {
+  this._mandar(this._tema, 'broadcast', { type: 'broadcast', event: 'm', payload: { de: this._yo, ...extra } });
+};
+
+CanalRele.prototype.send = function (texto) {
+  if (this.readyState !== 'open') throw new Error('canal cerrado');
+  this._colaSalida = this._colaSalida.then(async () => {
+    const k = await this._clave;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const c = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(texto));
+    this._emitir({ k: 'd', iv: _aB64(iv), c: _aB64(c) });
+  }).catch(() => {});
+};
+
+CanalRele.prototype._cerrado = function () {
+  if (this.readyState === 'closed') return;
+  this.readyState = 'closed';
+  clearInterval(this._latido);
+  clearInterval(this._saludo);
+  if (this.onclose) this.onclose();
+};
+
+CanalRele.prototype.close = function () {
+  if (this.readyState === 'closed') return;
+  // El adiós sale DETRÁS de lo que quede por cifrar (p. ej. el «adios» del juego).
+  const ws = this._ws;
+  this._colaSalida.then(() => {
+    this._emitir({ k: 'adios-rele' });
+    try { this._mandar(this._tema, 'phx_leave', {}); } catch { /* */ }
+    setTimeout(() => { try { ws.close(); } catch { /* */ } }, 100);
+  });
+  this._cerrado();
+};
+
+window.Game.CanalRele = CanalRele;
