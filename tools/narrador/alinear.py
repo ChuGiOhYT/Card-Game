@@ -82,11 +82,17 @@ def main(ruta: str) -> None:
         oido = corrido
         propias = palabras(texto)
 
-        def veces(trozo):
+        def veces(trozo, en):
             n = len(trozo)
-            return sum(1 for j in range(len(oido) - n + 1) if oido[j:j + n] == trozo) if n else 0
+            return sum(1 for j in range(len(en) - n + 1) if en[j:j + n] == trozo) if n else 0
 
-        repetida = len(propias) >= 6 and (veces(propias[:4]) > 1 or veces(propias[-4:]) > 1)
+        # Se compara con las veces que ese trozo está en el GUION de la
+        # petición: dos escenas que empiezan igual («La magia de la Vida…»)
+        # no son una repetición (falso positivo que dejaba sin voz a dos
+        # escenas de los reanimados, día tras día).
+        guion = [w for x in t["textos"] for w in palabras(x)]
+        repetida = len(propias) >= 6 and any(
+            veces(tr, oido) > veces(tr, guion) for tr in (propias[:4], propias[-4:]))
         if repetida:
             motivo = "la repite"
         elif cobertura < 0.85:

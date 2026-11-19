@@ -521,6 +521,10 @@ window.Game.NARRACION = {
   "suave": {
    "src": "assets/narracion/suave/b389efc5.ogg",
    "dur": 4.89
+  },
+  "anciano": {
+   "src": "assets/narracion/anciano/ba7679e3.ogg",
+   "dur": 13.22
   }
  },
  "966d0ede": {
@@ -562,6 +566,10 @@ window.Game.NARRACION = {
   "suave": {
    "src": "assets/narracion/suave/e07b41cf.ogg",
    "dur": 9.25
+  },
+  "anciano": {
+   "src": "assets/narracion/anciano/021dc421.ogg",
+   "dur": 22.7
   }
  },
  "9a8e1145": {

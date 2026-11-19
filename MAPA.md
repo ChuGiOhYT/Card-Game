@@ -20,7 +20,7 @@ scripts, que también es el orden de dependencias.
 | `Game.Ambiente` | módulo | `src/js/ui/ambiente.js:21` |
 | `Game.Audio` | módulo | `src/js/core/audio.js:13` |
 | `Game.Bocadillos` | módulo | `src/js/ui/bocadillos.js:28` |
-| `Game.calabozoDe` | función | `src/js/data/dungeons.js:1122` |
+| `Game.calabozoDe` | función | `src/js/data/dungeons.js:1130` |
 | `Game.CHARACTERS` | dato | `src/js/data/characters.js:7` |
 | `Game.CHARACTERS_BY_ID` | dato | `src/js/data/characters.js:424` |
 | `Game.CHARACTERS_BY_ID` | dato | `src/js/data/creatures.js:337` |
@@ -31,18 +31,18 @@ scripts, que también es el orden de dependencias.
 | `Game.CREATURES` | dato | `src/js/data/creatures.js:13` |
 | `Game.DueloRed` | módulo | `src/js/core/dueloRed.js:27` |
 | `Game.DUNGEONS` | módulo | `src/js/data/dungeons.js:81` |
-| `Game.DUNGEONS_PENDIENTES` | dato | `src/js/data/dungeons.js:1086` |
+| `Game.DUNGEONS_PENDIENTES` | dato | `src/js/data/dungeons.js:1094` |
 | `Game.EfectosPersonaje` | módulo | `src/js/core/efectosPersonaje.js:24` |
-| `Game.equipoDeHistoria` | función | `src/js/data/dungeons.js:1143` |
+| `Game.equipoDeHistoria` | función | `src/js/data/dungeons.js:1151` |
 | `Game.esCriatura` | función | `src/js/data/creatures.js:342` |
 | `Game.ETAPAS_CON_ACCIONES_BASICAS` | dato | `src/js/data/dungeons.js:60` |
 | `Game.ETIQUETA_FASE` | módulo | `src/js/core/turnEngine.js:21` |
 | `Game.FASES` | dato | `src/js/core/turnEngine.js:19` |
 | `Game.FRASES` | módulo | `src/js/data/frases.js:27` |
-| `Game.gemaDe` | función | `src/js/data/dungeons.js:1127` |
-| `Game.gemasTotales` | función | `src/js/data/dungeons.js:1133` |
+| `Game.gemaDe` | función | `src/js/data/dungeons.js:1135` |
+| `Game.gemasTotales` | función | `src/js/data/dungeons.js:1141` |
 | `Game.Hades` | módulo | `src/js/core/hades.js:16` |
-| `Game.HISTORIA_FINAL` | módulo | `src/js/data/dungeons.js:1097` |
+| `Game.HISTORIA_FINAL` | módulo | `src/js/data/dungeons.js:1105` |
 | `Game.INICIAL_FASE` | módulo | `src/js/core/turnEngine.js:29` |
 | `Game.Jefes` | módulo | `src/js/core/bossAbilities.js:29` |
 | `Game.Lupa` | módulo | `src/js/core/lupa.js:11` |
@@ -51,7 +51,7 @@ scripts, que también es el orden de dependencias.
 | `Game.Narrador` | módulo | `src/js/ui/narrador.js:16` |
 | `Game.NOMBRE_FASE` | módulo | `src/js/core/turnEngine.js:38` |
 | `Game.personajesDeRaza` | función | `src/js/data/characters.js:430` |
-| `Game.Plataforma` | módulo | `src/js/plataforma.js:25` |
+| `Game.Plataforma` | módulo | `src/js/plataforma.js:32` |
 | `Game.RACE_ORDER` | dato | `src/js/data/races.js:117` |
 | `Game.RACES` | módulo | `src/js/data/races.js:13` |
 | `Game.Recordatorios` | módulo | `src/js/core/recordatorios.js:19` |
@@ -108,17 +108,17 @@ Registros: CREATURES: 21
 |---|---|
 | `esCriatura()` | 342 |
 
-### `src/js/data/dungeons.js`  ·  1159 líneas
+### `src/js/data/dungeons.js`  ·  1167 líneas
 
 Expone: `Game.ACCIONES_CALABOZO`, `Game.ACCIONES_CALABOZO_BASICAS`, `Game.ETAPAS_CON_ACCIONES_BASICAS`, `Game.accionesDeOleada`, `Game.DUNGEONS`, `Game.DUNGEONS_PENDIENTES`, `Game.HISTORIA_FINAL`, `Game.calabozoDe`, `Game.gemaDe`, `Game.gemasTotales`, `Game.equipoDeHistoria`
 
 | Función | Línea |
 |---|---|
 | `accionesDeOleada()` | 75 |
-| `calabozoDe()` | 1122 |
-| `gemaDe()` | 1127 |
-| `gemasTotales()` | 1133 |
-| `equipoDeHistoria()` | 1143 |
+| `calabozoDe()` | 1130 |
+| `gemaDe()` | 1135 |
+| `gemasTotales()` | 1141 |
+| `equipoDeHistoria()` | 1151 |
 
 ### `src/js/data/frases.js`  ·  228 líneas
 
@@ -171,14 +171,14 @@ Expone: `Game.Router`
 | `Router.renderSeguro(…)` | 82 |
 | `Router.volver()` | 103 |
 
-### `src/js/core/team.js`  ·  115 líneas
+### `src/js/core/team.js`  ·  154 líneas
 
 Expone: `Game.Team`
 
 | Función | Línea |
 |---|---|
 | `Team.validar(…)` | 14 |
-| `Team.equipoPredeterminado(…)` | 86 |
+| `Team.equipoPredeterminado(…)` | 123 |
 
 ### `src/js/core/hades.js`  ·  73 líneas
 
@@ -258,7 +258,7 @@ Expone: `Game.Cinematica`
 | `Cinematica.video(…)` | 115 |
 | `Cinematica.mostrar(…)` | 238 |
 
-### `src/js/core/tutorial.js`  ·  483 líneas
+### `src/js/core/tutorial.js`  ·  485 líneas
 
 Expone: `Game.Tutorial`
 
@@ -268,12 +268,12 @@ Expone: `Game.Tutorial`
 | `Tutorial.vistos()` | 326 |
 | `Tutorial.procede(…)` | 333 |
 | `Tutorial.toca(…)` | 344 |
-| `Tutorial.progresoTour()` | 355 |
-| `Tutorial.revisar(…)` | 367 |
-| `Tutorial.mostrar(…)` | 391 |
-| `Tutorial.colocar(…)` | 450 |
-| `Tutorial.limpiar()` | 468 |
-| `Tutorial.reiniciar()` | 476 |
+| `Tutorial.progresoTour()` | 357 |
+| `Tutorial.revisar(…)` | 369 |
+| `Tutorial.mostrar(…)` | 393 |
+| `Tutorial.colocar(…)` | 452 |
+| `Tutorial.limpiar()` | 470 |
+| `Tutorial.reiniciar()` | 478 |
 
 ### `src/js/core/recordatorios.js`  ·  266 líneas
 
@@ -369,7 +369,7 @@ Expone: `Game.EfectosPersonaje`
 | `EfectosPersonaje.enBatalla(…)` | 832 |
 | `EfectosPersonaje._sumar(…)` | 853 |
 
-### `src/js/core/turnEngine.js`  ·  1044 líneas
+### `src/js/core/turnEngine.js`  ·  1064 líneas
 
 Expone: `Game.SANGRE_TOTAL`, `Game.FASES`, `Game.ETIQUETA_FASE`, `Game.INICIAL_FASE`, `Game.NOMBRE_FASE`, `Game.crearJugador`, `Game.TurnEngine`
 
@@ -377,54 +377,54 @@ Expone: `Game.SANGRE_TOTAL`, `Game.FASES`, `Game.ETIQUETA_FASE`, `Game.INICIAL_F
 |---|---|
 | `crearJugador()` | 47 |
 | `TurnEngine.constructor(…)` | 93 |
-| `TurnEngine.jugadorActivo()` | 135 |
-| `TurnEngine.jugadorInactivo()` | 139 |
-| `TurnEngine.vidaDe(…)` | 143 |
-| `TurnEngine.energiaDe(…)` | 147 |
-| `TurnEngine.activoDe(…)` | 152 |
-| `TurnEngine.instancia(…)` | 156 |
-| `TurnEngine.log(…)` | 166 |
-| `TurnEngine.notificar()` | 170 |
-| `TurnEngine.elegir(…)` | 186 |
-| `TurnEngine.resolverEleccion(…)` | 214 |
-| `TurnEngine.ponerEstado(…)` | 223 |
-| `TurnEngine.tieneEstado(…)` | 237 |
-| `TurnEngine.estadosDe(…)` | 248 |
-| `TurnEngine.puedeSerAtacado(…)` | 254 |
-| `TurnEngine.anunciar(…)` | 259 |
-| `TurnEngine.iniciar()` | 268 |
-| `TurnEngine.estaAturdido(…)` | 276 |
-| `TurnEngine.eternalProtegido(…)` | 296 |
-| `TurnEngine.esbirrosVivos(…)` | 304 |
-| `TurnEngine.defensorEfectivo(…)` | 319 |
-| `TurnEngine.interponerEsbirro(…)` | 332 |
-| `TurnEngine.derramar(…)` | 364 |
-| `TurnEngine.pagar(…)` | 378 |
-| `TurnEngine.recuperar(…)` | 391 |
-| `TurnEngine.revelar(…)` | 406 |
-| `TurnEngine.enviarAlHades(…)` | 410 |
-| `TurnEngine.destruir(…)` | 448 |
-| `TurnEngine.recuperarDelHades(…)` | 455 |
-| `TurnEngine.enviarAlVacio(…)` | 487 |
-| `TurnEngine.recuperarDelVacio(…)` | 502 |
-| `TurnEngine.puedeDesplegar(…)` | 518 |
-| `TurnEngine.retirar(…)` | 526 |
-| `TurnEngine.desplegar(…)` | 546 |
-| `TurnEngine.accionesDisponibles(…)` | 585 |
-| `TurnEngine.equipar(…)` | 607 |
-| `TurnEngine.atacantesDisponibles(…)` | 652 |
-| `TurnEngine.puedeAtacar()` | 666 |
-| `TurnEngine.declararAtaque(…)` | 682 |
-| `TurnEngine.implicadosAtaque()` | 740 |
-| `TurnEngine.previsionAtaque()` | 755 |
-| `TurnEngine.cancelarAtaque()` | 762 |
-| `TurnEngine.resolverAtaque()` | 771 |
-| `TurnEngine._cobrarGolpe(…)` | 812 |
-| `TurnEngine.atacar(…)` | 890 |
-| `TurnEngine.siguienteFase()` | 897 |
-| `TurnEngine.finalizarTurno()` | 923 |
-| `TurnEngine.sinPersonajes(…)` | 1010 |
-| `TurnEngine.comprobarFin()` | 1018 |
+| `TurnEngine.jugadorActivo()` | 138 |
+| `TurnEngine.jugadorInactivo()` | 142 |
+| `TurnEngine.vidaDe(…)` | 146 |
+| `TurnEngine.energiaDe(…)` | 150 |
+| `TurnEngine.activoDe(…)` | 155 |
+| `TurnEngine.instancia(…)` | 159 |
+| `TurnEngine.log(…)` | 169 |
+| `TurnEngine.notificar()` | 173 |
+| `TurnEngine.elegir(…)` | 189 |
+| `TurnEngine.resolverEleccion(…)` | 217 |
+| `TurnEngine.ponerEstado(…)` | 226 |
+| `TurnEngine.tieneEstado(…)` | 240 |
+| `TurnEngine.estadosDe(…)` | 251 |
+| `TurnEngine.puedeSerAtacado(…)` | 257 |
+| `TurnEngine.anunciar(…)` | 262 |
+| `TurnEngine.iniciar()` | 271 |
+| `TurnEngine.estaAturdido(…)` | 279 |
+| `TurnEngine.eternalProtegido(…)` | 299 |
+| `TurnEngine.esbirrosVivos(…)` | 307 |
+| `TurnEngine.defensorEfectivo(…)` | 322 |
+| `TurnEngine.interponerEsbirro(…)` | 335 |
+| `TurnEngine.derramar(…)` | 367 |
+| `TurnEngine.pagar(…)` | 384 |
+| `TurnEngine.recuperar(…)` | 397 |
+| `TurnEngine.revelar(…)` | 412 |
+| `TurnEngine.enviarAlHades(…)` | 416 |
+| `TurnEngine.destruir(…)` | 460 |
+| `TurnEngine.recuperarDelHades(…)` | 467 |
+| `TurnEngine.enviarAlVacio(…)` | 499 |
+| `TurnEngine.recuperarDelVacio(…)` | 514 |
+| `TurnEngine.puedeDesplegar(…)` | 530 |
+| `TurnEngine.retirar(…)` | 538 |
+| `TurnEngine.desplegar(…)` | 558 |
+| `TurnEngine.accionesDisponibles(…)` | 597 |
+| `TurnEngine.equipar(…)` | 619 |
+| `TurnEngine.atacantesDisponibles(…)` | 664 |
+| `TurnEngine.puedeAtacar()` | 682 |
+| `TurnEngine.declararAtaque(…)` | 698 |
+| `TurnEngine.implicadosAtaque()` | 759 |
+| `TurnEngine.previsionAtaque()` | 774 |
+| `TurnEngine.cancelarAtaque()` | 781 |
+| `TurnEngine.resolverAtaque()` | 790 |
+| `TurnEngine._cobrarGolpe(…)` | 831 |
+| `TurnEngine.atacar(…)` | 909 |
+| `TurnEngine.siguienteFase()` | 916 |
+| `TurnEngine.finalizarTurno()` | 942 |
+| `TurnEngine.sinPersonajes(…)` | 1027 |
+| `TurnEngine.comprobarFin()` | 1035 |
 
 ### `src/js/core/ai.js`  ·  492 líneas
 
@@ -511,7 +511,7 @@ Expone: `Game.DueloRed`
 
 Una por archivo. Reciben `(contenedor, params)` y pintan.
 
-### `src/js/screens/mainMenu.js`  ·  310 líneas
+### `src/js/screens/mainMenu.js`  ·  327 líneas
 
 Expone: `Game.Screens`
 
@@ -531,7 +531,7 @@ Expone: `Game.Screens`
 
 Expone: `Game.Screens`
 
-### `src/js/screens/match.js`  ·  3210 líneas
+### `src/js/screens/match.js`  ·  3255 líneas
 
 Expone: `Game.Screens`
 
@@ -541,19 +541,22 @@ Expone: `Game.Screens`
 
 ## Arranque
 
-### `src/js/plataforma.js`  ·  129 líneas
+### `src/js/plataforma.js`  ·  169 líneas
 
 Expone: `Game.Plataforma`
 
 | Función | Línea |
 |---|---|
-| `Plataforma.esMovil()` | 31 |
-| `Plataforma.plugin(…)` | 35 |
-| `Plataforma.anchoDeDiseno()` | 40 |
-| `Plataforma.ajustarPantalla()` | 46 |
-| `Plataforma.apiMovil()` | 58 |
-| `Plataforma.conectarAtras()` | 94 |
-| `Plataforma.iniciar()` | 120 |
+| `Plataforma.esMovil()` | 38 |
+| `Plataforma.esTelefonoWeb()` | 43 |
+| `Plataforma.plugin(…)` | 48 |
+| `Plataforma.anchoDeDiseno()` | 53 |
+| `Plataforma.ajustarPantalla()` | 59 |
+| `Plataforma.apiMovil()` | 71 |
+| `Plataforma.apiWeb()` | 88 |
+| `Plataforma.guardadoLocal()` | 100 |
+| `Plataforma.conectarAtras()` | 126 |
+| `Plataforma.iniciar()` | 152 |
 
 ### `src/js/ui/ambiente.js`  ·  115 líneas
 

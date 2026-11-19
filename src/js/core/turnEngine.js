@@ -11,7 +11,7 @@
  * el lado del calabozo lo sube, para desplegar toda su oleada de criaturas.
  *
  * Fases del turno: personaje → accion → ataque → fin
- * Al cerrar el turno se derrama 1 sangre de CADA jugador.
+ * Al cerrar el turno, quien lo cierra derrama 1 sangre.
  */
 window.Game = window.Game || {};
 
@@ -101,6 +101,9 @@ window.Game.TurnEngine = class TurnEngine {
     this.perdedor = null;
     /** 'sangre' | 'personajes' — por qué acabó el duelo. */
     this.motivoFin = null;
+    /** { tipo, jugadorIdx, motivo, n?, personaje? } — el golpe que lo decidió. */
+    this.causaFin = null;
+    this.ultimaCausa = null;
     this.registro = [];
     this.atacaronEsteTurno = new Set(); // uids que ya golpearon
     // Un despliegue por turno (sacar a alguien o cambiarlo). Sin tope, cambiar
@@ -370,6 +373,9 @@ window.Game.TurnEngine = class TurnEngine {
       `${jugador.nombre} derrama ${real} sangre (${motivo}). ` +
         `Vida ${this.vidaDe(jugador)}, energía ${this.energiaDe(jugador)}.`
     );
+    // Lo último que movió sangre de este jugador: si lo deja a 0, es la
+    // causa que el cartel de fin explica (Oscar: «no sé por qué gané»).
+    if (!this.terminada) this.ultimaCausa = { tipo: 'sangre', jugadorIdx: this.jugadores.indexOf(jugador), motivo, n: real };
     this.comprobarFin();
     return real;
   }
@@ -433,6 +439,12 @@ window.Game.TurnEngine = class TurnEngine {
         `(${motivo}). Hades de ${jugador.nombre}: ${jugador.hades.length}.`
     );
     // Perder al último personaje también termina el duelo.
+    if (!this.terminada) {
+      this.ultimaCausa = {
+        tipo: 'hades', jugadorIdx: this.jugadores.indexOf(jugador), motivo,
+        personaje: window.Game.CHARACTERS_BY_ID[inst.personaje].nombre
+      };
+    }
     this.comprobarFin();
     // El panel de Herramientas llama aquí directamente, así que sin avisar
     // la mesa se quedaba sin repintar: la carta seguía viéndose en posición
@@ -931,17 +943,15 @@ window.Game.TurnEngine = class TurnEngine {
     if (this.terminada) return;
     this.ataquePendiente = null;
 
-    // Derrame automático de fin de turno: 1 sangre de cada jugador.
-    // Si con eso alguien se queda a 0 la partida acaba AQUÍ, y hay que avisar a
-    // la pantalla: derramar() no notifica, y sin esto la mesa se quedaba en
-    // «Fin de turno» con el duelo ya ganado y sin cartel (pasaba en la etapa 1
-    // del Bosque, con la oleada a 5 de sangre).
-    for (const j of this.jugadores) {
-      this.derramar(j, 1, 'fin de turno');
-      if (this.terminada) {
-        this.notificar();
-        return;
-      }
+    // Derrame automático de fin de turno: 1 sangre SOLO de quien cierra el
+    // turno (Oscar; antes derramaban los dos, y cada ronda costaba el doble).
+    // Si con eso se queda a 0 la partida acaba AQUÍ, y hay que avisar a la
+    // pantalla: derramar() no notifica, y sin esto la mesa se quedaba en
+    // «Fin de turno» con el duelo ya ganado y sin cartel.
+    this.derramar(this.jugadorActivo, 1, 'fin de turno');
+    if (this.terminada) {
+      this.notificar();
+      return;
     }
 
     // Los bloqueos manuales caducan solos.
@@ -1037,6 +1047,9 @@ window.Game.TurnEngine = class TurnEngine {
       this.ganador = this.jugadores[1 - i];
       this.perdedor = j;
       this.motivoFin = motivo;
+      // Qué lo decidió, si fue a este jugador (si no, se queda sin detalle).
+      const c = this.ultimaCausa;
+      this.causaFin = c && c.jugadorIdx === i && (c.tipo === 'sangre') === (motivo === 'sangre') ? c : null;
       this.log(
         motivo === 'sangre'
           ? `${j.nombre} se queda sin sangre. Gana ${this.ganador.nombre}.`

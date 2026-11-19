@@ -347,8 +347,10 @@ window.Game.Tutorial = {
     if (!params || params.raza !== r.raza || Number(params.etapa) !== r.etapa) {
       return false;
     }
-    // Antes de mover ficha: en el turno 1 y con el campo aún vacío.
-    return motor.numeroTurno === 1 && motor.fase === 'personaje';
+    // Antes de mover ficha: en TU primer turno, en la fase de personaje. En
+    // el calabozo abre la oleada, así que tu primer turno es el 2 (y la fase
+    // de personaje no avanza sola: el recorrido no se corta).
+    return motor.numeroTurno <= 2 && motor.jugadorActivo === motor.jugadores[0] && motor.fase === 'personaje';
   },
 
   /** Cuántos pasos tiene el recorrido y por cuál vas. */

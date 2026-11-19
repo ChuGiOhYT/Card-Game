@@ -542,6 +542,64 @@ Oscar (ya descartó tocar números impresos de las criaturas).
   los Oxitrones de 100 % a 0 %, y Auram a los Desterrados de ~85 % a ~24 %.
   Antes (los 5 más baratos + acciones genéricas): lunaria 98 %, reanimado 5 %.
 
+## La marca registrada (INAPI)
+
+Oscar registró la marca AETERNUM: **las letras van siempre como en su logo**
+(serifa romana, la A y la M altas, el resto en versalitas, en oro). Es
+**Cinzel**, incluida en `src/assets/fuentes/` (woff2 400/600/700/900, licencia
+OFL al lado) y cargada con `@font-face` al principio de styles.css: ya no
+depende de internet ni de las fuentes del sistema. Como las minúsculas de
+Cinzel son versalitas, el título se escribe «AeternuM» (con `aria-label`
+«AETERNUM»). `--fuente-titulo` la usa en todos los títulos.
+
+Estética sutil del logo: tokens `--marca-noche/-violeta/-magenta/-cian`, una
+nebulosa violeta y cian en el fondo del `body`, el emblema hexagonal en SVG
+tras el título del menú (`EMBLEMA` en mainMenu.js: filetes de oro, nodos en
+los vértices, orbes violeta y cian) y el filete con rombo y nodos. Logo en
+`assets/marca/` (también de favicon). Cinzel es más ancha que Palatino: los
+títulos ocupan más; medir si algo se parte.
+
+## Aviso de la condición de victoria
+
+Oscar: «muchas victorias se sienten raras, no sé por qué gané». Al empezar el
+duelo sale una vez «Gana quien deje al rival sin sangre o sin personajes en
+pie» (`condicionAvisada`; el aviso de fase espera a que se vaya). Y el cartel
+de fin (`textoMotivo`) dice la regla, cómo se cumplió y **la última gota**:
+el motor guarda en `ultimaCausa` lo último que derramó sangre o mandó al Hades
+a cada jugador, y `comprobarFin` lo copia a `causaFin` si fue al perdedor. Lo
+que más sorprendía es el derrame de 1 al cerrar el turno, que se nombra así.
+**Ojo: hasta aquí el fin de turno derramaba 1 de LOS DOS jugadores**; ahora
+solo de quien cierra (Oscar). Las mediciones anteriores (mazos, sangre de las
+etapas del calabozo) son con la regla vieja. Con la nueva, mazos por estirpe:
+desterrado 87 %, lunaria 32 %, oxitrón 42 %, reanimado 39 % (16 turnos de
+media).
+
+**En el calabozo abre la OLEADA** (Oscar), en `render` de match.js
+(`turnoDe = 1` si hay `etapa`): abriendo tú, la regla del primer turno rompía
+la etapa 1 del Bosque y de las Forjas (34 % y 33 %: con un solo personaje no
+pegabas y la rata te lo mataba), y la sangre no lo arreglaba. El recorrido del
+tutorial espera a TU primer turno (`toca`, turno ≤ 2). Sangre reajustada con
+`afinar-sangre.js` del scratchpad (200 duelos por etapa, sangre → % ganado):
+
+| Calabozo | 1 | 2 | 3 | 4 | 5 | jefe |
+|---|---|---|---|---|---|---|
+| Bosque | 5→100 | 8→95 | 18→86 | 13→100 | 20→100 | 35→62 |
+| Oasis | 6→91 | 10→100 | 5→100 | 5→100 | 12→100 | 8→66 |
+| Forjas | 3→100 | 5→100 | 8→81 | 6→82 | 15→81 | 8→63 |
+| Catacumbas | 6→100 | 15→96 | 8→73 | 4→100 | 10→100 | 12→64 |
+
+**Jefes endurecidos: el Eternal sale PRIMERO** (`criaturas: [jefe, esbirro,
+esbirro]`). Saliendo el último no se asomaba casi nunca (1 de cada 60 duelos):
+la oleada rotaba a los esbirros, el jefe no lanzaba nada (exige `salioAlCampo`)
+y se ganaba desangrando a dos 4/4. Ahora se presenta, lanza desde su primer
+turno y los esbirros le cubren (`interponerEsbirro`). Ojo: `afinar-sangre.js`
+no lanzaba las habilidades (las lanza la PANTALLA, `lanzarHabilidadesJefe`, no
+`AI.jugarTurno`); ya las lanza igual que la mesa. Sangre y % ganado: Bosque
+35 → 62, Oasis 8 → 66, Forjas 8 → 63, Catacumbas 12 → 64. Las etapas 4-5 que
+salen al 100 % no dependen de la sangre (ni con 40 bajan). Las tablas de sangre más
+abajo en este archivo son de antes de estos cambios. Los motivos de `derramar` se traducen en `QUE_DERRAMA`; uno nuevo sin entrada
+sale como «el efecto «motivo»».
+
 ## Hades y destierro en la mesa (`zonaFuera` en match.js)
 
 Dos zonas de verdad junto al personaje en posición, en los dos lados y

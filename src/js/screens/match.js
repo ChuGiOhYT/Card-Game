@@ -18,6 +18,7 @@ window.Game.Screens.partida = {
     this.params = params;
     this.resultadoRegistrado = false;
     this.cineFinLanzada = false;
+    this.condicionAvisada = false;
     this.recordatorios = [];
     this.uidsRecordados = new Set();
     this.eco = null;
@@ -462,6 +463,10 @@ window.Game.Screens.partida = {
     // las revanchas abre uno y otro por turnos (`abre`).
     if (!this.motor.esEspejo) {
       if (this.remoto && this.remoto.abre === 1) this.motor.turnoDe = 1;
+      // En el calabozo abre la OLEADA (Oscar): con la regla de que quien abre
+      // no ataca, abriendo tú la etapa 1 (un solo personaje) la rata te lo
+      // mataba antes de poder pegar (34 % de victorias en el Bosque).
+      if (this.etapa) this.motor.turnoDe = 1;
       this.motor.iniciar();
     }
   },
@@ -533,7 +538,7 @@ window.Game.Screens.partida = {
     el.innerHTML = `
       <div class="fin-caja">
         <h2 class="${gano ? 'fin-victoria' : 'fin-derrota'}">${gano ? 'Victoria' : 'Derrota'}</h2>
-        <p class="fin-motivo">${this.textoMotivo(gano)}</p>
+        <div class="fin-motivo">${this.textoMotivo(gano)}</div>
         ${estado ? `<p class="nota fin-revancha-estado">${estado}</p>` : ''}
         <div class="fin-botones">
           <button class="btn-primario" id="btn-revancha" ${r.yo || r.fuera ? 'disabled' : ''}>
@@ -3006,6 +3011,16 @@ window.Game.Screens.partida = {
 
   avisarFase() {
     const m = this.motor;
+    // Al empezar el duelo, una vez: cómo se gana (Oscar: «no sé por qué gané»).
+    let tras = 0;
+    if (!this.condicionAvisada && m && !m.terminada) {
+      this.condicionAvisada = true;
+      tras = 4400; // el aviso de la fase espera a que se vaya este
+      setTimeout(() => {
+        if (this.motor !== m || m.terminada) return;
+        this.emergente('Gana quien deje al rival sin sangre o sin personajes en pie', { clase: 'fase', ms: 4200 });
+      }, 300);
+    }
     if (m.jugadorActivo !== this.tu() || m.ataquePendiente) return;
     const clave = `${m.numeroTurno}:${m.fase}`;
     if (this.faseAvisada === clave) return;
@@ -3020,7 +3035,7 @@ window.Game.Screens.partida = {
     if (m.fase === 'ataque' && m.numeroTurno !== 1 && !m.atacantesDisponibles(this.tu()).length) return;
     // Al abrir el turno sale antes el aviso «Tu turno» en el mismo sitio: se
     // espera a que se vaya, y si para entonces la fase ya cambió, no sale.
-    const espera = m.fase === 'personaje' ? 1200 : 0;
+    const espera = Math.max(tras, m.fase === 'personaje' ? 1200 : 0);
     setTimeout(() => {
       if (this.motor !== m || `${m.numeroTurno}:${m.fase}` !== clave || m.ataquePendiente) return;
       this.emergente(texto, { clase: 'fase' });
@@ -3049,21 +3064,49 @@ window.Game.Screens.partida = {
     }
   },
 
-  /** Explica en una frase cómo se decidió el duelo. */
+  /**
+   * El cartel de fin explica la condición de victoria y QUÉ la cumplió
+   * (Oscar: «muchas victorias se sienten raras, no sé por qué gané»). La
+   * causa la deja el motor en causaFin: lo último que derramó sangre o mandó
+   * al Hades al perdedor.
+   */
   textoMotivo(gano) {
     const m = this.motor;
-    const quien = m.perdedor ? m.perdedor.nombre : 'El perdedor';
-
+    const quien = m.perdedor ? m.perdedor.nombre : 'El rival';
+    const c = m.causaFin;
+    let condicion;
     if (m.motivoFin === 'personajes') {
-      return gano
-        ? `No le queda ni un personaje en pie: ${quien} cae con toda su ` +
-          `formación en el Hades.`
-        : `Te quedaste sin personajes en pie. Los del Hades no cuentan ` +
-          `mientras nada los devuelva.`;
+      condicion = gano
+        ? `${quien} se quedó sin personajes en pie: ni en posición ni en la reserva.`
+        : 'Te quedaste sin personajes en pie: ni en posición ni en la reserva.';
+    } else {
+      condicion = gano
+        ? `${quien} se quedó sin sangre (0 de ${m.perdedor ? m.perdedor.sangreTotal : 30}).`
+        : `Te quedaste sin sangre (0 de ${this.tu().sangreTotal}).`;
     }
-    return gano
-      ? `${quien} derramó todas sus sangres.`
-      : `Derramaste tus ${this.tu().sangreTotal} sangres.`;
+    let decidio = '';
+    if (c && c.tipo === 'sangre') {
+      const lo = this.QUE_DERRAMA[c.motivo] || `el efecto «${c.motivo}»`;
+      decidio = `La última gota: ${lo}${c.n > 1 ? ` (−${c.n})` : ''}.`;
+    } else if (c && c.tipo === 'hades') {
+      const como = /combate/.test(c.motivo) ? 'cayó en combate' : `fue al Hades (${c.motivo})`;
+      decidio = `${c.personaje} ${como} y era el último que ${gano ? 'le' : 'te'} quedaba.`;
+    }
+    return `
+      <span class="fin-regla">Se gana dejando al rival sin sangre o sin personajes en pie.</span>
+      <span class="fin-causa">${condicion}</span>
+      ${decidio ? `<span class="fin-decidio">${decidio}</span>` : ''}`;
+  },
+
+  /** Cómo se dice cada motivo de derrame en el cartel de fin. */
+  QUE_DERRAMA: {
+    'fin de turno': 'el derrame de fin de turno (cerrar un turno cuesta 1 sangre)',
+    'daño de combate': 'un golpe que pasó a la sangre',
+    'reflejo del escudo': 'el reflejo de un escudo más alto que el ataque',
+    'Sadash: sangrado': 'el sangrado de Sadash al retirarse',
+    'Bloquear: daño devuelto': 'el daño que devolvió Bloquear',
+    'habilidad de jefe': 'una habilidad del jefe',
+    'Aplacar': 'Aplacar'
   },
 
   /**
@@ -3167,7 +3210,7 @@ window.Game.Screens.partida = {
         <h2 class="${gano ? 'fin-victoria' : 'fin-derrota'}">
           ${gano ? 'Victoria' : 'Derrota'}
         </h2>
-        <p class="fin-motivo">${this.textoMotivo(gano)}</p>
+        <div class="fin-motivo">${this.textoMotivo(gano)}</div>
         ${recompensa}
         <button class="btn-primario" id="btn-fin-menu">
           ${volverA === 'historia' ? 'Seguir la historia' : volverA === 'remoto' ? 'Salir de la sala' : 'Volver al menú'}

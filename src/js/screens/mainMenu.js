@@ -3,6 +3,22 @@ window.Game = window.Game || {};
 window.Game.Screens = window.Game.Screens || {};
 
 window.Game.Screens.mainMenu = {
+  /** El emblema hexagonal del logo registrado (INAPI), sutil tras el título. */
+  EMBLEMA: `<svg class="menu-emblema" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="em-oro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e3b0"/><stop offset="1" stop-color="#8a6a2a"/></linearGradient>
+              <radialGradient id="em-violeta" cx="35%" cy="30%"><stop offset="0" stop-color="#f2a6e6"/><stop offset=".45" stop-color="#c04aae"/><stop offset="1" stop-color="#3a1250"/></radialGradient>
+              <radialGradient id="em-cian" cx="35%" cy="30%"><stop offset="0" stop-color="#c9f6ff"/><stop offset=".45" stop-color="#3cc3d4"/><stop offset="1" stop-color="#16305a"/></radialGradient>
+              <radialGradient id="em-nebula"><stop offset="0" stop-color="#7b2d96" stop-opacity=".55"/><stop offset=".6" stop-color="#3cc3d4" stop-opacity=".12"/><stop offset="1" stop-color="#0a0a1d" stop-opacity="0"/></radialGradient>
+            </defs>
+            <circle class="halo" cx="100" cy="100" r="78" fill="url(#em-nebula)"/>
+            <polygon points="100.0,12.0 176.2,56.0 176.2,144.0 100.0,188.0 23.8,144.0 23.8,56.0" fill="none" stroke="url(#em-oro)" stroke-width="1.4"/>
+            <polygon points="100.0,20.0 169.3,60.0 169.3,140.0 100.0,180.0 30.7,140.0 30.7,60.0" fill="none" stroke="#d8b968" stroke-opacity=".35" stroke-width=".8"/>
+            <path d="M100 58 L132 100 L100 142 L68 100 Z" fill="none" stroke="#3cc3d4" stroke-opacity=".55" stroke-width="1"/>
+            <circle cx="100" cy="100" r="5" fill="#fff6dc"/>
+            <circle cx="100" cy="40" r="9" fill="url(#em-violeta)"/><circle cx="55" cy="72" r="6" fill="url(#em-cian)"/><circle cx="145" cy="72" r="6" fill="url(#em-violeta)"/><circle cx="50" cy="128" r="6" fill="url(#em-violeta)"/><circle cx="150" cy="128" r="6" fill="url(#em-cian)"/><circle cx="100" cy="160" r="8" fill="url(#em-cian)"/><circle cx="100.0" cy="12.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="100.0" cy="12.0" r="2.4" fill="#d8b968"/><circle cx="176.2" cy="56.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="176.2" cy="56.0" r="2.4" fill="#d8b968"/><circle cx="176.2" cy="144.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="176.2" cy="144.0" r="2.4" fill="#d8b968"/><circle cx="100.0" cy="188.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="100.0" cy="188.0" r="2.4" fill="#d8b968"/><circle cx="23.8" cy="144.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="23.8" cy="144.0" r="2.4" fill="#d8b968"/><circle cx="23.8" cy="56.0" r="7" fill="#0a0a1d" stroke="url(#em-oro)" stroke-width="1.6"/><circle cx="23.8" cy="56.0" r="2.4" fill="#d8b968"/>
+          </svg>`,
+
   render(contenedor) {
     const partidas = window.Game.State.perfil.partidasJugadas;
     const equipos = window.Game.State.perfil.equiposGuardados.length;
@@ -92,7 +108,8 @@ window.Game.Screens.mainMenu = {
         <canvas class="menu-particulas" id="menu-particulas" aria-hidden="true"></canvas>
 
         <div class="menu-marca">
-          <h1 class="menu-titulo">AETERNUM</h1>
+          ${this.EMBLEMA}
+          <h1 class="menu-titulo" aria-label="AETERNUM">AeternuM</h1>
           <div class="menu-filete"></div>
           <p class="menu-lema">Juego de mesa y aventura de rol</p>
         </div>

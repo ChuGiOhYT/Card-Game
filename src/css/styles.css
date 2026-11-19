@@ -2,6 +2,15 @@
    AETERNUM — hoja de estilos única
    ================================================================== */
 
+/* La letra de la MARCA registrada (INAPI): Cinzel, incluida en assets para
+   que el .exe y la APK no dependan de internet (licencia OFL en
+   assets/fuentes). En Cinzel las minúsculas son versalitas: «AeternuM» se ve
+   como el logo, con la A y la M altas. */
+@font-face { font-family: 'Cinzel'; font-weight: 400; font-display: swap; src: url('../assets/fuentes/cinzel-400.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-weight: 500 600; font-display: swap; src: url('../assets/fuentes/cinzel-600.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; font-display: swap; src: url('../assets/fuentes/cinzel-700.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-weight: 900; font-display: swap; src: url('../assets/fuentes/cinzel-900.woff2') format('woff2'); }
+
 :root {
   --fondo: #0b0d17;
   --fondo-alto: #12162a;
@@ -43,11 +52,19 @@ body {
   --oro-claro: #f6e3b0;
   --oro-medio: #d8b968;
   --oro-hondo: #8a6a2a;
+  /* Colores del logo: noche, violeta, magenta y cian, con filetes de oro. */
+  --marca-noche: #0a0a1d;
+  --marca-violeta: #7b2d96;
+  --marca-magenta: #c04aae;
+  --marca-cian: #3cc3d4;
 }
 
 body {
+  /* Un eco sutil del logo: nebulosa violeta y un toque cian sobre la noche. */
   background:
-    radial-gradient(ellipse 80% 60% at 50% -10%, #1b2242 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% -10%, #1f1a46 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 12% 105%, rgba(123, 45, 150, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 35% at 92% 100%, rgba(60, 195, 212, 0.08) 0%, transparent 70%),
     var(--fondo);
   color: var(--texto);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -291,9 +308,10 @@ button:disabled {
   margin: 0;
   font-family: var(--fuente-titulo);
   font-size: clamp(54px, 10vh, 92px);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-indent: 0.16em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-indent: 0.04em;
+  line-height: 1.1;
   color: #e9cd84;
   background:
     linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%) 0 0 / 250% 100%,
@@ -7344,3 +7362,63 @@ html.web .menu-icono-salir {
     text-align: center;
   }
 }
+
+/* Condición de victoria en el cartel de fin: la regla, cómo se cumplió y la
+   última gota (Oscar: «no sé por qué gané»). */
+.fin-motivo { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--texto-suave); }
+.fin-motivo .fin-regla { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--oro-medio, #c9a24a); opacity: 0.85; }
+.fin-motivo .fin-causa { font-size: 15px; color: var(--texto, #eee); }
+.fin-motivo .fin-decidio { font-style: italic; }
+
+
+/* --- La marca (INAPI) ------------------------------------------------------
+   El emblema hexagonal del logo, sutil, detrás del título del menú: filetes
+   de oro, nodos en los vértices y orbes violeta y cian. */
+.menu-marca { position: relative; }
+.menu-emblema {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(190px, 33vh, 310px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -56%);
+  z-index: -1;
+  opacity: 0.34;
+  pointer-events: none;
+  filter: drop-shadow(0 0 18px rgba(123, 45, 150, 0.45));
+}
+.menu-emblema .halo { animation: emblema-latido 6s ease-in-out infinite; transform-origin: 50% 50%; }
+@keyframes emblema-latido { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .menu-emblema .halo { animation: none; } }
+
+/* El filete bajo el título, con el rombo y los nodos del logo. */
+.menu-filete { position: relative; overflow: visible; }
+.menu-filete::before,
+.menu-filete::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+}
+.menu-filete::before {
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--oro-medio);
+  background: var(--marca-noche);
+  box-shadow: 0 0 8px rgba(60, 195, 212, 0.6), inset 0 0 4px rgba(192, 74, 174, 0.8);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.menu-filete::after {
+  left: 0;
+  right: 0;
+  height: 5px;
+  transform: translateY(-50%);
+  background:
+    radial-gradient(circle, var(--oro-medio) 0 1.6px, transparent 2px) 18% 50% / 5px 5px no-repeat,
+    radial-gradient(circle, var(--oro-medio) 0 1.6px, transparent 2px) 82% 50% / 5px 5px no-repeat;
+}
+
+/* Los títulos de pantalla también con la letra de la marca. */
+.pantalla-titulo { letter-spacing: 0.04em; }
+/* Cinzel es más ancha que Palatino: el contador no se parte. */
+.gemas-cab .nota { white-space: nowrap; }

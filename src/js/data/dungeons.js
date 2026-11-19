@@ -212,7 +212,7 @@ window.Game.DUNGEONS = {
       {
         n: 3,
         titulo: 'La manada de los sin nombre',
-        sangre: 10,
+        sangre: 18,
         criaturas: ['cri_ratas', 'cri_lobo', 'cri_gnolls'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -243,7 +243,7 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'Manos humanas',
-        sangre: 15,
+        sangre: 13,
         criaturas: ['cri_gnolls', 'cri_conspiradores'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -308,8 +308,10 @@ window.Game.DUNGEONS = {
       {
         n: 6,
         titulo: 'Iskar, lo que queda del Orden',
-        sangre: 30,
-        criaturas: ['cri_esbirro_bosque', 'cri_esbirro_bosque', 'cri_uldar'],
+        sangre: 35,
+        // El Eternal se presenta primero y lanza desde su primer turno; los
+        // esbirros le cubren (si salía el último, casi nunca llegaba a salir).
+        criaturas: ['cri_uldar', 'cri_esbirro_bosque', 'cri_esbirro_bosque'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
         dialogo: [
@@ -399,7 +401,7 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Cascos en la niebla',
-        sangre: 12,
+        sangre: 6,
         criaturas: ['cri_centauro'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -431,7 +433,7 @@ window.Game.DUNGEONS = {
       {
         n: 2,
         titulo: 'Bajo las raíces',
-        sangre: 15,
+        sangre: 10,
         criaturas: ['cri_centauro', 'cri_troles'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -465,7 +467,7 @@ window.Game.DUNGEONS = {
       {
         n: 3,
         titulo: 'El claro equivocado',
-        sangre: 12,
+        sangre: 5,
         criaturas: ['cri_centauro', 'cri_troles', 'cri_culto_eclipse'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -496,7 +498,7 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'El culto del eclipse',
-        sangre: 12,
+        sangre: 5,
         criaturas: ['cri_troles', 'cri_culto_eclipse'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
@@ -562,7 +564,9 @@ window.Game.DUNGEONS = {
         n: 6,
         titulo: 'Brahma, el jardín que se cerró',
         sangre: 8,
-        criaturas: ['cri_esbirro_oasis', 'cri_esbirro_oasis', 'cri_brahma'],
+        // El Eternal se presenta primero y lanza desde su primer turno; los
+        // esbirros le cubren (si salía el último, casi nunca llegaba a salir).
+        criaturas: ['cri_brahma', 'cri_esbirro_oasis', 'cri_esbirro_oasis'],
         // BORRADOR de Claude (docs/BIBLIA.md): Oscar lo reemplaza por el
         // suyo. Lo dicen al andar, antes de los enemigos.
         dialogo: [
@@ -646,7 +650,7 @@ window.Game.DUNGEONS = {
       {
         n: 1,
         titulo: 'Los que no descansan',
-        sangre: 10,
+        sangre: 6,
         criaturas: ['cri_condenados'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -709,7 +713,7 @@ window.Game.DUNGEONS = {
       {
         n: 3,
         titulo: 'La cripta abierta',
-        sangre: 12,
+        sangre: 8,
         criaturas: ['cri_condenados', 'cri_slime', 'cri_nigromante'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -742,7 +746,7 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'Marea de huesos',
-        sangre: 8,
+        sangre: 4,
         criaturas: ['cri_slime', 'cri_nigromante'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -805,8 +809,10 @@ window.Game.DUNGEONS = {
       {
         n: 6,
         titulo: 'Tarh Akh, lo que la muerte olvidó',
-        sangre: 8,
-        criaturas: ['cri_esbirro_catacumbas', 'cri_esbirro_catacumbas', 'cri_tarh_akh'],
+        sangre: 12,
+        // El Eternal se presenta primero y lanza desde su primer turno; los
+        // esbirros le cubren (si salía el último, casi nunca llegaba a salir).
+        criaturas: ['cri_tarh_akh', 'cri_esbirro_catacumbas', 'cri_esbirro_catacumbas'],
         esJefe: true,
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -952,7 +958,7 @@ window.Game.DUNGEONS = {
       {
         n: 3,
         titulo: 'La cadena de montaje',
-        sangre: 10,
+        sangre: 8,
         criaturas: ['cri_rocoso', 'cri_guardian', 'cri_horda'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -983,7 +989,7 @@ window.Game.DUNGEONS = {
       {
         n: 4,
         titulo: 'Horda llameante',
-        sangre: 12,
+        sangre: 6,
         criaturas: ['cri_guardian', 'cri_horda'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -1013,7 +1019,7 @@ window.Game.DUNGEONS = {
       {
         n: 5,
         titulo: 'El corazón del yunque',
-        sangre: 5,
+        sangre: 15,
         criaturas: ['cri_horda', 'cri_esbirro_forjas'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -1046,7 +1052,9 @@ window.Game.DUNGEONS = {
         n: 6,
         titulo: "A'tar, el fuego sin herrero",
         sangre: 8,
-        criaturas: ['cri_esbirro_forjas', 'cri_esbirro_forjas', 'cri_atar'],
+        // El Eternal se presenta primero y lanza desde su primer turno; los
+        // esbirros le cubren (si salía el último, casi nunca llegaba a salir).
+        criaturas: ['cri_atar', 'cri_esbirro_forjas', 'cri_esbirro_forjas'],
         esJefe: true,
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
