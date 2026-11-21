@@ -269,6 +269,31 @@ mal, se corrige ahí y se regenera.
   Los textos de las gemas son **provisionales**, pendientes de la prosa
   definitiva.
 
+  **Emblemas de estirpe** (láminas de Oscar en `tools/emblemas/`, recortadas
+  con `python tools/emblemas/recortar.py`: máscara CIRCULAR sobre cada
+  medallón, porque los bordes plateados son tan claros como el tablero
+  dibujado de la lámina). `RACES[x].emblema` (también `mercenario`: la «?»
+  con runas) y `Game.emblema(raza, tam?)` los pinta con sombra (`.emblema`:
+  sombra oscura + halo del color de la estirpe). Sustituyen al `sigil` de
+  texto en tarjetas y ficha de estirpe, pestañas y marca de mercenario del
+  constructor, modo solo, sala remota, placa y reverso dibujado de la mesa.
+  Las criaturas no tienen emblema: caen a su `sigil`. Ojo: sin `tam` el
+  tamaño lo pone el CSS de cada sitio (en línea lo pisaba), y las reglas
+  `.carta-mini img` / `.mini-carta img` (100 % + cover) estiraban el emblema
+  a toda la carta: por eso `img.emblema` las anula.
+
+  **Las gemas tienen arte** (lámina de Oscar, `tools/gemas/lamina.png`,
+  recortada con `python tools/gemas/recortar.py tools/gemas/lamina.png` →
+  `src/assets/gemas/<raza>.webp`; el tablero de «transparencia» de la lámina
+  está DIBUJADO, por eso se recorta por el contorno oscuro). Asignación de
+  Oscar: amarilla = Desterrados, blanca = Lunaria, roja = Oxitrón, negra =
+  Reanimados. Cada `gema` lleva `imagen` y `brillo` (color del halo), y se
+  pinta con `Game.gemaImg(gema, tam)`: halo que late + destello que la cruza
+  (máscara en línea, no en variable CSS). Sustituye al sigilo ◈ en la tarjeta
+  de estirpe, la vitrina, la línea compacta, la ventana de la recompensa
+  final y el cartel de victoria. Con las cuatro y la historia sin leer, la
+  vitrina ya se desplazaba antes (texto largo); las imágenes lo alargan algo.
+
   **El aviso de la recompensa es de un solo uso, y la vitrina se encoge después.**
   La pantalla de estirpes no se desplaza (`.pantalla` es `overflow: hidden`) y lo
   único flexible es la ficha de la estirpe, así que todo lo que se quede fijo ahí
@@ -308,6 +333,12 @@ mal, se corrige ahí y se regenera.
   eso el panel de fin de `match.js` pinta las cartas que existan en vez de dar
   las dos por hechas. Los cuatro calabozos siguen acabando en 6 personajes y
   8 acciones.
+
+  **Y una etapa puede no dar nada** (`recompensa: null`): la 2 de las
+  Catacumbas. Oscar puso **Inmolación en las acciones iniciales de los
+  Reanimados** (las seis etapas) y a cambio esa etapa dejó de regalar Escape.
+  Las Catacumbas tampoco dan personaje en las etapas 1 y 2 (empiezan con
+  tres): acaban igual en 6 + 8.
 
 ## Lecturas de cartas fijadas por Oscar (para automatizarlas todas)
 
@@ -686,6 +717,63 @@ enteras y mudas.
   entero (justo la repetición), así que las repeticiones se cuentan con una
   segunda escucha sin tiempos por palabra. Lo malo o lo que no cabe en el
   cupo queda para el día siguiente: el índice se guarda tras cada petición.
+- **Voces de personajes** (`ui/vocesPersonajes.js`, `Game.VocesPersonajes`;
+  NO confundir con `ui/voces.js`, que es el «pipipi» de los bocadillos): la
+  frase de cada estirpe la dice su protagonista al pulsarla en la pantalla de
+  estirpes (`Game.FRASE_ESTIRPE` en `data/frases.js`, textos de Oscar). Una
+  voz de Gemini por personaje: Annia y Sadash = Kore, Luh = Enceladus
+  (elegidas por Oscar). **Pip es un robot y NO tiene voz** (`robot: true`):
+  «dice» su frase en pitidos digitales generados con WebAudio
+  (`VocesPersonajes.robot`, un trino por palabra, sube al final si es
+  pregunta); el generador salta las frases `robot`.
+- **Frase de ENTRADA** (`Game.FRASE_ENTRADA`, elegidas por Oscar, ≤5
+  palabras): cada personaje la dice con su voz UNA vez por duelo, la primera
+  vez que entra en posición, en todos los modos y los dos bandos, SIN
+  bocadillo (los bocadillos de siempre siguen escritos, sin voz: Oscar).
+  Gancho en `reaccionarASucesos` (`nuevosActivos`); `nuevoDuelo()` en
+  `render`, `parar()` en `destruir`. Una voz a la vez: cola corta.
+  Voz y efecto por personaje en `tools/narrador/voces-personajes.json`
+  (`"Kore"` o `{ "voz", "efecto" }`): Oxitrón = `robot`, Fälum = `coro`,
+  Lirhym = `eco`; efectos en `tools/narrador/efectos_voz.py` con numpy/scipy
+  del python de combo-shorts (el ffmpeg de editor-cartas no trae filtros, y
+  el completo de imageio vive en un AppData que Oscar no ve). Espíritus
+  (`cuervo`) es una GRABACIÓN que eligió Oscar (`assets/audio/cuervo.ogg`, recortada
+  a 2,6 s con fundido; la sintetizada sonaba rara) y el Ejército (`horda`) es
+  `assets/audio/ejercito.ogg`, una MEZCLA de 3,6 s de tres grabaciones que pasó
+  Oscar (quejidos de batalla, gruñidos de monstruo, gruñido de bestia de
+  fondo; cada trozo igualado a -18 dBFS antes de mezclar). Lo sintetizado no
+  sonaba a zombis.
+  **Una voz DISTINTA por personaje** (Oscar: Schedar o Pulcherrima para
+  varios sonaban a la misma persona; cada voz de Gemini es un timbre fijo).
+  Las ya hechas se quedan; las pendientes van una por voz (14 peticiones).
+  Los robots llevan además su zumbido: `{ "efecto": "robot", "tono": 110 }`
+  → `robot@110` (Hz; más bajo, más grave). El Ejército ya no son golpes de
+  ruido: gemidos con formantes de «uuh» y pies que se arrastran
+  (`sonido('horda')`, ×4 de volumen: sueltos daban picos del 10 %). Se
+  escuchan en `tools/narrador/muestras-voces/efectos/`.
+  «Ül Dar = Uldar» en pronunciacion.txt: separado, Whisper oía «Uldar» y
+  daba la frase de Lyla por incompleta.
+- **Bordes limpios** (Oscar oía «chirridos» al inicio o al final): eran restos
+  de la frase VECINA del lote de Gemini, colados en el margen de aire del
+  corte, más el clic del corte seco. `tools/narrador/limpiar_voz.py`: Whisper
+  marca dónde empiezan y acaban las palabras ESPERADAS, se extiende hacia fuera
+  solo mientras la voz siga sin silencio (no se come colas) y para en el
+  primer silencio; luego 50 ms de aire y fundidos (15 ms / 60 ms). Recortar
+  solo por energía NO sirve: se llevaba «Yo» y «¿verdad?» (palabras cortas
+  tras una pausa). Si Whisper no reconoce el audio (Brawl, por el robot), solo
+  fundidos. Los dos generadores limpian lo nuevo al crearlo;
+  `node tools/narrador/limpiar-audios.mjs [--prueba]` limpia lo existente
+  (voces + anciano), guarda originales en `tools/narrador/respaldo-audios/` y
+  apunta lo hecho en `limpiados.json`. `GENERAR_VOCES.bat` /
+  `tools/narrador/generar-voces.mjs`: primero `--muestras` (cada voz
+  candidata dice TODAS las frases en una petición; se escuchan en
+  `tools/narrador/muestras-voces/escuchar.html`), Oscar elige en
+  `tools/narrador/voces-personajes.json`, y luego genera las finales
+  reutilizando las muestras buenas (no gasta cupo). Índice
+  `assets/voces/voces.js` por hash del texto; mando «Voces de personajes» en el
+  mezclador (`Audio.GRUPOS.voces`). Trampa pisada: `gemini-tts.mjs` también
+  tiene `--muestras` y al IMPORTARLO se ejecutaba (gastó el cupo de un día);
+  ahora solo corre si es el archivo principal.
 - Trampa de Gemini TTS: una instrucción de estilo EN ESPAÑOL delante del
   texto se lee en voz alta. La forma que no la lee es inglés con «Say in the
   voice of …: <texto>».
@@ -922,6 +1010,71 @@ con un imitador local de Realtime y los CANDIDATE tirados (conectan en ~4 s).
   falso en un preload con `contextIsolation: false`. Trampa:
   `enableDeviceEmulation` o el debugger enganchado ANTES de la primera carga
   tumban Electron sin ningún mensaje.
+
+## Mesa: columna de sangre a la izquierda (Oscar)
+
+- **La sangre y la estirpe salen de entre las manos** y van a una columna
+  vertical (`.mesa-rail`, 1.ª columna de `.mesa`): el rival arriba, «VS», tú
+  abajo. Los contenedores conservan los ids `#placa-rival` / `#placa-jugador`
+  (`placaDe`, golpes, tutorial). Cada uno: emblema + nombre + estirpe ·
+  activo, y DOS barras verticales lado a lado que se llenan desde abajo: la
+  VIDA (roja) baja al perder sangre y la ENERGÍA (azul) sube al derramarla;
+  entre ellas → derramar / ← recuperar, y debajo «Fuera» con ↓ pagar.
+  `medirBarras`/`animarBarras` miden y animan el ALTO de `.rail-barra .relleno`.
+  Las manos ya no tienen placa en medio (`.mesa-manos` en 1fr 1fr).
+- Trampas: una regla vieja daba a `.sangre` `min-width: 300px` y la ficha se
+  salía de la columna; y Hades/Destierro cuelgan ABSOLUTOS a la izquierda de
+  la fila del campo, así que la fila se centraba sin contarlos y se salían por
+  encima de la columna: `.mesa-plano .lado-fila .lado-campo` les reserva su
+  margen. Bajo 1150 px el lateral cede (230 px). Medido a 1194×728 y
+  1024×700: 0 px de solape con la columna y 0 por la derecha.
+- **Sin Registro ni Herramientas** (Oscar: ya no hacen falta y se montaban
+  unos paneles sobre otros). El lateral es la lupa y los recordatorios (⚡). El
+  motor sigue llevando `registro`; el tutorial perdió sus dos pasos.
+- **«Abandonar» es el mismo botón dorado de «Volver»** del resto de pantallas
+  (`.btn-volver` con su icono); el redondo gris apenas se veía.
+
+## Ver una carta en grande: mantener pulsada (sin panel lateral)
+
+- **Ya no hay panel de lupa en ninguna pantalla** (mesa, calabozo,
+  constructor; Oscar). `core/lupa.js` se engancha UNA vez al documento
+  (`Lupa.iniciar()` desde `app.js`): mantener pulsada cualquier `[data-lupa]`
+  `MS_PULSAR` (380 ms) la enseña gigante en el centro con el fondo oscurecido
+  y desenfocado, y **al soltar se cierra**. Un anillo dorado se llena mientras
+  carga; moverse más de `MOVER_PX` lo cancela. Ratón y dedo.
+- **Una pulsación larga no juega la carta**: si llegó a abrirse, el clic de
+  soltar se traga (oyente `click` en captura, una vez). Un toque corto juega
+  como siempre. Medido en el constructor: largo = la ve sin elegirla; corto =
+  la elige sin abrir nada.
+- El overlay en modo vistazo es `pointer-events: none`, para que el soltar
+  llegue al documento. Clic derecho: la abre FIJA (se cierra tocando o con
+  Esc). En el móvil la pulsación larga también dispara `contextmenu`: se
+  ignora mientras dura el gesto; y `[data-lupa]` lleva `user-select: none` y
+  `-webkit-touch-callout: none` (sin menú de copiar).
+- `Lupa.extra(el)`: la mesa añade bajo la carta lo que tenga pendiente (el
+  ⚡, `pendienteDeCarta`), que era lo otro del lateral; leerlo lo descarta.
+- La mesa queda en dos columnas (sangre | campo): el campo pasó de ~644 a 954
+  px a 1194. Ojo al probar con eventos sintéticos: la mesa se repinta y la
+  carta pulsada deja de existir, así que un `pointerup` despachado SOBRE ELLA
+  no llega al documento (con un puntero real sí llega).
+
+## Pantallas de carga (ui/pantallaCarga.js)
+
+- Ilustración de la estirpe a pantalla completa (`assets/carga/<raza>.webp`,
+  arte de Oscar: Bosque, Oasis, Forjas, Catacumbas), su emblema, una frase al
+  azar de `Game.FRASES_CARGA` (borrador de Claude) y una barra verde.
+- **La barra es real**: precarga lo que necesita la pantalla siguiente
+  (`recursosDeArranque` / `recursosDeCalabozo` / `recursosDeDuelo`) y no se
+  adelanta ni a lo cargado ni a un mínimo de tiempo (`minMs`, para leer la
+  frase: en el PC todo carga al instante). Tope `maxMs` (8 s): un archivo
+  lento no deja a nadie atascado. Es lo que da tiempo a la versión web.
+- Tres sitios (Oscar): al abrir (`app.js`, estirpe al azar, el menú se monta
+  debajo), al pulsar «Comenzar historia» (`raceSelect`, espera y luego
+  navega) y **en `Router.ir('partida')`**, que la muestra y se vuelve a llamar
+  con `_trasCarga`: así la tienen TODOS los caminos a un duelo (solo, etapa,
+  remoto, revancha). Un segundo `ir('partida')` durante la carga se ignora.
+- Ojo en los scripts de prueba: `Router.ir('partida')` ya NO navega en el
+  acto; la mesa existe ~1,5 s después.
 
 ## Trampas ya pisadas
 
@@ -1187,7 +1340,7 @@ de historia (200 duelos por etapa), % de victorias antes → ahora:
 | Bosque | 5 · 8 · 10 · 15 · 20 · 30 | 1/5/0/4/100/72 | 80/79/100/81/100/64 |
 | Oasis | 12 · 15 · 12 · 12 · 12 · 8 | 48/65/0/0/32/11 | 91/97/100/93/94/68 |
 | Forjas | 3 · 5 · 10 · 12 · 5 · 8 | 0/15/0/0/0/12 | 70/90/100/84/89/66 |
-| Catacumbas | 10 · 15 · 12 · 8 · 10 · 8 | 0/45/0/0/0/0 | 100/94/92/100/76/58 |
+| Catacumbas | 6 · 8 · 8 · 4 · 10 · 12 | 0/45/0/0/0/0 | 100/90/89/100/100/0 (nov-2026: etapa 2 bajada de 15 a 8 por Oscar; el jefe con 12 da 0 %, pendiente) |
 
 Objetivo usado: ≥80% en las etapas 1-2, ≥75% en la 3-5 y ~60-65% el jefe.
 Las curvas NO son crecientes a propósito: cada etapa lleva lo que necesita su

@@ -16,6 +16,8 @@
   G.Router.registrar('remoto', G.Screens.remoto);
 
   G.Audio.precargar();
+  // Mantener pulsada una carta la enseña en grande (en todas las pantallas).
+  G.Lupa.iniciar();
 
   // Un solo oyente para todos los botones del juego, en vez de repetirlo en
   // cada pantalla. Va en fase de captura por dos motivos: suena antes de que
@@ -33,5 +35,8 @@
     true
   );
 
+  // Al abrir: la pantalla de carga (estirpe al azar) tapa el menú mientras se
+  // precargan las cartas, el vídeo y la música; el menú se monta debajo.
+  G.Carga?.mostrar({ recursos: G.Carga.recursosDeArranque(), minMs: 2200 });
   G.Router.iniciar(document.getElementById('app'), 'mainMenu');
 })();

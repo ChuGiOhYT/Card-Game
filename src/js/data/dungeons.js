@@ -112,6 +112,9 @@ window.Game.DUNGEONS = {
       id: 'gema_orden',
       nombre: 'Cristal del Orden',
       sigil: '◈',
+      // Ámbar con fuego dentro (gemas asignadas por Oscar).
+      imagen: 'assets/gemas/desterrado.webp',
+      brillo: '#ffb22e',
       mensaje:
         'El cristal de Iskar late todavía con la luz enferma del bosque. ' +
         'Solo, no sirve de nada: para limpiarlo hacen falta los otros tres.'
@@ -371,6 +374,9 @@ window.Game.DUNGEONS = {
       id: 'gema_vida',
       nombre: 'Cristal del Jardín',
       sigil: '◈',
+      // Blanca, agrietada por dentro.
+      imagen: 'assets/gemas/lunaria.webp',
+      brillo: '#dfe7ff',
       mensaje:
         'El cristal de Brahma sigue tibio, como una semilla que no se ' +
         'decide a abrir. Guárdalo: solo, no hará crecer nada.'
@@ -623,6 +629,9 @@ window.Game.DUNGEONS = {
       id: 'gema_retorno',
       nombre: 'Cristal del Retorno',
       sigil: '◈',
+      // Negra con savia verde.
+      imagen: 'assets/gemas/reanimado.webp',
+      brillo: '#5dff7a',
       mensaje:
         'El cristal de Tarh Akh pesa más de lo que debería, como si trajera' +
         ' algo dentro. Que descanse ahí hasta que estén los cuatro.'
@@ -641,7 +650,9 @@ window.Game.DUNGEONS = {
         'soporta perder, en manos del dolor, se sale de control con una ' +
         'facilidad aterradora.'
     },
-    accionesIniciales: ['o_finta', 'd_bloquear', 'n_ruego'],
+    // Inmolación desde el inicio, en las seis etapas (Oscar): los muertos no
+    // temen deshacerse. Por eso la etapa 2 ya no regala Escape.
+    accionesIniciales: ['o_finta', 'd_bloquear', 'n_ruego', 'o_inmolacion'],
     // Luh no baja sola: el Ejército y Gurh entran con ella desde la etapa 1 en
     // vez de ser las recompensas de la 1 y la 2. Ver las notas de esas etapas.
     personajesIniciales: ['rea_luh', 'rea_ejercito', 'rea_gurh'],
@@ -681,7 +692,8 @@ window.Game.DUNGEONS = {
       {
         n: 2,
         titulo: 'Lo que rezuma',
-        sangre: 15,
+        // 15 era imposible jugando a mano (Oscar); medido con la IA: 74 % → 89 %.
+        sangre: 8,
         criaturas: ['cri_condenados', 'cri_slime'],
         // BORRADOR de Claude (docs/BIBLIA.md). Sin escenario 2D, lo dicen en
         // bocadillos al empezar el duelo (ui/bocadillos.js).
@@ -704,11 +716,8 @@ window.Game.DUNGEONS = {
             'levantar a la gente de esta ciudad.'
         },
         // Sin personaje: Gurh también venía en el equipo de salida.
-        recompensa: { accion: 'd_escape' },
-        textoRecompensa:
-          'Gurh, la última en caer cuando arrasaron su pueblo, enseña lo ' +
-          'único que le sirvió entonces: por dónde salir de un túnel que se ' +
-          'cierra.'
+        // Sin recompensa: Inmolación ya viene desde el inicio (Oscar).
+        recompensa: null
       },
       {
         n: 3,
@@ -872,6 +881,9 @@ window.Game.DUNGEONS = {
       id: 'gema_forja',
       nombre: 'Cristal de la Forja',
       sigil: '◈',
+      // Roja de carne, con venas verdes.
+      imagen: 'assets/gemas/oxitron.webp',
+      brillo: '#ff3d52',
       mensaje:
         'El cristal de A’tar no se ha apagado: dentro sigue habiendo fuego,' +
         ' esperando un yunque que todavía no tienes.'
@@ -1135,6 +1147,19 @@ window.Game.calabozoDe = function (razaId) {
 window.Game.gemaDe = function (razaId) {
   const cal = window.Game.calabozoDe(razaId);
   return (cal && cal.gema) || null;
+};
+
+/**
+ * La gema pintada (su imagen, con su brillo que late y un destello que la
+ * cruza). `tam` en px. La máscara del destello va EN LÍNEA: un url() dentro de
+ * una variable CSS se resolvería contra la hoja y no cargaría.
+ */
+window.Game.gemaImg = function (gema, tam = 40) {
+  if (!gema || !gema.imagen) return gema ? gema.sigil : '';
+  const m = `url('${gema.imagen}')`;
+  return `<span class="gema-img" style="--tam:${tam}px;--brillo:${gema.brillo || '#fff'}">` +
+    `<img src="${gema.imagen}" alt="${gema.nombre}" draggable="false">` +
+    `<span class="gema-destello" style="-webkit-mask-image:${m};mask-image:${m}"></span></span>`;
 };
 
 /** Las cuatro gemas, en el orden de la campaña. */

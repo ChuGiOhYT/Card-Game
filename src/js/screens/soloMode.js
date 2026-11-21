@@ -99,7 +99,7 @@ window.Game.Screens.modoSolo = {
              <button data-raza="${id}" class="${id === razaId ? 'activa' : ''}"
                      style="--raza-primario:${window.Game.RACES[id].colorPrimario}"
                      title="${window.Game.RACES[id].nombre}">
-               ${window.Game.RACES[id].sigil}
+               ${window.Game.emblema(id)}
              </button>`
            ).join('')}
          </div>`
@@ -118,7 +118,7 @@ window.Game.Screens.modoSolo = {
       <div class="solo-tarjeta"
            style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
         <span class="solo-etiqueta">${etiqueta}</span>
-        <span class="solo-sigil">${r.sigil}</span>
+        <span class="solo-sigil">${window.Game.emblema(r)}</span>
         <strong class="solo-nombre">${r.nombre}</strong>
         <span class="solo-sangre">${window.Game.SANGRE_TOTAL} sangres</span>
         ${equipo}

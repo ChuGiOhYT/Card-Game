@@ -175,7 +175,7 @@ window.Game.Screens.historia = {
         <div class="pantalla" style="--raza-primario:${r.colorPrimario}">
           <header class="pantalla-cabecera">
             <button class="btn-volver" id="btn-volver" aria-label="Cambiar estirpe"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Cambiar estirpe</span></button>
-            <h2 class="pantalla-titulo tinte">${r.sigil} ${r.nombre}</h2>
+            <h2 class="pantalla-titulo tinte">${window.Game.emblema(r)} ${r.nombre}</h2>
             <p class="pantalla-sub">${pendiente ? pendiente.nombre : 'Calabozo'}</p>
           </header>
           <div class="calabozo-pendiente">
@@ -217,11 +217,6 @@ window.Game.Screens.historia = {
             </p>
           </section>
           <section class="calabozo-ficha" id="calabozo-ficha"></section>
-          <aside class="calabozo-lupa">
-            <div class="lupa" id="lupa">
-              <div class="lupa-vacia">Pasa el ratón por una carta</div>
-            </div>
-          </aside>
         </div>
       </div>
     `;
@@ -365,9 +360,7 @@ window.Game.Screens.historia = {
     });
     caja.querySelector('[data-etapa]')?.addEventListener('click', () => this.entrar(n));
     window.Game.Lupa.conectar(contenedor);
-    // La lupa no empieza vacía: enseña al primero de la oleada.
-    const lupa = contenedor.querySelector('#lupa');
-    if (lupa && criaturas[0]) window.Game.Lupa.mostrar(lupa, criaturas[0].imagen, criaturas[0].nombre);
+
   },
 
   /** Cinemática de entrada, travesía y al duelo. */

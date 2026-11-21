@@ -8,3 +8,7 @@
 # A’tar = Atar
 # Aj’Khul = Ajkul
 # Tarh Akh = Tar Ak
+
+# Lyla («Por Ül Dar.»): junto se pronuncia igual y Whisper lo reconoce
+# (separado lo oía «Uldar» y daba la frase por incompleta).
+Ül Dar = Uldar

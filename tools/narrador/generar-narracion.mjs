@@ -37,6 +37,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { hablar, guardarOgg, buscarFfmpeg, MODELO } from './gemini-tts.mjs';
+import { limpiarOggs, apuntarLimpios } from './limpiar-audios.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.join(AQUI, '..', '..');
@@ -296,6 +297,7 @@ if (remotos.length) {
       console.log(`  ✖ Petición ${n + 1}: Whisper no pudo cortarla.\n${(r.stderr || '').split('\n').slice(-4).join('\n')}`);
       continue;
     }
+    const nuevos = [];
     for (const c of JSON.parse(fs.readFileSync(cortes, 'utf8'))) {
       const t = lote[c.i];
       if (!c.ok) {
@@ -309,8 +311,15 @@ if (remotos.length) {
         '-ac', '1', '-c:a', 'libopus', '-b:a', '48k', destino]);
       if (f.status !== 0) { console.log(`  ✖ ffmpeg: ${String(f.stderr).slice(0, 160)}`); continue; }
       indice[t.k][t.tono] = { src: `assets/narracion/${t.archivo}`, dur: Math.round((c.fin - c.inicio) * 100) / 100 };
+      nuevos.push({ ogg: destino, texto: textos.find((x) => clave(x.texto) === t.k).texto, t });
       hechas++;
       console.log(`  ✔ [${t.tono}] ${t.donde} · ${indice[t.k][t.tono].dur} s`);
+    }
+    // Bordes limpios (sin restos de la escena vecina ni clic): limpiar_voz.py.
+    if (nuevos.length) {
+      const limpios = limpiarOggs(nuevos);
+      for (const a of nuevos) if (limpios[a.ogg]) indice[a.t.k][a.t.tono].dur = limpios[a.ogg].despues;
+      apuntarLimpios(nuevos.map((a) => a.ogg));
     }
     escribirIndice(); // lo hecho queda guardado aunque se corte después
   }

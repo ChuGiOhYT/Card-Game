@@ -107,7 +107,11 @@ export const CANDIDATAS = {
   }
 };
 
-if (process.argv.includes('--muestras')) {
+// Solo si se ejecuta ESTE archivo: importado desde generar-voces.mjs (que
+// también acepta --muestras) se ponía a regenerar estas muestras y gastaba
+// el cupo del día.
+const esPrincipal = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (esPrincipal && process.argv.includes('--muestras')) {
   const texto = 'El Bosque Nocturno fue cuna de sabios: aquí se pensaba despacio y se hablaba en voz baja. Hoy huele a podredumbre. Bestias enloquecidas, bandidos y conspiradores se reparten la espesura, y nadie sabe qué fue de su guardián.';
   const dir = path.join(AQUI, 'muestras');
   for (const [tipo, { estilo, voces }] of Object.entries(CANDIDATAS)) {

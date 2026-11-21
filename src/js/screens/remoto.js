@@ -201,7 +201,7 @@ window.Game.Screens.remoto = {
       const r = window.Game.RACES[id];
       return `<button type="button" class="remoto-raza ${id === this.raza ? 'activa' : ''}" data-raza="${id}"
                 style="--raza-primario:${r.colorPrimario}">
-          <span class="remoto-raza-sigil">${r.sigil}</span><span>${r.nombre}</span>
+          <span class="remoto-raza-sigil">${window.Game.emblema(r)}</span><span>${r.nombre}</span>
         </button>`;
     }).join('');
     caja.querySelectorAll('[data-raza]').forEach((b) => b.addEventListener('click', () => {

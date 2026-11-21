@@ -43,6 +43,21 @@ window.Game.Router = {
       params = { modo: 'historia' };
     }
 
+    // Ir a un duelo pasa por la pantalla de carga (ui/pantallaCarga.js): la
+    // ilustración de tu estirpe mientras se precargan las cartas y el tapete.
+    // Al terminar se vuelve a llamar con `_trasCarga` para entrar de verdad.
+    if (nombre === 'partida' && window.Game.Carga && !this._trasCarga) {
+      if (this._cargando) return;
+      this._cargando = true;
+      const C = window.Game.Carga;
+      C.mostrar({ raza: params.raza, recursos: C.recursosDeDuelo(params), minMs: 1400 }).then(() => {
+        this._cargando = false;
+        this._trasCarga = true;
+        try { this.ir(nombre, params); } finally { this._trasCarga = false; }
+      });
+      return;
+    }
+
     const pantalla = this.pantallas[nombre];
     if (!pantalla) {
       console.error(`Pantalla no registrada: ${nombre}`);

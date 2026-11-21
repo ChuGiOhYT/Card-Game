@@ -25,3 +25,7 @@ movil/android/app/src/main/assets/capacitor.config.json
 movil/android/app/src/main/assets/capacitor.plugins.json
 movil/android/capacitor-cordova-android-plugins/
 movil/android/local.properties
+
+# Narrador: caché de Python y los originales que guarda limpiar-audios (solo en este PC).
+__pycache__/
+tools/narrador/respaldo-audios/

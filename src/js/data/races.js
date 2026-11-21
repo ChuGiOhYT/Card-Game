@@ -16,6 +16,7 @@ window.Game.RACES = {
     nombre: 'Lunaria',
     lema: 'La marea recuerda lo que la piedra olvida',
     sigil: '☾',
+    emblema: 'assets/emblemas/lunaria.webp',
     colorPrimario: '#7ec8f2',
     colorSecundario: '#2a4a7a',
     // Ambiente de su campaña: se pinta a tamaño de ventana y con los bordes
@@ -39,6 +40,7 @@ window.Game.RACES = {
     nombre: 'Desterrado',
     lema: 'Sin tierra, sin nombre, sin freno',
     sigil: '⚔',
+    emblema: 'assets/emblemas/desterrado.webp',
     colorPrimario: '#f0913a',
     colorSecundario: '#7a3a1a',
     // Ambiente de su campaña: se pinta a tamaño de ventana y con los bordes
@@ -62,6 +64,7 @@ window.Game.RACES = {
     nombre: 'Oxitrón',
     lema: 'El óxido también es una forma de memoria',
     sigil: '⚙',
+    emblema: 'assets/emblemas/oxitron.webp',
     colorPrimario: '#5fd9a8',
     colorSecundario: '#1f5c48',
     // Ambiente de su campaña, igual que las otras. Ver `ui/ambiente.js`.
@@ -80,6 +83,7 @@ window.Game.RACES = {
     nombre: 'Reanimado',
     lema: 'Morir es solo cambiar de turno',
     sigil: '◉',
+    emblema: 'assets/emblemas/reanimado.webp',
     colorPrimario: '#c07ae8',
     colorSecundario: '#4a2060',
     // Ambiente de su campaña, igual que las otras. Ver `ui/ambiente.js`.
@@ -98,6 +102,7 @@ window.Game.RACES = {
     nombre: 'Mercenario',
     lema: 'La lealtad se cobra por adelantado',
     sigil: '?',
+    emblema: 'assets/emblemas/mercenario.webp',
     colorPrimario: '#d8d2c4',
     colorSecundario: '#4a463c',
     descripcion:
@@ -115,3 +120,20 @@ window.Game.RACES = {
  * orden en que se pintan las tarjetas.
  */
 window.Game.RACE_ORDER = ['desterrado', 'lunaria', 'oxitron', 'reanimado'];
+
+/**
+ * El emblema de una estirpe (o de los mercenarios) como imagen, con su sombra
+ * (CSS `.emblema`). Acepta el id o el objeto de la raza; lo que no tiene
+ * emblema (las criaturas del calabozo) cae a su `sigil` de texto. `tam` en px
+ * o cualquier medida CSS; sin él, 1.25em (crece con la letra de donde se
+ * ponga, como hacía el símbolo) o lo que diga el CSS de ese sitio.
+ */
+window.Game.emblema = function (raza, tam = null) {
+  const r = typeof raza === 'string' ? window.Game.RACES[raza] : raza;
+  if (!r) return '';
+  if (!r.emblema) return r.sigil || '';
+  // Sin `tam`, el tamaño lo pone el CSS de cada sitio (en línea lo pisaría).
+  const estilo = [tam !== null ? `--tam:${typeof tam === 'number' ? `${tam}px` : tam}` : '',
+    r.colorPrimario ? `--raza-primario:${r.colorPrimario}` : ''].filter(Boolean).join(';');
+  return `<img class="emblema" src="${r.emblema}" alt="${r.nombre || ''}" draggable="false" style="${estilo}">`;
+};

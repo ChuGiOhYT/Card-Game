@@ -25,6 +25,7 @@ window.Game.Screens.partida = {
     this.anunciosVistos = 0;
     this.vivas = [];
     this.limpiarBurbujaRecordatorio();
+    window.Game.VocesPersonajes?.nuevoDuelo();
     // Duelo remoto (core/dueloRed.js): el anfitrión corre el motor de verdad y
     // el invitado juega con un espejo. Tú eres el 0 o el 1.
     this.remoto = params.modo === 'remoto' ? params : null;
@@ -109,10 +110,8 @@ window.Game.Screens.partida = {
       ${window.Game.Ambiente.html(ambiente)}
       <div class="pantalla mesa">
         <header class="mesa-cabecera">
-          <button class="btn-salir-mesa" id="btn-salir-partida"
-                  title="Abandonar" aria-label="Abandonar">
-            <span class="bsm-ico" aria-hidden="true">←</span><span class="bsm-txt">Abandonar</span>
-          </button>
+          <button class="btn-volver" id="btn-salir-partida"
+                  title="Abandonar" aria-label="Abandonar"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Abandonar</span></button>
           <!-- El mezclador es una capa suelta, no una pantalla: se puede abrir
                a media partida sin perderla. -->
           <button class="mesa-sonido" id="btn-sonido-mesa"
@@ -122,6 +121,15 @@ window.Game.Screens.partida = {
             <span class="mesa-fase-nombre" id="mesa-fase"></span>
           </div>
         </header>
+
+        <!-- La sangre y la estirpe de cada uno, en una columna a la izquierda:
+             el rival arriba, tú abajo, enfrentados. Así las manos tienen todo
+             el ancho (Oscar). Los ids son los de las antiguas placas. -->
+        <aside class="mesa-rail">
+          <div class="rail-slot" id="placa-rival"></div>
+          <div class="rail-vs" aria-hidden="true">VS</div>
+          <div class="rail-slot" id="placa-jugador"></div>
+        </aside>
 
         <div class="mesa-tablero">
           <!-- El plano de la mesa, inclinado: se ve en diagonal, con el lado
@@ -137,7 +145,6 @@ window.Game.Screens.partida = {
               <span class="mano-titulo" id="titulo-rival-personajes">Personajes</span>
               <div class="mano-cartas" id="mano-rival-personajes"></div>
             </div>
-            <div class="placa-slot" id="placa-rival"></div>
             <div class="mano mano-rival mano-acciones">
               <span class="mano-titulo" id="titulo-rival-acciones">Acciones</span>
               <div class="mano-cartas" id="mano-rival-acciones"></div>
@@ -189,7 +196,6 @@ window.Game.Screens.partida = {
               <span class="mano-titulo">Personajes</span>
               <div class="mano-cartas" id="mesa-controles"></div>
             </div>
-            <div class="placa-slot" id="placa-jugador"></div>
             <div class="mano mano-acciones">
               <span class="mano-titulo">Acciones</span>
               <div class="mano-cartas" id="mano-acciones"></div>
@@ -205,26 +211,6 @@ window.Game.Screens.partida = {
           <div class="aviso-turno" id="aviso-turno" aria-live="polite"></div>
         </div>
 
-        <aside class="mesa-lateral">
-          <div class="lupa" id="lupa">
-            <div class="lupa-vacia">Pasa el ratón por una carta para verla</div>
-          </div>
-          <div class="lateral-pestanas">
-            <button class="pestana activa" data-panel="registro-lista" title="Registro">
-              <span class="pestana-ico" aria-hidden="true">📜</span><span class="pestana-txt">Registro</span>
-            </button>
-            ${this.remoto ? '' : `<button class="pestana" data-panel="herramientas" title="Herramientas">
-              <span class="pestana-ico" aria-hidden="true">🛠</span><span class="pestana-txt">Herramientas</span>
-            </button>`}
-            <button class="pestana" data-panel="recordatorios" id="pestana-recordatorios" title="Recordatorios">
-              <span class="pestana-ico" aria-hidden="true">⚡</span><span class="pestana-txt">Recordatorios</span>
-              <span class="pestana-num" hidden></span>
-            </button>
-          </div>
-          <div id="registro-lista" class="lateral-panel"></div>
-          <div id="herramientas" class="lateral-panel oculto"></div>
-          <div id="recordatorios" class="lateral-panel oculto"></div>
-        </aside>
 
       </div>
       <div class="mesa-fin oculto" id="mesa-fin"></div>
@@ -234,6 +220,9 @@ window.Game.Screens.partida = {
     window.Game.Bocadillos?.iniciar(this, esCalabozo ? { raza: razaJugador, etapa: this.etapa } : null);
 
     window.Game.Recordatorios.yoIdx = this.remoto ? this.yoIdx : null;
+    // Ya no hay panel lateral: lo que una carta tenga pendiente (el ⚡) se lee
+    // en su vista grande, al mantenerla pulsada (core/lupa.js).
+    window.Game.Lupa.extra = (el) => this.pendienteDeCarta(el);
     if (this.remoto && this.remoto.rol === 'invitado') {
       this.motor = window.Game.DueloRed.invitado({ red: window.Game.Red, alCambiar: () => this.pintar() });
     } else {
@@ -682,14 +671,17 @@ window.Game.Screens.partida = {
     // lo contrario de lo que hace falta. Se mira si estaba pegado al fondo
     // ANTES de rehacerlo y se le devuelve el sitio. Solo se re-pega si ya
     // estaba abajo: si subiste a leer algo, el turno de la IA no te arrastra.
+    // El registro ya no se enseña (Oscar): el motor lo sigue llevando.
     const lista = c.querySelector('#registro-lista');
-    const pegadoAlFondo =
-      lista.scrollHeight - lista.scrollTop - lista.clientHeight < this.MARGEN_FONDO;
-    lista.innerHTML = m.registro
-      .slice(-this.LINEAS_REGISTRO)
-      .map((e) => `<p><span>T${e.turno}</span> ${e.texto}</p>`)
-      .join('');
-    if (pegadoAlFondo) lista.scrollTop = lista.scrollHeight;
+    if (lista) {
+      const pegadoAlFondo =
+        lista.scrollHeight - lista.scrollTop - lista.clientHeight < this.MARGEN_FONDO;
+      lista.innerHTML = m.registro
+        .slice(-this.LINEAS_REGISTRO)
+        .map((e) => `<p><span>T${e.turno}</span> ${e.texto}</p>`)
+        .join('');
+      if (pegadoAlFondo) lista.scrollTop = lista.scrollHeight;
+    }
 
     this.pintarControles();
     this.pintarHerramientas();
@@ -1047,7 +1039,7 @@ window.Game.Screens.partida = {
       ? `<div class="dorso-carta dorso-oficial" style="--raza-primario:${r.colorPrimario}">
           <img src="assets/cartas/reverso.webp" alt=""></div>`
       : `<div class="dorso-carta" style="--raza-primario:${r.colorPrimario}">
-        ${this.RUNAS}<span class="dorso-sigil">${r.sigil}</span>
+        ${this.RUNAS}<span class="dorso-sigil">${window.Game.emblema(r)}</span>
       </div>`;
     // Lo revelado va boca arriba; y mientras eliges qué revelar (Annia, Thiana,
     // Axel, Erem), los reversos elegibles brillan y se pueden pinchar.
@@ -1376,47 +1368,50 @@ window.Game.Screens.partida = {
     const vida = m.vidaDe(j);
     const energia = m.energiaDe(j);
     const total = j.sangreTotal || window.Game.SANGRE_TOTAL;
-    const pct = (n) => `${(n / total) * 100}%`;
-    const sangre = `
-          <div class="sangre">
-            <div class="sangre-marcadores">
-              <div class="sm sm-vida" title="Pila inicial: sangre intacta. Si llega a 0, pierdes.">
-                <span class="sm-num">${vida}</span>
-                <span class="sm-lbl">Vida</span>
-              </div>
-              ${this.flechasDeSangre(j, esRival, 'vida-energia')}
-              <div class="sm sm-energia"
-                   title="Pila de gasto: sangre derramada. Puedes desplegar personajes de coste ${energia} o menos.">
-                <span class="sm-num">${energia}</span>
-                <span class="sm-lbl">Energía</span>
-              </div>
-              ${this.flechasDeSangre(j, esRival, 'energia-fuera')}
-              <div class="sm sm-fuera ${j.sangre.fuera ? '' : 'vacio'}"
-                   title="Sangre pagada: fuera del juego para siempre.">
-                <span class="sm-num">${j.sangre.fuera}</span>
-                <span class="sm-lbl">Fuera</span>
-              </div>
+    const pct = (n) => `${Math.max(0, Math.min(100, (n / total) * 100))}%`;
+    const inst = j.activos[0] || null;
+    const p = inst && window.Game.CHARACTERS_BY_ID[inst.personaje];
+    const enTurno = !m.terminada && m.jugadorActivo === j;
+    // Dos barras verticales: la VIDA (roja) baja al perder sangre y la
+    // ENERGÍA (azul) sube al derramarla. Lo pagado sale del juego: va abajo
+    // como «fuera». Las flechas de las tres operaciones, solo en lo tuyo
+    // (contra la IA también en el rival: las ajustas tú).
+    return `
+      <div class="rail-jugador ${esRival ? 'es-rival' : 'es-tuyo'} ${enTurno ? 'en-turno' : ''}"
+           style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
+        <div class="rail-cabeza" title="${r.nombre}">
+          <span class="rail-emblema">${window.Game.emblema(r)}</span>
+          <strong class="rail-nombre">${j.nombre}</strong>
+          <span class="rail-raza">${r.nombre}${p ? ` · ${p.nombre.split(',')[0]}` : ''}</span>
+        </div>
+        <div class="sangre rail-sangre">
+          <div class="sangre-barra" title="Vida y energía: suman ${total} con lo que salió fuera">
+            <div class="rail-barra barra-vida" title="Vida: sangre intacta. Si llega a 0, pierdes.">
+              <div class="relleno" style="height:${pct(j.sangre.pila)}"></div>
             </div>
-
-            <!-- Las tres pilas suman siempre lo mismo: la barra lo hace evidente. -->
-            <div class="sangre-barra" title="Las tres pilas suman ${total} sangres">
-              <div class="seg seg-vida" style="width:${pct(j.sangre.pila)}"></div>
-              <div class="seg seg-gasto" style="width:${pct(j.sangre.gasto)}"></div>
-              <div class="seg seg-fuera" style="width:${pct(j.sangre.fuera)}"></div>
-            </div>
-
-            <div class="sangre-pie">
-              <span>de ${total}</span>
-              <span class="sangre-zonas">
-                <span title="En reserva">👥 ${j.reserva.length}</span>
-                <span title="En el Hades">✖ ${j.hades.length}</span>
-              </span>
+            ${this.flechasDeSangre(j, esRival, 'vida-energia')}
+            <div class="rail-barra barra-energia"
+                 title="Energía: sangre derramada. Despliegas personajes de coste ${energia} o menos.">
+              <div class="relleno" style="height:${pct(j.sangre.gasto)}"></div>
             </div>
           </div>
-`;
-    return `<div class="placa-marco" style="--raza-primario:${r.colorPrimario};--raza-secundario:${r.colorSecundario}">
-      ${this.placa(j, r, esRival, sangre)}
-    </div>`;
+          <div class="sangre-marcadores">
+            <div class="sm sm-vida"><span class="sm-num">${vida}</span><span class="sm-lbl">Vida</span></div>
+            <div class="sm sm-energia"><span class="sm-num">${energia}</span><span class="sm-lbl">Energía</span></div>
+          </div>
+          <div class="rail-fuera ${j.sangre.fuera ? '' : 'vacio'}" title="Sangre pagada: fuera del juego para siempre.">
+            ${this.flechasDeSangre(j, esRival, 'energia-fuera')}
+            <span class="sm sm-fuera"><span class="sm-num">${j.sangre.fuera}</span><span class="sm-lbl">Fuera</span></span>
+          </div>
+          <div class="sangre-pie">
+            <span>de ${total}</span>
+            <span class="sangre-zonas">
+              <span title="En reserva">👥 ${j.reserva.length}</span>
+              <span title="En el Hades">✖ ${j.hades.length}</span>
+            </span>
+          </div>
+        </div>
+      </div>`;
   },
 
   placa(j, r, esRival, extra = '') {
@@ -1431,7 +1426,7 @@ window.Game.Screens.partida = {
           <div class="placa-foto ${p && p.imagenFlotante ? 'es-busto' : ''}">
             ${foto ? `<img src="${foto}" alt="" loading="lazy">` : ''}
           </div>
-          <span class="placa-sigil" title="${r.nombre}">${r.sigil}</span>
+          <span class="placa-sigil" title="${r.nombre}">${window.Game.emblema(r)}</span>
         </div>
         <div class="placa-texto">
           <strong>${j.nombre}</strong>
@@ -1682,7 +1677,7 @@ window.Game.Screens.partida = {
     }
     return `
       <div class="sg-flechas">
-        ${boton('pagar', '→', 'Pagar: Energía → Fuera (sale del juego para siempre)', j.sangre.gasto > 0)}
+        ${boton('pagar', '↓', 'Pagar: Energía → Fuera (sale del juego para siempre)', j.sangre.gasto > 0)}
       </div>`;
   },
 
@@ -1856,6 +1851,14 @@ window.Game.Screens.partida = {
     if (!s) { this.mostrarAvisoTurno(); return; }
     this.sonarSucesos(s);
     this.animarSucesos(s);
+    // Quien entra en posición dice su frase de entrada, con su voz, una vez
+    // por duelo (ui/vocesPersonajes.js). Los dos bandos.
+    for (const k of s.nuevosActivos || []) {
+      const [idx, uid] = k.split(':');
+      const j = this.motor.jugadores[Number(idx)];
+      const inst = j && j.activos.find((i) => i.uid === uid);
+      if (inst) window.Game.VocesPersonajes?.entrada(inst.personaje);
+    }
   },
 
   /**
@@ -2061,12 +2064,13 @@ window.Game.Screens.partida = {
     const out = {};
     if (!this.contenedor) return out;
     for (const id of ['placa-jugador', 'placa-rival']) {
-      const barra = this.contenedor.querySelector(`#${id} .sangre-barra`);
-      // (los ids son los de las placas: la sangre ya no vive en el panel)
-      const total = barra && barra.getBoundingClientRect().width;
-      if (!total) continue;
-      out[id] = [...barra.querySelectorAll('.seg')]
-        .map((s) => (s.getBoundingClientRect().width / total) * 100);
+      // Barras verticales: se mide el ALTO de cada relleno frente a su barra.
+      const rellenos = [...this.contenedor.querySelectorAll(`#${id} .rail-barra .relleno`)];
+      if (!rellenos.length) continue;
+      out[id] = rellenos.map((r) => {
+        const alto = r.parentElement.getBoundingClientRect().height;
+        return alto ? (r.getBoundingClientRect().height / alto) * 100 : 0;
+      });
     }
     return out;
   },
@@ -2083,15 +2087,15 @@ window.Game.Screens.partida = {
   animarBarras(antes) {
     if (this.sinMovimiento()) return;
     for (const [id, anchos] of Object.entries(antes)) {
-      const segs = [...this.contenedor.querySelectorAll(`#${id} .sangre-barra .seg`)];
+      const segs = [...this.contenedor.querySelectorAll(`#${id} .rail-barra .relleno`)];
       if (segs.length !== anchos.length) continue;
-      const destino = segs.map((s) => s.style.width);
+      const destino = segs.map((s) => s.style.height);
       if (segs.every((s, i) => Math.abs(parseFloat(destino[i]) - anchos[i]) < 0.3)) continue;
-      segs.forEach((s, i) => { s.style.transition = 'none'; s.style.width = `${anchos[i]}%`; });
+      segs.forEach((s, i) => { s.style.transition = 'none'; s.style.height = `${anchos[i]}%`; });
       void segs[0].offsetWidth;
       segs.forEach((s, i) => {
-        s.style.transition = `width ${this.MS_SANGRE}ms cubic-bezier(0.2, 0.7, 0.2, 1)`;
-        s.style.width = destino[i];
+        s.style.transition = `height ${this.MS_SANGRE}ms cubic-bezier(0.2, 0.7, 0.2, 1)`;
+        s.style.height = destino[i];
       });
     }
   },
@@ -2157,7 +2161,7 @@ window.Game.Screens.partida = {
       if (!vivo.rumbo) {
         const objetivo = (panelDef && g.defensorUid
           && panelDef.querySelector(`[data-uid-personaje="${g.defensorUid}"]`))
-          || this.placaDe(g.defensorIdx).querySelector('.placa');
+          || this.placaDe(g.defensorIdx).querySelector('.rail-cabeza');
         const a = atk.getBoundingClientRect();
         const o = objetivo ? objetivo.getBoundingClientRect() : a;
         vivo.rumbo = {
@@ -2197,10 +2201,28 @@ window.Game.Screens.partida = {
    * distintivo en la carta y esta lista. Con 16 cartas de «En posición», una
    * burbuja en cada repintado sería insufrible.
    */
+  /**
+   * Lo pendiente de la carta que se está mirando en grande (el ⚡), con su
+   * texto impreso. Leerlo ya cuenta como visto: se descarta.
+   */
+  pendienteDeCarta(el) {
+    const caja = el.closest('[data-uid-personaje], [data-uid-accion]');
+    const uid = caja && (caja.dataset.uidPersonaje || caja.dataset.uidAccion);
+    if (!uid) return '';
+    const mias = (this.recordatorios || []).filter((r) => r.uid === uid);
+    if (!mias.length) return '';
+    setTimeout(() => {
+      mias.forEach((r) => window.Game.Recordatorios.descartar(r.clave));
+      if (this.motor) this.pintar();
+    }, 0);
+    return mias.map((r) => `<p><strong>⚡ ${r.timing}</strong> ${r.texto}</p>`).join('');
+  },
+
   pintarRecordatorios() {
     const cont = this.contenedor.querySelector('#recordatorios');
-    if (!cont) return;
     const lista = this.recordatorios || [];
+    // Sin panel (ya no hay lateral): queda el aviso de una línea y el ⚡.
+    if (!cont) { this.burbujaRecordatorio(lista); return; }
 
     const pestana = this.contenedor.querySelector('#pestana-recordatorios');
     if (pestana) {
@@ -3128,7 +3150,7 @@ window.Game.Screens.partida = {
 
     return `
       <div class="fin-gema ${nueva ? 'nueva' : ''}">
-        <span class="fin-gema-sigil">${gema.sigil}</span>
+        <span class="fin-gema-sigil">${window.Game.gemaImg(gema, 64)}</span>
         <div class="fin-gema-cuerpo">
           <strong>${nueva ? gema.nombre : `${gema.nombre} · ya en tu poder`}</strong>
           <p>${gema.mensaje}</p>
@@ -3232,6 +3254,9 @@ window.Game.Screens.partida = {
     // La burbuja cuelga de `body`, así que vaciar el contenedor no se la lleva.
     this.limpiarBurbujaRecordatorio();
     window.Game.Bocadillos?.parar();
+    window.Game.VocesPersonajes?.parar();
+    window.Game.Lupa.extra = null;
+    window.Game.Lupa.cerrar();
     window.Game.Audio.quitarMusica();
     // Duelo remoto: se suelta la red y se cierra la sala.
     if (this.soltarRed) this.soltarRed();

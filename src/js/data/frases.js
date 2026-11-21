@@ -225,3 +225,100 @@ window.Game.FRASES = {
     cae: ['Que descansen… ya… que descansen…']
   }
 };
+
+/**
+ * La frase de cada estirpe, dicha por su protagonista al elegirla en la
+ * pantalla de estirpes (ui/vocesPersonajes.js). Textos aprobados por Oscar. La voz sale
+ * de tools/narrador/generar-voces.mjs (Gemini, una voz por personaje): si
+ * cambias un texto, hay que regenerarla o callará (nunca suena una voz que no
+ * corresponde).
+ */
+window.Game.FRASE_ESTIRPE = {
+  desterrado: { personaje: 'des_annia', texto: 'No pedí esta luz… pero no voy a apagarla.' },
+  lunaria: { personaje: 'lun_sadash', texto: 'La marea recuerda lo que la piedra olvida. Yo también.' },
+  // Pip es un robot: no habla con voz, «dice» su frase en pitidos digitales
+  // (ui/vocesPersonajes.js los genera; Oscar).
+  oxitron: { personaje: 'oxi_pip', texto: '¿Un juguete? Eso es justo lo que quiero que crean.', robot: true },
+  reanimado: { personaje: 'rea_luh', texto: 'Morir no fue lo peor. Lo peor fue volver… sin ella.' }
+};
+
+/**
+ * La frase de ENTRADA de cada personaje: suena con su voz UNA vez por duelo,
+ * la primera vez que se pone en posición (ui/vocesPersonajes.js), sin
+ * bocadillo. Elegidas por Oscar (máx. 5 palabras). Las voces y sus efectos
+ * (robot para los Oxitrón, coro, eco) están en tools/narrador/voces-personajes.json
+ * y salen de GENERAR_VOCES.bat. Lo que no es voz es un `sonido` que genera el
+ * juego (el cuervo de los Espíritus, la horda del Ejército).
+ */
+window.Game.FRASE_ENTRADA = {
+  des_annia: 'Ya no me esconderé.',
+  des_axel: 'Yo los vi primero.',
+  des_thiana: 'Muéstrame dónde sangras.',
+  des_erem: '¡Detrás de mí!',
+  des_lydia: 'Te veo, jovencito.',
+  des_auram: 'Forjé esto para protegerlos.',
+  lun_sadash: 'Mi guardia nunca termina.',
+  lun_delem: '¡Yo voy primero!',
+  lun_falum: '¡Escúchanos!',
+  lun_seluah: 'La diosa me envía.',
+  lun_lirhym: 'Hasta el silencio me oye.',
+  lun_acompanantes: { sonido: 'cuervo' },
+  oxi_pip: 'Modo juguete: apagado.',
+  oxi_kaw: 'Presa marcada. Caza iniciada.',
+  oxi_krag: '¿Dónde está el maestro?',
+  oxi_brawl: '¡Formación!',
+  oxi_krox: 'Engranajes listos. Adelante.',
+  oxi_kratox: 'Queda usted bajo custodia.',
+  rea_luh: 'Volví. Ella no.',
+  rea_vyla: 'Fui la primera en levantarme.',
+  rea_gurh: 'Mi pueblo cayó. Yo no.',
+  rea_zabar: 'Huelo a quien la mató.',
+  rea_thila: 'Solaria me forjó. Tú no.',
+  rea_ejercito: { sonido: 'horda' },
+  mer_lyla: 'Por Ül Dar.',
+  mer_tilos: 'La vida se abre paso.',
+  mer_yrving: '¿Sabes a dónde los llevan?',
+  mer_zhin: '¿Oyes los chillidos?',
+  mer_yun: '¡Qué ágil!, ¿verdad?',
+  mer_errante: 'Yo decido quién cruza.'
+};
+
+/**
+ * Frases de las pantallas de carga (ui/pantallaCarga.js), una al azar de la
+ * estirpe que toca: lore de docs/BIBLIA.md y algún consejo. BORRADOR de Claude
+ * para que Oscar las corrija.
+ */
+window.Game.FRASES_CARGA = {
+  desterrado: [
+    'Annia fue desterrada por despertar el Orden. Su luz no ilumina: oculta.',
+    'Los conspiradores no tienen don, pero tienen la paciencia de los envidiosos.',
+    'Thiana ve las costuras de las cosas: por dónde se rompen.',
+    'Erem habla poco. Cuando habla, nadie le discute.',
+    'Iskar todavía cree que hace justicia. Por eso es tan peligroso.',
+    'Consejo: derramar sangre te da energía, y con más energía entran personajes más caros.'
+  ],
+  lunaria: [
+    'Los Lunaria no matan: dan descanso.',
+    'Cada lunaria nace con un espíritu acompañante enviado por la diosa.',
+    'En el Oasis nada termina. Ni siquiera el cansancio.',
+    'La Reina Lirhym habla, y hasta los que no oyen la escuchan.',
+    'Brahma era la Muerte. Ahora no deja morir a nadie.',
+    'Consejo: cuando Sadash se retira de la posición, el rival sangra por cada lunaria revelado.'
+  ],
+  oxitron: [
+    'Pip lleva catorce días fingiendo ser chatarra.',
+    'Lo que los Persecutores capturan deja de existir para cualquier magia.',
+    'A’tar daba forma al metal. Encadenado, ya solo funde.',
+    'Kratox siempre explica los motivos antes de llevarte.',
+    'El Rey Caído se condenó a la soledad. Su Forja sigue trabajando sin él.',
+    'Consejo: los Oxitrón ganan aguantando. Defensa alta y paciencia.'
+  ],
+  reanimado: [
+    'Se alzaron con la lluvia sin que nadie los llamara.',
+    'Los muertos de las Catacumbas recuerdan. Por eso sufren.',
+    'Luh volvió. Ella no.',
+    'Tarh Akh quiere dar vida incluso a lo que debe volver al polvo.',
+    'Aj’Khul no odiaba la vida: la amaba demasiado para dejarla ir.',
+    'Consejo: lo que cae al Hades no se pierde del todo. Los Reanimados viven de eso.'
+  ]
+};

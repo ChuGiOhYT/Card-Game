@@ -1,0 +1,59 @@
+{
+  "_ayuda": "Voz de Gemini de cada personaje y su efecto opcional (robot, coro, eco). En los robots, 'tono' es el zumbido en Hz (más bajo = más grave). Cambia una y vuelve a abrir GENERAR_VOCES.bat: rehace solo lo de ese personaje.",
+  "des_annia": "Kore",
+  "des_axel": "Puck",
+  "des_thiana": "Leda",
+  "des_erem": "Orus",
+  "des_lydia": "Gacrux",
+  "des_auram": "Orus",
+  "lun_sadash": "Kore",
+  "lun_delem": "Puck",
+  "lun_falum": {
+    "voz": "Iapetus",
+    "efecto": "coro"
+  },
+  "lun_seluah": "Vindemiatrix",
+  "lun_lirhym": {
+    "voz": "Gacrux",
+    "efecto": "eco"
+  },
+  "oxi_pip": {
+    "voz": "Puck",
+    "efecto": "robot"
+  },
+  "oxi_kaw": {
+    "voz": "Fenrir",
+    "efecto": "robot",
+    "tono": 200
+  },
+  "oxi_krag": {
+    "voz": "Algenib",
+    "efecto": "robot",
+    "tono": 110
+  },
+  "oxi_brawl": {
+    "voz": "Orus",
+    "efecto": "robot"
+  },
+  "oxi_krox": {
+    "voz": "Alnilam",
+    "efecto": "robot",
+    "tono": 160
+  },
+  "oxi_kratox": {
+    "voz": "Rasalgethi",
+    "efecto": "robot",
+    "tono": 135
+  },
+  "rea_luh": "Enceladus",
+  "rea_vyla": "Erinome",
+  "rea_gurh": "Pulcherrima",
+  "rea_zabar": "Umbriel",
+  "rea_thila": "Despina",
+  "mer_lyla": "Achernar",
+  "mer_tilos": "Puck",
+  "mer_yrving": "Sadachbia",
+  "mer_zhin": "Algieba",
+  "mer_yun": "Puck",
+  "mer_errante": "Sadaltager"
+}

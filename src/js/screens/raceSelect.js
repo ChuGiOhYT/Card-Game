@@ -6,6 +6,7 @@ window.Game.Screens.seleccionRaza = {
 
   render(contenedor, params = {}) {
     this.seleccionada = window.Game.State.perfil.razaSeleccionada || null;
+    this.ultimaVoz = null;
 
     const tarjetas = window.Game.RACE_ORDER.map((id, i) => {
       const r = window.Game.RACES[id];
@@ -40,7 +41,7 @@ window.Game.Screens.seleccionRaza = {
           <span class="raza-orden">${i + 1}</span>
           ${disponible ? '' : '<span class="rt-candado" aria-hidden="true">🔒</span>'}
           <span class="rt-texto">
-            <span class="raza-sigil">${r.sigil}</span>
+            <span class="raza-sigil">${window.Game.emblema(r)}</span>
             <span class="raza-nombre">${r.nombre}</span>
             <span class="raza-lema">${r.lema}</span>
             <span class="raza-progreso">${estado}</span>
@@ -51,7 +52,7 @@ window.Game.Screens.seleccionRaza = {
             window.Game.State.tieneGema(id)
               ? `<span class="raza-gema" title="${
                   window.Game.gemaDe(id).nombre
-                }">${window.Game.gemaDe(id).sigil}</span>`
+                }">${window.Game.gemaImg(window.Game.gemaDe(id), 30)}</span>`
               : ''
           }
         </button>
@@ -98,6 +99,12 @@ window.Game.Screens.seleccionRaza = {
       el.addEventListener('click', () => {
         // Una estirpe cerrada se puede mirar, pero no elegir.
         this.seleccionar(contenedor, el.dataset.raza, el.dataset.disponible === '1');
+        // Su protagonista dice su frase (si es una estirpe que ya puedes jugar
+        // y no la acaba de decir: volver a pulsar la misma no la repite).
+        if (el.dataset.disponible === '1' && this.ultimaVoz !== el.dataset.raza) {
+          this.ultimaVoz = el.dataset.raza;
+          window.Game.VocesPersonajes?.estirpe(el.dataset.raza);
+        }
       });
     });
 
@@ -138,7 +145,15 @@ window.Game.Screens.seleccionRaza = {
       window.Game.State.perfil.razaSeleccionada = this.seleccionada;
       window.Game.State.sesion.raza = this.seleccionada;
       window.Game.State.guardar();
-      window.Game.Router.ir('historia', { raza: this.seleccionada });
+      // Entrar a un calabozo pasa por su pantalla de carga: precarga el mapa,
+      // el vídeo y el ambiente mientras se lee una frase de la campaña.
+      if (this.entrando) return;
+      this.entrando = true;
+      const raza = this.seleccionada;
+      const C = window.Game.Carga;
+      const ir = () => { this.entrando = false; window.Game.Router.ir('historia', { raza }); };
+      if (C) C.mostrar({ raza, recursos: C.recursosDeCalabozo(raza), minMs: 2200 }).then(ir);
+      else ir();
     });
 
     if (this.seleccionada) this.seleccionar(contenedor, this.seleccionada);
@@ -175,7 +190,9 @@ window.Game.Screens.seleccionRaza = {
           <div class="gema ${mia ? 'conseguida' : 'pendiente'}"
                title="${mia ? gema.mensaje : 'Derriba al Eternal de ' + r.nombre}"
                style="--raza-primario:${r.colorPrimario}">
-            <span class="gema-piedra"><span class="gema-sigil">${mia ? gema.sigil : '?'}</span></span>
+            ${mia
+              ? `<span class="gema-piedra con-imagen">${window.Game.gemaImg(gema, 38)}</span>`
+              : '<span class="gema-piedra"><span class="gema-sigil">?</span></span>'}
             <span class="gema-nombre">${mia ? gema.nombre : r.nombre}</span>
           </div>`;
       })
@@ -232,7 +249,7 @@ window.Game.Screens.seleccionRaza = {
       .map(({ raza, gema }) => {
         const r = window.Game.RACES[raza];
         return `<span class="gema-sigil" title="${gema.nombre}"
-                      style="--raza-primario:${r.colorPrimario}">${gema.sigil}</span>`;
+                      style="--raza-primario:${r.colorPrimario}">${window.Game.gemaImg(gema, 26)}</span>`;
       })
       .join('');
 
@@ -266,7 +283,7 @@ window.Game.Screens.seleccionRaza = {
 
     const gemas = window.Game.gemasTotales()
       .map(({ raza, gema }) => `<span class="rf-gema" title="${gema.nombre}"
-        style="--raza-primario:${window.Game.RACES[raza].colorPrimario}">${gema.sigil}</span>`)
+        style="--raza-primario:${window.Game.RACES[raza].colorPrimario}">${window.Game.gemaImg(gema, 52)}</span>`)
       .join('');
 
     // Ventana grande (Oscar: en una casilla pequeña no se podían revisar).
@@ -349,7 +366,7 @@ window.Game.Screens.seleccionRaza = {
     detalle.style.setProperty('--raza-secundario', r.colorSecundario);
     detalle.innerHTML = `
       <div class="detalle-columna">
-        <h3 class="detalle-nombre">${r.sigil} ${r.nombre}</h3>
+        <h3 class="detalle-nombre">${window.Game.emblema(r)} ${r.nombre}</h3>
         <p class="detalle-desc">${r.descripcion}</p>
         <div class="detalle-etiquetas">
           ${r.afinidad.map((a) => `<span class="etiqueta">${a}</span>`).join('')}

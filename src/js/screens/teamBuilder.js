@@ -37,9 +37,6 @@ window.Game.Screens.constructor = {
           </section>
 
           <aside class="constructor-mazo">
-            <div class="lupa" id="lupa">
-              <div class="lupa-vacia">Pasa el ratón por una carta</div>
-            </div>
             <h3 class="seccion-titulo">Tu equipo</h3>
             <div class="equipo-lista" id="equipo-lista"></div>
             <h3 class="seccion-titulo" style="margin-top:14px">Acciones elegidas</h3>
@@ -84,7 +81,7 @@ window.Game.Screens.constructor = {
       const r = window.Game.RACES[id];
       return `<button data-raza="${id}" class="${id === this.raza ? 'activa' : ''}"
                       style="--raza-primario:${r.colorPrimario}">
-                ${r.sigil} ${r.nombre}
+                ${window.Game.emblema(r)} ${r.nombre}
               </button>`;
     }).join('');
 
@@ -180,7 +177,7 @@ window.Game.Screens.constructor = {
           <span class="mini-coste">${p.coste}</span>
           <span class="mini-stats">⚔${p.ataque} 🛡${p.defensa}</span>
           ${elegido ? '<span class="mini-check">✓</span>' : ''}
-          ${p.raza === 'mercenario' ? '<span class="mini-merc">?</span>' : ''}
+          ${p.raza === 'mercenario' ? `<span class="mini-merc" title="Mercenario">${window.Game.emblema('mercenario', 22)}</span>` : ''}
         </article>`;
       })
       .join('');

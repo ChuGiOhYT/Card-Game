@@ -43,11 +43,12 @@ window.Game.Audio = {
       descripcion: 'Posición, acción y golpes',
       muestra: 'ataque'
     },
-    narrador: { etiqueta: 'Narrador', descripcion: 'La voz de las cinemáticas', muestra: null }
+    narrador: { etiqueta: 'Narrador', descripcion: 'La voz de las cinemáticas', muestra: null },
+    voces: { etiqueta: 'Voces de personajes', descripcion: 'Lo que dicen los personajes', muestra: null }
   },
 
   /** Nivel de cada mando, de 0 a 1. Se guardan en el perfil. */
-  niveles: { musica: 1, botones: 1, efectos: 1, narrador: 1 },
+  niveles: { musica: 1, botones: 1, efectos: 1, narrador: 1, voces: 1 },
 
   /**
    * Música de fondo. Nada que ver con los efectos: aquí NO se clona nada,

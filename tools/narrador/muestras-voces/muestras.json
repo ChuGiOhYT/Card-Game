@@ -1,0 +1,210 @@
+{
+ "Kore": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": true,
+   "motivo": "",
+   "dur": 5.44
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.84
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": true,
+   "motivo": "",
+   "dur": 5.26
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": true,
+   "motivo": "",
+   "dur": 6.06
+  }
+ },
+ "Leda": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": false,
+   "motivo": "solo se oye el 20%",
+   "dur": 0
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": false,
+   "motivo": "solo se oye el 27%",
+   "dur": 0
+  }
+ },
+ "Aoede": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": false,
+   "motivo": "solo se oye el 10%",
+   "dur": 0
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": false,
+   "motivo": "solo se oye el 10%",
+   "dur": 0
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  }
+ },
+ "Achernar": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": false,
+   "motivo": "solo se oye el 11%",
+   "dur": 0
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  }
+ },
+ "Puck": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.54
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.48
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.1
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": true,
+   "motivo": "",
+   "dur": 6.04
+  }
+ },
+ "Fenrir": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.4
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.82
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.39
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": true,
+   "motivo": "",
+   "dur": 5.63
+  }
+ },
+ "Orus": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": false,
+   "motivo": "solo se oye el 20%",
+   "dur": 0
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": false,
+   "motivo": "no se oye",
+   "dur": 0
+  }
+ },
+ "Enceladus": {
+  "des_annia": {
+   "texto": "No pedí esta luz… pero no voy a apagarla.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.72
+  },
+  "lun_sadash": {
+   "texto": "La marea recuerda lo que la piedra olvida. Yo también.",
+   "ok": true,
+   "motivo": "",
+   "dur": 5.1
+  },
+  "oxi_pip": {
+   "texto": "¿Un juguete? Eso es justo lo que quiero que crean.",
+   "ok": true,
+   "motivo": "",
+   "dur": 4.81
+  },
+  "rea_luh": {
+   "texto": "Morir no fue lo peor. Lo peor fue volver… sin ella.",
+   "ok": true,
+   "motivo": "",
+   "dur": 5.39
+  }
+ }
+}

@@ -70,10 +70,10 @@ window.Game.Tutorial = {
       ancla: '#placa-jugador .sangre-marcadores',
       titulo: 'La sangre lo es todo',
       texto:
-        'Tienes 30 sangres repartidas en tres pilas. <strong>Vida</strong> es ' +
-        'la que te queda intacta: si llega a 0, pierdes. <strong>Energía</strong> ' +
-        'es la que ya se derramó. <strong>Fuera</strong> es la que se pagó y no ' +
-        'vuelve. Las tres suman 30 siempre.'
+        'Tienes 30 sangres. La barra roja es tu <strong>Vida</strong>, la ' +
+        'intacta: baja al perder sangre y si llega a 0, pierdes. La azul es tu ' +
+        '<strong>Energía</strong>, la que ya se derramó: sube a la vez. ' +
+        '<strong>Fuera</strong> es la que se pagó y no vuelve.'
     },
     {
       id: 't_energia',
@@ -129,47 +129,12 @@ window.Game.Tutorial = {
     {
       id: 't_lupa',
       tour: true,
-      ancla: '#lupa',
-      titulo: 'La lupa',
+      ancla: '#mesa-controles',
+      titulo: 'Ver una carta en grande',
       texto:
-        'Pasa el ratón por cualquier carta —tuya, del rival, del Hades— y ' +
-        'aparece aquí ampliada. Pulsa el panel para verla a pantalla completa y ' +
-        'leer su texto sin forzar la vista.'
-    },
-    {
-      id: 't_registro',
-      tour: true,
-      ancla: '.pestana[data-panel="registro-lista"]',
-      titulo: 'El registro',
-      texto:
-        'Todo lo que pasa queda escrito aquí, turno por turno: quién entró, ' +
-        'qué golpeó, cuánta sangre se derramó. Si te pierdes, la respuesta ' +
-        'está en este panel.',
-      antes: (c) => c.querySelector('.pestana[data-panel="registro-lista"]')?.click()
-    },
-    {
-      id: 't_herramientas',
-      tour: true,
-      ancla: '#herramientas',
-      titulo: 'Las Herramientas: los efectos los aplicas tú',
-      texto:
-        'AETERNUM no ejecuta solo lo que dicen las cartas, igual que en la ' +
-        'mesa de verdad: lo aplicas tú desde aquí. Tienes el dado, los ' +
-        'ajustes de ataque y defensa, la sangre, el Hades y el vacío. Todo lo ' +
-        'que hagas queda anotado en el registro.',
-      antes: (c) => c.querySelector('.pestana[data-panel="herramientas"]')?.click()
-    },
-    {
-      id: 't_recordatorios',
-      tour: true,
-      ancla: '#pestana-recordatorios',
-      titulo: 'Los recordatorios',
-      texto:
-        'Como los efectos son manuales, el juego te avisa cuándo toca cada ' +
-        'uno. Esta pestaña lista lo que tienes pendiente y la carta te sale ' +
-        'marcada con un ⚡ en la mesa. Pulsa «Ya está aplicado» cuando lo ' +
-        'hayas hecho.',
-      antes: (c) => c.querySelector('#pestana-recordatorios')?.click()
+        'Mantén pulsada cualquier carta —tuya, del rival, del Hades— y ' +
+        'aparece gigante en el centro para leerla. Al soltar, se cierra. Un ' +
+        'toque corto sigue siendo jugarla.'
     },
     {
       id: 't_sonido',
@@ -178,9 +143,7 @@ window.Game.Tutorial = {
       titulo: 'El sonido',
       texto:
         'Ajusta música, botones y efectos por separado, sin salir de la ' +
-        'partida. Se guarda solo.',
-      // Se vuelve al registro, que es la pestaña con la que conviene empezar.
-      antes: (c) => c.querySelector('.pestana[data-panel="registro-lista"]')?.click()
+        'partida. Se guarda solo.'
     },
     {
       id: 't_abandonar',
@@ -236,11 +199,11 @@ window.Game.Tutorial = {
     },
     {
       id: 'lupa',
-      ancla: '#lupa',
+      ancla: '#mano-acciones',
       titulo: 'Mira las cartas de cerca',
       texto:
-        'Pasa el ratón por cualquier carta para verla aquí, y pulsa el panel ' +
-        'para ampliarla a pantalla completa y leer su texto.',
+        'Mantén pulsada cualquier carta para verla en grande y leer su texto. ' +
+        'Al soltar se cierra.',
       cuando: (m) => window.Game.Tutorial.esMiTurno(m) && m.fase === 'accion'
     },
     {
@@ -253,16 +216,6 @@ window.Game.Tutorial = {
         'Resolver, por si quieres aplicar algo antes.',
       cuando: (m) =>
         window.Game.Tutorial.esMiTurno(m) && m.fase === 'ataque' && !m.ataquePendiente
-    },
-    {
-      id: 'herramientas',
-      ancla: '.pestana[data-panel="herramientas"]',
-      titulo: 'Los efectos los aplicas tú',
-      texto:
-        'El juego no ejecuta solo los efectos de las cartas. Aquí tienes el ' +
-        'dado, los ajustes de ataque y defensa, la sangre y el resto: ' +
-        'aplícalos cuando la carta lo pida.',
-      cuando: (m) => window.Game.Tutorial.esMiTurno(m) && m.fase === 'ataque'
     },
     {
       // Va ANTES de `combate` a propósito: cuando el golpe es del rival, lo
@@ -298,12 +251,11 @@ window.Game.Tutorial = {
     },
     {
       id: 'marca_pendiente',
-      ancla: '#pestana-recordatorios',
-      titulo: 'Tienes un efecto sin aplicar',
+      ancla: '#panel-jugador',
+      titulo: 'Una carta te pide algo',
       texto:
-        'El ⚡ de una carta significa que su texto impreso pide algo y aún no ' +
-        'lo has hecho. Aquí tienes la lista con el texto entero; aplícalo desde ' +
-        'Herramientas y márcalo como hecho.',
+        'El ⚡ de una carta significa que su texto impreso pide algo que el ' +
+        'juego no hace solo. Mantenla pulsada: en su vista grande verás qué es.',
       cuando: (m, params, pantalla) =>
         !!pantalla && (pantalla.recordatorios || []).length > 0
     }

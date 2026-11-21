@@ -14,7 +14,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/31e2d8af.ogg",
-   "dur": 10.11
+   "dur": 9.83
   }
  },
  "92131786": {
@@ -29,7 +29,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/1d5a5960.ogg",
-   "dur": 23.99
+   "dur": 23.41
   }
  },
  "5cddc11e": {
@@ -44,7 +44,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/c0b320c8.ogg",
-   "dur": 23.88
+   "dur": 23.35
   }
  },
  "a17e7e16": {
@@ -59,7 +59,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/517140f0.ogg",
-   "dur": 11.42
+   "dur": 10.97
   }
  },
  "e7085893": {
@@ -74,7 +74,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/e7a09193.ogg",
-   "dur": 8.74
+   "dur": 8.29
   }
  },
  "19fa0076": {
@@ -89,7 +89,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/dbd9c550.ogg",
-   "dur": 10.32
+   "dur": 10.19
   }
  },
  "2336cfbf": {
@@ -104,7 +104,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/f3d62017.ogg",
-   "dur": 10.12
+   "dur": 9.58
   }
  },
  "41b00c7b": {
@@ -119,7 +119,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/5618b89b.ogg",
-   "dur": 17.36
+   "dur": 16.8
   }
  },
  "edd30a9f": {
@@ -134,7 +134,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/ac891bf7.ogg",
-   "dur": 17.84
+   "dur": 17.35
   }
  },
  "54a30b39": {
@@ -149,7 +149,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/dcbad401.ogg",
-   "dur": 14.26
+   "dur": 13.79
   }
  },
  "24a2eeb3": {
@@ -164,7 +164,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/e145ca33.ogg",
-   "dur": 12.8
+   "dur": 12.46
   }
  },
  "560515e8": {
@@ -179,7 +179,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/d3e9448a.ogg",
-   "dur": 11.24
+   "dur": 10.76
   }
  },
  "91af09f1": {
@@ -194,7 +194,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/93bec8e9.ogg",
-   "dur": 15.64
+   "dur": 15.25
   }
  },
  "d01bedec": {
@@ -209,7 +209,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/e0e5ff06.ogg",
-   "dur": 13.76
+   "dur": 13.29
   }
  },
  "3160c811": {
@@ -224,7 +224,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/ed82a689.ogg",
-   "dur": 19.96
+   "dur": 19.49
   }
  },
  "4f6c9898": {
@@ -239,7 +239,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/67ce27fa.ogg",
-   "dur": 10.1
+   "dur": 9.58
   }
  },
  "b0f557b0": {
@@ -254,7 +254,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/45323f02.ogg",
-   "dur": 8.78
+   "dur": 8.33
   }
  },
  "03c06b12": {
@@ -269,7 +269,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/c74f66e4.ogg",
-   "dur": 14.29
+   "dur": 13.91
   }
  },
  "a212360c": {
@@ -284,7 +284,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/e1615a26.ogg",
-   "dur": 11.3
+   "dur": 10.81
   }
  },
  "4d436d72": {
@@ -299,7 +299,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/c34462c4.ogg",
-   "dur": 6.48
+   "dur": 6.05
   }
  },
  "8af57aa2": {
@@ -314,7 +314,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/32789df4.ogg",
-   "dur": 10.88
+   "dur": 10.58
   }
  },
  "b3f57b88": {
@@ -329,7 +329,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/ffe8cfaa.ogg",
-   "dur": 11.68
+   "dur": 11.13
   }
  },
  "e7cb5634": {
@@ -344,7 +344,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/a595f3be.ogg",
-   "dur": 14.6
+   "dur": 14.03
   }
  },
  "60f46b32": {
@@ -359,7 +359,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/81c83604.ogg",
-   "dur": 12.61
+   "dur": 12.29
   }
  },
  "31e5a20f": {
@@ -374,7 +374,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/ec1398e7.ogg",
-   "dur": 15.53
+   "dur": 15.49
   }
  },
  "2c0664f2": {
@@ -404,7 +404,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/70558093.ogg",
-   "dur": 10.74
+   "dur": 10.33
   }
  },
  "5c15906b": {
@@ -419,7 +419,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/5118107b.ogg",
-   "dur": 12.86
+   "dur": 12.37
   }
  },
  "66aa24de": {
@@ -434,7 +434,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/13820a08.ogg",
-   "dur": 12.48
+   "dur": 11.95
   }
  },
  "b193b299": {
@@ -449,7 +449,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/dd277a61.ogg",
-   "dur": 6.06
+   "dur": 5.67
   }
  },
  "0db9ec5c": {
@@ -464,7 +464,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/d0ff5136.ogg",
-   "dur": 6.26
+   "dur": 5.59
   }
  },
  "cbee2054": {
@@ -479,7 +479,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/7282f7de.ogg",
-   "dur": 8.34
+   "dur": 7.95
   }
  },
  "69ac8404": {
@@ -494,7 +494,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/a0e8344e.ogg",
-   "dur": 17.56
+   "dur": 17.01
   }
  },
  "74d6b500": {
@@ -509,7 +509,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/5e2c0392.ogg",
-   "dur": 6.51
+   "dur": 5.81
   }
  },
  "3bcb2da3": {
@@ -524,7 +524,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/ba7679e3.ogg",
-   "dur": 13.22
+   "dur": 11.69
   }
  },
  "966d0ede": {
@@ -539,7 +539,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/c50ee808.ogg",
-   "dur": 13.95
+   "dur": 13.69
   }
  },
  "e6926bfd": {
@@ -554,7 +554,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/4655da7d.ogg",
-   "dur": 12.09
+   "dur": 10.52
   }
  },
  "9ac4cbd9": {
@@ -569,7 +569,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/021dc421.ogg",
-   "dur": 22.7
+   "dur": 22
   }
  },
  "9a8e1145": {
@@ -584,7 +584,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/0db7e2b5.ogg",
-   "dur": 19.24
+   "dur": 18.87
   }
  },
  "6ab04d57": {
@@ -599,7 +599,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/e59bf63f.ogg",
-   "dur": 13.32
+   "dur": 12.81
   }
  },
  "737fdc48": {
@@ -614,7 +614,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/bf2275ea.ogg",
-   "dur": 8.1
+   "dur": 7.79
   }
  },
  "15b354c7": {
@@ -629,7 +629,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/93ef382f.ogg",
-   "dur": 7.48
+   "dur": 7.03
   }
  },
  "2df13ae2": {
@@ -644,7 +644,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/af71b2b4.ogg",
-   "dur": 10.56
+   "dur": 10.08
   }
  },
  "dabea2b3": {
@@ -659,7 +659,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/23072633.ogg",
-   "dur": 11.8
+   "dur": 11.25
   }
  },
  "a431b0e6": {
@@ -674,7 +674,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/811592c0.ogg",
-   "dur": 7.2
+   "dur": 6.81
   }
  },
  "363ce87c": {
@@ -689,7 +689,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/a5f0e2d6.ogg",
-   "dur": 9.96
+   "dur": 8.32
   }
  },
  "35ece86d": {
@@ -704,7 +704,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/0e865ced.ogg",
-   "dur": 6.86
+   "dur": 6.43
   }
  },
  "c2e36adc": {
@@ -719,7 +719,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/f78814b6.ogg",
-   "dur": 8.94
+   "dur": 8.51
   }
  },
  "23dfbf8f": {
@@ -734,7 +734,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/16286967.ogg",
-   "dur": 10.14
+   "dur": 8.71
   }
  },
  "df83b2c5": {
@@ -749,7 +749,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/40b67f35.ogg",
-   "dur": 12.66
+   "dur": 12.27
   }
  },
  "ad3cc038": {
@@ -764,7 +764,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/95c4479a.ogg",
-   "dur": 21.12
+   "dur": 20.75
   }
  },
  "d2bed646": {
@@ -779,7 +779,7 @@ window.Game.NARRACION = {
   },
   "anciano": {
    "src": "assets/narracion/anciano/1f46eda0.ogg",
-   "dur": 21.41
+   "dur": 21.21
   }
  }
 };

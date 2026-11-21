@@ -7590,3 +7590,529 @@ html.movil .rf-sub { margin-bottom: 10px; }
 .rf-carta { cursor: zoom-in; }
 /* La lupa grande por encima de la ventana de recompensa. */
 .rf-velo ~ .lupa-grande, body > .lupa-grande { z-index: 70; }
+
+/* ------------------------- Gemas de los Eternales ------------------------- */
+/* La imagen de la gema (Game.gemaImg): un halo de su color que late y un
+   destello de luz que la cruza de vez en cuando, recortado a su silueta. */
+.gema-img {
+  position: relative;
+  display: inline-block;
+  width: var(--tam, 40px);
+  height: var(--tam, 40px);
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.gema-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px var(--brillo))
+    drop-shadow(0 0 9px color-mix(in srgb, var(--brillo) 55%, transparent));
+  animation: gema-brilla 2.8s ease-in-out infinite;
+}
+
+@keyframes gema-brilla {
+  50% {
+    filter: drop-shadow(0 0 6px var(--brillo)) drop-shadow(0 0 18px var(--brillo)) brightness(1.15);
+  }
+}
+
+.gema-destello {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.85) 50%, transparent 62%);
+  background-size: 320% 100%;
+  background-position: 150% 0;
+  mix-blend-mode: screen;
+  animation: gema-destello 5s ease-in-out infinite;
+}
+
+@keyframes gema-destello {
+  0%, 60% { background-position: 150% 0; }
+  88%, 100% { background-position: -50% 0; }
+}
+
+/* Que no latan todas a la vez. */
+.gemas-fila > :nth-child(2) .gema-img img,
+.rf-gemas > :nth-child(2) .gema-img img { animation-delay: -0.7s; }
+.gemas-fila > :nth-child(3) .gema-img img,
+.rf-gemas > :nth-child(3) .gema-img img { animation-delay: -1.4s; }
+.gemas-fila > :nth-child(4) .gema-img img,
+.rf-gemas > :nth-child(4) .gema-img img { animation-delay: -2.1s; }
+.gemas-fila > :nth-child(2) .gema-destello,
+.rf-gemas > :nth-child(2) .gema-destello { animation-delay: -1.2s; }
+.gemas-fila > :nth-child(3) .gema-destello,
+.rf-gemas > :nth-child(3) .gema-destello { animation-delay: -2.5s; }
+.gemas-fila > :nth-child(4) .gema-destello,
+.rf-gemas > :nth-child(4) .gema-destello { animation-delay: -3.7s; }
+
+/* Donde antes había un sigilo o un octaedro dibujado: sin recorte ni fondo. */
+.gema-piedra.con-imagen,
+.gema.conseguida .gema-piedra.con-imagen,
+.raza-bajo .gema-piedra.con-imagen {
+  width: auto;
+  height: auto;
+  clip-path: none;
+  background: none;
+  filter: none;
+  animation: none;
+}
+
+.raza-gema { text-shadow: none; top: 4px; right: 6px; line-height: 0; }
+.rf-gema:has(.gema-img) { filter: none; animation: none; }
+.fin-gema-sigil:has(.gema-img) { line-height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gema-img img, .gema-destello { animation: none; }
+}
+.gema-piedra.con-imagen { line-height: 0; }
+.gema-piedra.con-imagen .gema-img { display: block; }
+
+/* --------------------------- Emblemas de estirpe --------------------------- */
+/* Game.emblema(): el medallón de la estirpe (o el de los mercenarios). La
+   sombra lo despega de lo que tenga debajo —una oscura y cercana que le da
+   peso, y un halo suave del color de la estirpe— y por encima un brillo. */
+.emblema {
+  display: inline-block;
+  width: var(--tam, 1.25em);
+  height: var(--tam, 1.25em);
+  vertical-align: middle;
+  border-radius: 50%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 4px 9px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 7px color-mix(in srgb, var(--raza-primario, #c9a959) 45%, transparent));
+}
+
+/* Donde el símbolo vivía en un círculo de color (placa, marca de mercenario),
+   el medallón ya es el círculo: fuera el fondo y el borde. */
+.placa-sigil:has(.emblema),
+.mini-merc:has(.emblema) {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.placa-sigil .emblema { --tam: 26px; }
+.mini-merc .emblema { --tam: 22px; }
+.dorso-sigil .emblema { --tam: 1.6em; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9)); }
+.raza-sigil .emblema { --tam: 36px; }
+.solo-sigil .emblema { --tam: 1.6em; }
+.remoto-raza-sigil .emblema { --tam: 1.5em; }
+.pantalla-titulo .emblema { -webkit-text-fill-color: initial; margin-right: 0.15em; }
+.placa-sigil:has(.emblema),
+.mini-merc:has(.emblema) { width: auto; height: auto; }
+/* La regla de las imágenes de carta (100 % y cover) no debe estirar el emblema. */
+.carta-mini img.emblema,
+.mini-carta img.emblema,
+.opcion-carta img.emblema {
+  display: inline-block;
+  width: var(--tam, 1.25em);
+  height: var(--tam, 1.25em);
+  object-fit: contain;
+}
+.constructor-razas .emblema { --tam: 1.7em; margin-right: 2px; }
+.placa-sigil .emblema { --tam: 28px; }
+
+/* ------------- Mesa: la sangre en una columna a la izquierda ------------- */
+/* Oscar: las manos son las protagonistas, así que la sangre y la estirpe de
+   cada uno salen de entre ellas y van a una columna vertical, el rival
+   arriba y tú abajo, enfrentados. */
+.mesa {
+  grid-template-columns: clamp(124px, 10.5vw, 150px) minmax(0, 1fr) 310px;
+}
+
+.mesa-rail {
+  grid-row: 2;
+  grid-column: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mesa .mesa-tablero { grid-row: 2; grid-column: 2; }
+.mesa .mesa-lateral { grid-row: 2; grid-column: 3; }
+
+.rail-slot {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+
+.rail-vs {
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--fuente-titulo);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--oro-medio);
+  opacity: 0.75;
+}
+
+.rail-jugador {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 8px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--raza-primario) 35%, rgba(216, 185, 104, 0.25));
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--raza-primario) 18%, transparent), transparent 70%),
+    rgba(7, 8, 14, 0.72);
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.9);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.rail-jugador.en-turno {
+  border-color: var(--oro-medio);
+  box-shadow: 0 0 0 1px rgba(216, 185, 104, 0.35), 0 0 22px -4px rgba(216, 185, 104, 0.55),
+    0 8px 22px -10px rgba(0, 0, 0, 0.9);
+}
+
+.rail-cabeza {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+}
+
+.rail-emblema .emblema { --tam: clamp(40px, 6.4vh, 58px); }
+
+.rail-nombre {
+  margin-top: 3px;
+  max-width: 100%;
+  font-size: 12.5px;
+  line-height: 1.15;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-raza {
+  max-width: 100%;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-sangre {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Las dos barras lado a lado, con las flechas entre ellas. */
+.mesa-rail .sangre-barra {
+  flex: 1;
+  min-height: 60px;
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  overflow: visible;
+}
+
+.rail-barra {
+  position: relative;
+  width: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Se llenan desde ABAJO: la vida baja, la energía sube. */
+.rail-barra .relleno {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 10px;
+  transition: height 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.barra-vida .relleno {
+  background: linear-gradient(180deg, #ff6b6b, #c0262f 60%, #7d1219);
+  box-shadow: 0 0 10px rgba(240, 80, 80, 0.45);
+}
+
+.barra-energia .relleno {
+  background: linear-gradient(180deg, #8fd0ff, #3d8bdb 60%, #1d4f8f);
+  box-shadow: 0 0 10px rgba(110, 180, 255, 0.45);
+}
+
+.mesa-rail .sg-flechas {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.mesa-rail .sangre-marcadores {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  gap: 0;
+}
+
+.mesa-rail .sm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  min-width: 0;
+}
+
+.mesa-rail .sm-num {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mesa-rail .sm-vida .sm-num { color: #ff7a7a; }
+.mesa-rail .sm-energia .sm-num { color: #8fc9ff; }
+
+.mesa-rail .sm-lbl {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.rail-fuera {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.rail-fuera .sm { flex-direction: row; gap: 4px; align-items: baseline; }
+.rail-fuera .sm-num { font-size: 13px; color: var(--texto-suave); }
+.rail-fuera.vacio { opacity: 0.6; }
+
+.mesa-rail .sangre-pie {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--texto-tenue);
+}
+
+.mesa-rail .sangre-zonas { display: flex; gap: 6px; }
+
+/* Sin las placas en medio, las manos ocupan todo el ancho. */
+.mesa-manos {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* El lateral ya solo tiene la lupa y los recordatorios. */
+.mesa-lateral .lateral-pestanas .pestana { cursor: default; }
+/* La regla vieja de la placa daba a .sangre un mínimo de 300 px. */
+.mesa-rail .sangre,
+.mesa-rail .rail-jugador,
+.mesa-rail .rail-slot { min-width: 0; width: 100%; }
+/* La mesa inclinada se abre por abajo: aire para no pisar la columna. */
+.mesa { column-gap: 24px; }
+/* En ventanas estrechas el lateral cede ancho: con la columna de sangre, la
+   fila del campo no cabía y se salía por encima de ella (1024 px). */
+@media (max-width: 1150px) {
+  .mesa { grid-template-columns: 118px minmax(0, 1fr) 230px; column-gap: 18px; }
+}
+/* Hades y destierro cuelgan a la IZQUIERDA de la fila (absolutos): se les
+   reserva su sitio con un margen, para que el centrado los cuente y no se
+   salgan de la mesa por encima de la columna de sangre. */
+.mesa-plano .lado-fila .lado-campo {
+  margin-left: calc(2 * clamp(44px, 7.2vh, 64px) + clamp(8px, 1.4vh, 14px) + clamp(10px, 1.6vw, 22px) + 6px);
+}
+
+/* ---------------- Sin panel lateral: la carta grande al mantener ---------------- */
+/* La mesa: la columna de sangre y el campo, que se queda con todo el ancho. */
+.mesa { grid-template-columns: clamp(124px, 10.5vw, 150px) minmax(0, 1fr); }
+@media (max-width: 1150px) {
+  .mesa { grid-template-columns: 118px minmax(0, 1fr); }
+}
+/* El calabozo: el mapa y la placa de la etapa (sin la lupa). */
+.calabozo-cuerpo.calabozo-v2 { grid-template-columns: auto minmax(0, 1fr); }
+
+/* Mantener pulsado no debe seleccionar texto ni sacar el menú del móvil. */
+[data-lupa] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* El anillo que se llena mientras mantienes pulsado. */
+.lupa-anillo {
+  position: fixed;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(var(--oro-medio) var(--p, 0%), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 17px, #000 18px);
+  mask: radial-gradient(circle, transparent 17px, #000 18px);
+  filter: drop-shadow(0 0 6px rgba(216, 185, 104, 0.7));
+  animation: lupa-anillo var(--ms, 380ms) linear forwards;
+  opacity: 0;
+}
+
+@property --p {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@keyframes lupa-anillo {
+  0% { --p: 0%; opacity: 0; }
+  25% { opacity: 1; }
+  100% { --p: 100%; opacity: 1; }
+}
+
+/* La vista grande: el fondo se oscurece y se desenfoca, y la carta entra con
+   un pequeño zoom. Mientras se mantiene (vistazo) no recibe clics: el soltar
+   tiene que llegar al documento para cerrarla. */
+.lupa-grande {
+  z-index: 70;
+  background: rgba(4, 5, 11, 0.82);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.lupa-grande.vistazo { pointer-events: none; }
+
+.lupa-grande .lupa-grande-caja { transform: scale(0.92); opacity: 0; transition: transform 0.16s ease-out, opacity 0.16s; }
+.lupa-grande.abierta .lupa-grande-caja { transform: none; opacity: 1; }
+
+.lupa-grande-caja img {
+  max-height: calc(100vh - 110px);
+  box-shadow: 0 22px 60px -10px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(216, 185, 104, 0.35);
+}
+
+.lupa-extra {
+  max-width: min(520px, 90vw);
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 200, 80, 0.45);
+  border-radius: 10px;
+  background: rgba(20, 16, 6, 0.9);
+  color: var(--texto);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.lupa-extra p { margin: 2px 0; }
+.lupa-extra strong { color: #ffc850; margin-right: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lupa-grande .lupa-grande-caja { transition: none; }
+  .lupa-anillo { animation-duration: 1ms; }
+}
+
+/* ------------------------------ Pantallas de carga ------------------------------ */
+.carga {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #05060b;
+  opacity: 0;
+  transition: opacity var(--fundido, 380ms) ease;
+  pointer-events: all;
+}
+
+.carga.visible { opacity: 1; }
+
+.carga-fondo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.04);
+  animation: carga-acercar 9s ease-out forwards;
+}
+
+@keyframes carga-acercar { to { transform: scale(1); } }
+
+.carga-velo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(4, 5, 10, 0.96) 0%, rgba(4, 5, 10, 0.75) 22%, rgba(4, 5, 10, 0) 52%),
+    radial-gradient(130% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55));
+}
+
+.carga-pie {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(26px, 6vh, 64px);
+  transform: translateX(-50%);
+  width: min(760px, 86vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.carga-frase {
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  font-size: clamp(16px, 2.6vh, 22px);
+  line-height: 1.4;
+  color: var(--oro-claro);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  animation: carga-frase 0.9s 0.15s ease-out both;
+}
+
+@keyframes carga-frase { from { opacity: 0; transform: translateY(8px); } }
+
+.carga-barra {
+  width: min(420px, 70vw);
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(140, 255, 120, 0.15);
+  overflow: hidden;
+}
+
+.carga-relleno {
+  width: 0;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #2f8f2a, #7dff5a);
+  box-shadow: 0 0 12px rgba(125, 255, 90, 0.75);
+  transition: width 0.18s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carga-fondo, .carga-frase { animation: none; }
+}

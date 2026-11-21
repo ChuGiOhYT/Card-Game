@@ -95,7 +95,9 @@ def main(ruta: str) -> None:
             veces(tr, oido) > veces(tr, guion) for tr in (propias[:4], propias[-4:]))
         if repetida:
             motivo = "la repite"
-        elif cobertura < 0.85:
+        # En frases cortas una sola palabra mal oída hunde la cobertura
+        # («Volví. Ella no.»: 2 de 3 = 67 %): se tolera UNA por debajo de 6.
+        elif cobertura < (0.85 if len(idx) > 5 else (len(idx) - 1) / len(idx) - 0.01):
             motivo = f"solo se oye el {cobertura:.0%}"
         elif sobra > 1.25:
             motivo = "repite o añade palabras"

@@ -16,7 +16,7 @@ window.Game.State = {
     tutorialVisto: [],
     tutorialSaltado: false,
     // Mandos del mezclador, de 0 a 1. 1 = la mezcla tal y como se diseñó.
-    volumenes: { musica: 1, botones: 1, efectos: 1, narrador: 1 },
+    volumenes: { musica: 1, botones: 1, efectos: 1, narrador: 1, voces: 1 },
     // Narrador de las cinemáticas: 'apagado' | 'normal' | 'suave' (ui/narrador.js).
     narrador: 'apagado',
     nombreRemoto: '',
