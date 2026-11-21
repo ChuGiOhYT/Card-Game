@@ -7200,12 +7200,10 @@ html.movil .pool-acciones {
   overflow: visible;
 }
 
-/* Mesa: en el teléfono el lateral es SOLO la carta (Oscar): sin registro, ni
-   herramientas, ni recordatorios (lo que importa ya sale en emergentes sobre
-   la mesa). La lupa ocupa la columna entera; la grande sigue con «mantener
-   pulsado». Ancho pensado para que la carta casi llene el alto. */
+/* Mesa: las columnas son las de la mesa nueva (sangre + campo, sin lateral);
+   aquí solo se recorta el pie. Antes este bloque fijaba «1fr 270px» y, al
+   quitar el lateral, la columna de sangre se comía media pantalla. */
 html.movil .mesa {
-  grid-template-columns: 1fr 270px;
   padding-bottom: 4px;
 }
 
