@@ -1,6 +1,6 @@
 {
   "name": "aeternum",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "AETERNUM — juego de mesa y aventura de rol",
   "main": "main.js",
   "scripts": {

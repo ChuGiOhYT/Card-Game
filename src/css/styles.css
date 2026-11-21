@@ -7204,6 +7204,10 @@ html.movil .pool-acciones {
    aquí solo se recorta el pie. Antes este bloque fijaba «1fr 270px» y, al
    quitar el lateral, la columna de sangre se comía media pantalla. */
 html.movil .mesa {
+  /* Columnas fijas, sin clamp(): si el WebView descarta la regla de la mesa
+     nueva, vuelve a la de 1fr + lateral y la sangre se come media pantalla. */
+  grid-template-columns: 118px minmax(0, 1fr);
+  column-gap: 14px;
   padding-bottom: 4px;
 }
 
