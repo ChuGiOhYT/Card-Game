@@ -1,6 +1,6 @@
 # Notas de versión de AETERNUM
 
-## 0.2.0 — 21 de noviembre de 2026
+## 0.3.0 — 21 de noviembre de 2026
 
 ### Voces
 - **Los personajes hablan con su propia voz.** Al elegir una estirpe, su
@@ -40,6 +40,18 @@
   Catacumbas; a cambio, la etapa 2 ya no da Escape.
 - **Catacumbas** reajustadas: la etapa 2 (que era casi imposible) y las demás
   cambian la sangre de sus oleadas.
+
+## 0.2.0 — 19 de noviembre de 2026
+
+- Letras de la marca registrada (Cinzel, como el logo) y estética de la marca.
+- Aviso de la condición de victoria al empezar y al terminar cada duelo, con
+  la regla y cómo se cumplió.
+- Quien abre no ataca en su primer turno; al cerrar el turno solo derrama
+  sangre quien lo cierra.
+- Mazos por defecto con identidad para cada estirpe.
+- En el calabozo abre la oleada; los Eternales se presentan y lanzan sus
+  habilidades desde su primer turno; dificultad de las etapas reajustada.
+- Voces del anciano completas.
 
 ## 0.1.0 — 18 de noviembre de 2026
 
