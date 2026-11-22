@@ -157,6 +157,9 @@ window.Game.Audio = {
    * volver al menú no tiene por qué cortar la música por la mitad.
    */
   ponerMusica(nombre) {
+    // Una historia secreta suena con la música de su campaña de aspecto.
+    const aspecto = window.Game.RACES && window.Game.RACES[nombre] && window.Game.RACES[nombre].aspecto;
+    if (!this.MUSICA[nombre] && aspecto) nombre = aspecto;
     const pista = this.MUSICA[nombre];
     if (!pista) return;
     if (this._musicaNombre === nombre && this._musica) return;

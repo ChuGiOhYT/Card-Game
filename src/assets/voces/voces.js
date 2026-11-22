@@ -68,6 +68,13 @@ window.Game.VOCES = {
   "src": "assets/voces/lun_delem-a0cd3285.ogg",
   "dur": 1.09
  },
+ "08519fda": {
+  "personaje": "lun_falum",
+  "voz": "Iapetus",
+  "efecto": "coro",
+  "src": "assets/voces/lun_falum-08519fda.ogg",
+  "dur": 0.95
+ },
  "ef8a9ef9": {
   "personaje": "lun_seluah",
   "voz": "Vindemiatrix",
@@ -88,38 +95,19 @@ window.Game.VOCES = {
   "src": "assets/voces/oxi_pip-d1325bd0.ogg",
   "dur": 2.32
  },
- "572cd1c7": {
-  "personaje": "oxi_brawl",
-  "voz": "Orus",
-  "efecto": "robot",
-  "src": "assets/voces/oxi_brawl-572cd1c7.ogg",
-  "dur": 1.03
- },
- "f68ee3d3": {
-  "personaje": "mer_tilos",
-  "voz": "Puck",
-  "src": "assets/voces/mer_tilos-f68ee3d3.ogg",
-  "dur": 1.57
- },
- "1d0dffe9": {
-  "personaje": "mer_yun",
-  "voz": "Puck",
-  "src": "assets/voces/mer_yun-1d0dffe9.ogg",
-  "dur": 1.33
- },
- "08519fda": {
-  "personaje": "lun_falum",
-  "voz": "Iapetus",
-  "efecto": "coro",
-  "src": "assets/voces/lun_falum-08519fda.ogg",
-  "dur": 0.95
- },
  "ac68a006": {
   "personaje": "oxi_krag",
   "voz": "Algenib",
   "efecto": "robot@110",
   "src": "assets/voces/oxi_krag-ac68a006.ogg",
   "dur": 1.94
+ },
+ "572cd1c7": {
+  "personaje": "oxi_brawl",
+  "voz": "Orus",
+  "efecto": "robot",
+  "src": "assets/voces/oxi_brawl-572cd1c7.ogg",
+  "dur": 1.03
  },
  "2c97e409": {
   "personaje": "oxi_krox",
@@ -147,6 +135,12 @@ window.Game.VOCES = {
   "src": "assets/voces/rea_gurh-05319ec9.ogg",
   "dur": 3.47
  },
+ "8a8176fb": {
+  "personaje": "rea_zabar",
+  "voz": "Umbriel",
+  "src": "assets/voces/rea_zabar-8a8176fb.ogg",
+  "dur": 2.26
+ },
  "c235f11d": {
   "personaje": "rea_thila",
   "voz": "Despina",
@@ -158,5 +152,48 @@ window.Game.VOCES = {
   "voz": "Achernar",
   "src": "assets/voces/mer_lyla-4d6a1881.ogg",
   "dur": 0.75
+ },
+ "f68ee3d3": {
+  "personaje": "mer_tilos",
+  "voz": "Puck",
+  "src": "assets/voces/mer_tilos-f68ee3d3.ogg",
+  "dur": 1.57
+ },
+ "112d6d32": {
+  "personaje": "mer_yrving",
+  "voz": "Sadachbia",
+  "src": "assets/voces/mer_yrving-112d6d32.ogg",
+  "dur": 2.16
+ },
+ "e482a482": {
+  "personaje": "mer_zhin",
+  "voz": "Algieba",
+  "src": "assets/voces/mer_zhin-e482a482.ogg",
+  "dur": 1.1
+ },
+ "1d0dffe9": {
+  "personaje": "mer_yun",
+  "voz": "Puck",
+  "src": "assets/voces/mer_yun-1d0dffe9.ogg",
+  "dur": 1.33
+ },
+ "1db5c08e": {
+  "personaje": "oxi_kaw",
+  "voz": "Achird",
+  "efecto": "robot@200",
+  "src": "assets/voces/oxi_kaw-1db5c08e.ogg",
+  "dur": 3.13
+ },
+ "b07724e0": {
+  "personaje": "rea_luh",
+  "voz": "Enceladus",
+  "src": "assets/voces/rea_luh-b07724e0.ogg",
+  "dur": 0.58
+ },
+ "7efa11cc": {
+  "personaje": "mer_errante",
+  "voz": "Sadaltager",
+  "src": "assets/voces/mer_errante-7efa11cc.ogg",
+  "dur": 2.43
  }
 };

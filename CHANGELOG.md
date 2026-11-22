@@ -1,5 +1,38 @@
 # Notas de versión de AETERNUM
 
+## 0.4.0 — 22 de noviembre de 2026
+
+### Historias secretas
+- **Tres historias nuevas** que se abren al terminar la campaña, desde
+  «Historias secretas» en la vitrina de cristales: **Yrving y Ceniza** («El que
+  volvió»), **Lyla y Lis** («La que vino a aprender») y **Tilos y Chispa** («El
+  niño de Forjaris»). Son calabozos cortos de tres etapas, con su travesía y
+  su final, y las tres se cruzan entre sí.
+- Las **cartas desbloqueadas se pueden volver a ver** cuando quieras desde
+  «Ver cartas».
+
+### Mascotas
+- **Lis**, **Ceniza** y **Chispa** son el premio de su historia y, una vez
+  ganadas, pueden ir en el equipo de cualquier estirpe:
+  - **Lis** (revelada en la mano): el personaje del rival en posición tiene
+    −2 de ataque y −2 de defensa.
+  - **Ceniza** (revelada): Yrving no puede ser destruido en batalla.
+  - **Chispa**: con Tilos equipado como acción, admite además otra acción.
+
+### Equipos
+- **Equipo libre**: personajes de las cuatro estirpes, mercenarios y mascotas
+  juntos en el mismo equipo, con su propio tapete de mármol y oro. Se arma en
+  el constructor y se usa en el modo solo y en el duelo remoto.
+
+### Pantallas y estética
+- **Retratos flotantes para los seis mercenarios y las tres mascotas**: ahora
+  también flotan sobre la mesa.
+- **Nuevas ilustraciones de carga**: los cuatro Eternos y la Gran Lluvia, con
+  sus propias frases.
+- Nuevas voces para Errante, Yrving, Zhin, Kaw, Luh y Zabar.
+- En el teléfono, la mesa se adapta a la columna de sangre nueva.
+- En el menú, «Juega online» pasa a ser **«Visitar web»**.
+
 ## 0.3.0 — 21 de noviembre de 2026
 
 ### Voces

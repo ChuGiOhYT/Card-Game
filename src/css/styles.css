@@ -8118,3 +8118,57 @@ html.movil .rf-sub { margin-bottom: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .carga-fondo, .carga-frase { animation: none; }
 }
+
+/* «Ver cartas» junto a «Leerla de nuevo» en la vitrina completa. */
+.gemas-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Historias secretas: una tarjeta por mercenario y su mascota. */
+.hs-lista {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin: 6px 0 14px;
+}
+
+.hs-tarjeta {
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(216, 185, 104, 0.4);
+  background: rgba(7, 8, 14, 0.7);
+  text-align: center;
+}
+
+.hs-tarjeta.proxima { opacity: 0.5; filter: grayscale(0.6); }
+
+.hs-cartas {
+  display: flex;
+  justify-content: center;
+}
+
+.hs-cartas img {
+  width: 92px;
+  border-radius: 6px;
+  box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.9);
+}
+
+.hs-cartas img:nth-child(1) { transform: rotate(-5deg) translateX(8px); z-index: 1; }
+.hs-cartas img:nth-child(2) { transform: rotate(6deg) translate(-8px, 8px); width: 74px; }
+
+.hs-nombre {
+  font-family: var(--fuente-titulo);
+  color: var(--oro-claro);
+  font-size: 14px;
+}
+
+.hs-jugar { padding: 8px 22px; }

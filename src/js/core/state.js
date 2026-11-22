@@ -86,7 +86,7 @@ window.Game.State = {
 
   /** ¿Está terminado el calabozo de esta raza, jefe incluido? */
   calabozoCompleto(razaId) {
-    const cal = (window.Game.DUNGEONS || {})[razaId];
+    const cal = window.Game.calabozoDe ? window.Game.calabozoDe(razaId) : (window.Game.DUNGEONS || {})[razaId];
     return !!cal && this.progresoDe(razaId) >= cal.etapas.length;
   },
 
@@ -102,6 +102,8 @@ window.Game.State = {
    * en el orden de `RACE_ORDER`. El primero está siempre disponible.
    */
   calabozoDisponible(razaId) {
+    // Las historias secretas se abren con la recompensa de la campaña.
+    if ((window.Game.HISTORIAS_SECRETAS || {})[razaId]) return this.desbloqueado();
     const orden = window.Game.RACE_ORDER || [];
     const i = orden.indexOf(razaId);
     if (i <= 0) return i === 0;

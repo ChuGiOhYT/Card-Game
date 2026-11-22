@@ -213,7 +213,55 @@ def reanimado():
     return vineta(img, 0.6)
 
 
-TAPETES = {'desterrado': desterrado, 'oxitron': oxitron, 'lunaria': lunaria, 'reanimado': reanimado}
+# ------------------------------- libre: mármol de noche con vetas de oro
+def libre():
+    """Equipo libre (Oscar): ninguna tierra y todas. Mármol oscuro con los tonos
+    de la marca (noche y violeta), vetas de oro y, en cada esquina, el resplandor
+    tenue de una estirpe (colorPrimario de races.js). Un filete dorado con
+    rombos marca el borde, como el del logo."""
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    piedra = fbm(W, H, 200, 101, 5)
+    img = rampa(piedra, ['#07071a', '#110f2a', '#1c1638', '#2a1f47'])
+    # Nubes violeta y cian, muy suaves (la nebulosa de la marca).
+    img = mezclar(img, rgb('#7b2d96'), suave(0.55, 0.85, fbm(W, H, 320, 103, 4)) * 0.18)
+    img = mezclar(img, rgb('#3cc3d4'), suave(0.62, 0.9, fbm(W, H, 280, 107, 4)) * 0.08)
+
+    # Vetas de oro como en el mármol: bandas diagonales largas, deformadas por
+    # ruido (las crestas de un ruido suelto salían como garabatos cerrados).
+    vetas = np.zeros((H, W), np.float32)
+    for sem, periodo, grosor, giro in ((109, 520, 0.035, 0.55), (113, 330, 0.022, -0.35)):
+        torcer = (fbm(W, H, 420, sem, 5) - 0.5) * 0.9 + (fbm(W, H, 70, sem + 1, 3) - 0.5) * 0.12
+        fase = (xx * np.cos(giro) + yy * np.sin(giro)) / periodo * 2 * np.pi + torcer * 2 * np.pi
+        vetas = np.maximum(vetas, 1 - suave(0.0, grosor, np.abs(np.sin(fase / 2))))
+    vetas *= 0.25 + 0.75 * suave(0.3, 0.65, fbm(W, H, 380, 117, 3))
+    # Bajo las cartas (bandas centrales de cada lado), más tenues.
+    vetas *= 1 - 0.45 * (1 - suave(0.0, 0.35, np.abs(xx / W - 0.5)))
+    halo = np.asarray(Image.fromarray((vetas * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(5)), np.float32) / 255
+    img = mezclar(img, rgb('#8a6a2a'), np.clip(halo * 1.4, 0, 1) * 0.35)
+    img = mezclar(img, rgb('#e3c27a'), vetas * 0.75)
+
+    # Las cuatro estirpes, una por esquina (desterrado, lunaria, oxitrón, reanimado).
+    for (cx, cy), color in (((0, 0), '#7ec8f2'), ((W, 0), '#c07ae8'),
+                            ((0, H), '#f0913a'), ((W, H), '#5fd9a8')):
+        d = np.sqrt(((xx - cx) / (W * 0.55)) ** 2 + ((yy - cy) / (H * 0.6)) ** 2)
+        img = mezclar(img, rgb(color), (1 - suave(0.0, 1.0, d)) ** 1.6 * 0.32)
+
+    # Filete dorado con rombos en las esquinas y a media altura.
+    def filete(d, s):
+        m = 26
+        d.rectangle([m * s, m * s, (W - m) * s, (H - m) * s], outline=255, width=2 * s)
+        d.rectangle([(m + 9) * s, (m + 9) * s, (W - m - 9) * s, (H - m - 9) * s], outline=150, width=s)
+        for x, y in ((m, m), (W - m, m), (m, H - m), (W - m, H - m), (W / 2, m), (W / 2, H - m), (m, H / 2), (W - m, H / 2)):
+            r = 11
+            d.polygon([(x * s, (y - r) * s), ((x + r) * s, y * s), (x * s, (y + r) * s), ((x - r) * s, y * s)], fill=255)
+    f = capa_trazos(filete)
+    img = mezclar(img, rgb('#3a2c10'), np.roll(f, (3, 3), (0, 1)) * 0.6)
+    img = mezclar(img, rgb('#d9b866'), f * 0.8)
+    return vineta(img, 0.5)
+
+
+TAPETES = {'desterrado': desterrado, 'oxitron': oxitron, 'lunaria': lunaria, 'reanimado': reanimado,
+           'libre': libre}
 
 if __name__ == '__main__':
     for nombre in (sys.argv[1:] or TAPETES):

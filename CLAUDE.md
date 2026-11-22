@@ -19,7 +19,7 @@ npm run simular -- --torneo   # compara variantes de la heurística
 npm run dist       # compila los .exe (instalador + portable) en dist/
 python tools/fondos2d/bosque.py   # repinta las capas del escenario 2D del Bosque
 python tools/fondos2d/oasis.py    # … y las del Oasis
-python tools/fondos2d/tapetes.py  # repinta los tapetes de la mesa (uno por estirpe)
+python tools/fondos2d/tapetes.py  # repinta los tapetes de la mesa (uno por estirpe, y el libre)
 ```
 
 Para compilar sin acordarse de nada, **doble clic en `construir_todo.bat`**:
@@ -293,6 +293,12 @@ mal, se corrige ahí y se regenera.
   de estirpe, la vitrina, la línea compacta, la ventana de la recompensa
   final y el cartel de victoria. Con las cuatro y la historia sin leer, la
   vitrina ya se desplazaba antes (texto largo); las imágenes lo alargan algo.
+
+  **Las cartas desbloqueadas se pueden ver SIEMPRE** (Oscar): la ventana de la
+  recompensa sale sola una vez, y después «Ver cartas» (vitrina completa y
+  bloque grande ya leído) la reabre como «Cartas desbloqueadas»
+  (`bloqueRecompensaFinal({ reabierta })`, `abrirCartas`, `conectarRecompensa`).
+  Cada carta lleva `data-personaje`: ahí colgará su historia jugable.
 
   **El aviso de la recompensa es de un solo uso, y la vitrina se encoge después.**
   La pantalla de estirpes no se desplaza (`.pantalla` es `overflow: hidden`) y lo
@@ -1068,13 +1074,100 @@ con un imitador local de Realtime y los CANDIDATE tirados (conectan en ~4 s).
   adelanta ni a lo cargado ni a un mínimo de tiempo (`minMs`, para leer la
   frase: en el PC todo carga al instante). Tope `maxMs` (8 s): un archivo
   lento no deja a nadie atascado. Es lo que da tiempo a la versión web.
-- Tres sitios (Oscar): al abrir (`app.js`, estirpe al azar, el menú se monta
+- **Ilustraciones del mundo** (`Carga.DEL_MUNDO`, arte de Oscar, con el logo
+  en vez de emblema): los cuatro Eternos (`eternos.webp`) y la Gran Lluvia
+  (`lluvia.webp`), cada una con sus frases en `FRASES_CARGA`. Una al azar al
+  abrir el juego y en los duelos de un equipo libre (`mostrar` sin raza o con
+  `libre`). Ojo con las frases: el apóstrofo de Aeter’num va TIPOGRÁFICO (’);
+  el recto cierra la cadena de JS y revienta frases.js entero.
+- Tres sitios (Oscar): al abrir (`app.js`, Eternos o Lluvia, el menú se monta
   debajo), al pulsar «Comenzar historia» (`raceSelect`, espera y luego
   navega) y **en `Router.ir('partida')`**, que la muestra y se vuelve a llamar
   con `_trasCarga`: así la tienen TODOS los caminos a un duelo (solo, etapa,
   remoto, revancha). Un segundo `ir('partida')` durante la carga se ignora.
 - Ojo en los scripts de prueba: `Router.ir('partida')` ya NO navega en el
   acto; la mesa existe ~1,5 s después.
+
+## Mascotas de las historias secretas (Oscar)
+
+Lyla, Tilos e Yrving son solitarios: en sus historias secretas los acompaña una
+mascota (arte de Oscar). Raza `mascota` (no entran en los mazos de estirpe ni
+en el constructor: `personajesDeRaza` solo suma la raza y los mercenarios),
+coste 0, 2/2, en `characters-source.json` → `npm run datos`.
+
+- **Lis** (`mas_lis`, de Lyla) — Revelado (en la mano): el activo rival −2/−2
+  (`PASIVOS.mas_lis`, `DONDE_PASIVO: 'mano'`).
+- **Ceniza** (`mas_ceniza`, de Yrving) — Revelado: Yrving no puede ser
+  destruido en batalla (`EfectosPersonaje.protegido`). Va APARTE de
+  `antesDeDestruir` a propósito: el golpe normal destruye con `yaDecidido`
+  (por Zhin) y se saltaba el gancho entero. Ojo: en defensa, si le rompen el
+  escudo, el golpe no pasa a la sangre (regla del combate): Ceniza solo evita
+  la caída.
+- **Chispa** (`mas_chispa`, de Tilos) — con Tilos equipado admite además una
+  acción: `equipar` no le devuelve a Tilos y `Combat._equipo` suma las dos (la
+  acción activa su estadística y Tilos la suya). La fase de acción no pasa
+  sola mientras Chispa lleve solo a Tilos y queden acciones.
+- Pruebas: `tools/pruebas/8-mascotas.js` (dado fijo; ojo: en el turno 1 no
+  se ataca).
+
+## Equipos libres y mascotas en el constructor (Oscar)
+
+- **Equipo «Libre»** (`RACES.libre`, `seleccionable: false`; `RAZAS_EQUIPO` =
+  las cuatro + libre): personajes de las cuatro estirpes, mercenarios y
+  mascotas en el mismo equipo. Pestaña en el constructor, botón en el modo solo
+  (solo para ti; la IA sigue con estirpes) y en la sala remota. Se guarda con
+  `raza: 'libre'`. Sin mazo propio: «Autocompletar» da el de los Desterrados.
+  Tapete propio (`python tools/fondos2d/tapetes.py libre`): mármol de noche
+  con los tonos de la marca, vetas de oro (bandas diagonales deformadas: las
+  crestas de un ruido suelto salían como garabatos), el resplandor de una
+  estirpe en cada esquina y un filete dorado. Sin tema musical propio. Las acciones con `razaRequerida`
+  solo se marcan inertes si NADIE del equipo es de esa estirpe (constructor,
+  aviso de `validar` y mano de la mesa).
+- **Las mascotas son el premio de su historia**: la última etapa de cada
+  historia secreta da su mascota, y `mascotasDesbloqueadas()` (historias
+  terminadas) las mete en `personajesDeRaza` de TODAS las estirpes, como los
+  mercenarios. `validar` usa ese mismo pool (antes: raza o mercenario).
+  `personajesDeRaza` vive en el GENERADOR (`tools/generar-datos.js`).
+
+## Historias secretas (data/historiasSecretas.js)
+
+- Recompensa de terminar la campaña (`State.calabozoDisponible` → `desbloqueado()`):
+  calabozos cortos (3 etapas) de un mercenario SOLITARIO y su mascota. Textos
+  condensados del libro (Ep. III-IV) por Claude, a corregir por Oscar. Las tres:
+  **Yrving y Ceniza** («El que volvió»: la huida de los Segadores, el rastro,
+  el contrato; cierra con la Vástago), **Lyla y Lis** («La que vino a
+  aprender», aspecto Bosque: la invitación, el contrapeso, el puente; cierra
+  con Tilos abriendo los ojos) y **Tilos y Chispa** («El niño de Forjaris»,
+  aspecto Forjas: el último de Forjaris, el hilo dorado, el primer Vástago;
+  cierra con la Vástago llegando al taller). Las tres se cruzan a propósito.
+  **Lyla empieza SOLA**: Lis es el pájaro del primer rito y llega como
+  recompensa de la etapa 1 (por eso esa etapa es contra UNA criatura: con dos,
+  sola, no pasaba del 49 %). Que Chispa existiera antes de morir Tilos es
+  lectura mía de su carta. `HISTORIAS_PROXIMAS` queda vacía.
+- Van en `HISTORIAS_SECRETAS`, **aparte de `DUNGEONS`**: `calabozosCompletados`,
+  el «más avanzado» y las gemas recorren `DUNGEONS` y no deben contarlas.
+  `calabozoDe(id)` mira los dos sitios, así que mapa, travesía, mesa, progreso
+  (`progresoHistoria[id]`) y bocadillos funcionan igual. `calabozoCompleto`
+  usa `calabozoDe`.
+- Cada historia se da de alta como **raza oculta en `RACES`** (`secreta: true`,
+  `seleccionable: false`) copiando el ASPECTO de una campaña (`aspecto`):
+  fondo, colores, mapa (nodos repartidos entre los 6 de la campaña), y
+  `Audio.ponerMusica` / `estiloTapete` / `Carga.mostrar` traducen al aspecto
+  (la carga usa las frases propias de `FRASES_CARGA[id]` si las hay). Emblema:
+  el de los mercenarios. Heredan también el `escenario2d` de su campaña: Yrving
+  y Lyla recorren el Bosque de lado, Tilos camina sobre el mapa de las Forjas.
+  Camina el PROTAGONISTA (`protagonistaPrimero` en storyMode; el equipo de
+  Tilos empieza con Chispa) y la mascota va a su lado aunque no hable.
+- Se entra por «Historias secretas» en la vitrina de cristales
+  (`raceSelect.abrirHistorias`).
+- **Mazos fijados por Oscar**: los tres empiezan con Finta y Comodín más la
+  acción propia de cada uno (Yrving Captura, Lyla Ruego al eterno, Tilos
+  Biomecánica, y además Escape: «siempre» para Tilos), y la etapa 2 les da
+  Inmolación para la última. Sin
+  defensivas, la etapa 2 (lobo + gnolls) caía al 15 %: ahora es ratas + lobo.
+- Sangre medida con la IA (200 duelos): Yrving 5 · 3 · 10 → 89 / 81 / 95 %;
+  Lyla 3 · 4 · 7 → 81 / 96 / 92 %; Tilos 4 · 3 · 6 → 87 / 79 / 86 %. Banco:
+  `banco-secreto.js` en el scratchpad.
 
 ## Trampas ya pisadas
 
@@ -1889,8 +1982,13 @@ Dos trampas aquí:
 **El arte flotante es opcional y va por `imagenFlotante`.** Es una ruta
 completa desde `src/` (no el nombre suelto, como sí lo es `imagen`), vive en
 `src/assets/personajes-flotantes/` y la tienen los 24 personajes de las cuatro
-estirpes más los 4 eternals. Los únicos sin retrato son los 6 mercenarios, que
-simplemente no flotan. Al añadir personajes, recuerda
+estirpes, los 4 eternals, los 6 mercenarios y las 3 mascotas (láminas de
+Oscar en `tools/flotantes/`, `python tools/flotantes/recortar.py`: alfa por
+distancia al gris del fondo, solo en el fondo conectado al borde o en huecos de
+gris exacto, y figuras separadas por componentes conexas; las motas sueltas van
+con el cuerpo más cercano). Yrving y Tilos van cortados por las rodillas (72 %
+del alto, con fundido; Oscar: «para que se vean más grandes»). Flotan también en la
+mesa, en todos los modos (Oscar: «me gusta así»). Al añadir personajes, recuerda
 que `tools/generar-datos.js` enumera los campos uno a uno: un campo nuevo en
 el `-source.json` que no esté en `lineaPersonaje()` se pierde al regenerar.
 

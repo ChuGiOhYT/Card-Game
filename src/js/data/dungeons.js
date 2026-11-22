@@ -1140,7 +1140,8 @@ window.Game.HISTORIA_FINAL = {
 };
 
 window.Game.calabozoDe = function (razaId) {
-  return window.Game.DUNGEONS[razaId] || null;
+  // También las historias secretas (data/historiasSecretas.js), que van aparte.
+  return window.Game.DUNGEONS[razaId] || (window.Game.HISTORIAS_SECRETAS || {})[razaId] || null;
 };
 
 /** La gema que deja el Eternal de esa raza, o null. */

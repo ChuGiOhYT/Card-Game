@@ -143,7 +143,7 @@ window.Game.Bocadillos = {
 
   conversacionInicial(m) {
     const { raza, etapa } = this.ctx;
-    const cal = window.Game.DUNGEONS[raza];
+    const cal = window.Game.calabozoDe(raza);
     if (!cal || cal.escenario2d || !etapa || !etapa.dialogo) return;
     if (this.marcas.has('conversacion')) return;
     this.marcas.add('conversacion');

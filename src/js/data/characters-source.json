@@ -446,6 +446,7 @@
     {
       "id": "mer_yrving",
       "imagen": "mercenario-1.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_yrving-flotante.png",
       "nombre": "Yrving, Explorador de los Domabestias",
       "raza": "mercenario",
       "coste": 5,
@@ -462,6 +463,7 @@
     {
       "id": "mer_tilos",
       "imagen": "mercenario-2.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_tilos-flotante.png",
       "nombre": "Tilos, Promesa de los Engranagenios",
       "raza": "mercenario",
       "coste": 5,
@@ -480,6 +482,7 @@
     {
       "id": "mer_lyla",
       "imagen": "mercenario-3.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_lyla-flotante.png",
       "nombre": "Lyla, Ninfa de las luciérnagas",
       "raza": "mercenario",
       "coste": 5,
@@ -496,6 +499,7 @@
     {
       "id": "mer_yun",
       "imagen": "mercenario-4.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_yun-flotante.png",
       "nombre": "Yun, acróbata de las seis nieblas",
       "raza": "mercenario",
       "coste": 5,
@@ -511,6 +515,7 @@
     {
       "id": "mer_errante",
       "imagen": "mercenario-5.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_errante-flotante.png",
       "nombre": "Errante, el guardián de la puerta",
       "raza": "mercenario",
       "coste": 5,
@@ -529,6 +534,7 @@
     {
       "id": "mer_zhin",
       "imagen": "mercenario-6.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mer_zhin-flotante.png",
       "nombre": "Zhin, el encantador de ratas",
       "raza": "mercenario",
       "coste": 5,
@@ -540,6 +546,59 @@
       "mecanicas": [
         "autosacrificio"
       ]
+    },
+    {
+      "id": "mas_lis",
+      "imagen": "mascota-lis.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mas_lis-flotante.png",
+      "nombre": "Lis, la verdadera vida",
+      "raza": "mascota",
+      "coste": 0,
+      "ataque": 2,
+      "defensa": 2,
+      "timing": "Revelado",
+      "texto": "Revelado: Disminuye el ataque y defensa del personaje oponente en 2.",
+      "cita": "La gran magia de la vida es asombrosa. Ahora se le ve siempre junto a Lyla",
+      "mecanicas": [
+        "pasivo_revelado",
+        "debilitar_rival"
+      ],
+      "de": "mer_lyla"
+    },
+    {
+      "id": "mas_ceniza",
+      "imagen": "mascota-ceniza.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mas_ceniza-flotante.png",
+      "nombre": "Ceniza, Domabestias honorífico",
+      "raza": "mascota",
+      "coste": 0,
+      "ataque": 2,
+      "defensa": 2,
+      "timing": "Revelado",
+      "texto": "Revelado: Yrving no puede ser destruido en batalla.",
+      "cita": "Fiel a su amo Yrving, lo acompañó incluso en la muerte, y en su nueva vida",
+      "mecanicas": [
+        "pasivo_revelado",
+        "proteger_aliado"
+      ],
+      "de": "mer_yrving"
+    },
+    {
+      "id": "mas_chispa",
+      "imagen": "mascota-chispa.jpg",
+      "imagenFlotante": "assets/personajes-flotantes/mas_chispa-flotante.png",
+      "nombre": "Chispa, acompañante del último Engranagenio",
+      "raza": "mascota",
+      "coste": 0,
+      "ataque": 2,
+      "defensa": 2,
+      "timing": "En posición",
+      "texto": "En posición: Si Tilos está equipado a esta carta, puedes equiparle una segunda carta de equipo.",
+      "cita": "La primera creación de Tilos, lo acompaña a todo lugar sin falta",
+      "mecanicas": [
+        "doble_equipo"
+      ],
+      "de": "mer_tilos"
     }
   ]
 }

@@ -122,6 +122,28 @@ window.Game.RACES = {
 window.Game.RACE_ORDER = ['desterrado', 'lunaria', 'oxitron', 'reanimado'];
 
 /**
+ * Equipo LIBRE (Oscar): personajes de cualquier estirpe en el mismo equipo.
+ * Solo existe en el constructor, el modo solo y el duelo remoto; no tiene
+ * campaña, tapete ni tema propios (la mesa cae al neutro).
+ */
+window.Game.RACES.libre = {
+  id: 'libre',
+  nombre: 'Libre',
+  lema: 'Cualquier estirpe, un solo equipo',
+  sigil: '✦',
+  emblema: window.Game.RACES.mercenario.emblema,
+  colorPrimario: '#c9a959',
+  colorSecundario: '#4a3f24',
+  descripcion: 'Personajes de las cuatro estirpes, mercenarios y mascotas, mezclados.',
+  afinidad: ['neutral'],
+  dificultad: 2,
+  seleccionable: false
+};
+
+/** Las estirpes con las que se arma un equipo: las cuatro y la libre. */
+window.Game.RAZAS_EQUIPO = [...window.Game.RACE_ORDER, 'libre'];
+
+/**
  * El emblema de una estirpe (o de los mercenarios) como imagen, con su sombra
  * (CSS `.emblema`). Acepta el id o el objeto de la raza; lo que no tiene
  * emblema (las criaturas del calabozo) cae a su `sigil` de texto. `tam` en px

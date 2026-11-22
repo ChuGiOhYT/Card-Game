@@ -2,7 +2,9 @@
  * Construcción y validación de equipos: 5 personajes + 8 acciones.
  * No hay mazo ni robo; todo lo que tendrás durante el duelo se elige aquí.
  *
- * Los mercenarios (raza "mercenario") pueden acompañar a cualquier raza.
+ * Los mercenarios (raza "mercenario") pueden acompañar a cualquier raza, y
+ * las mascotas también, una vez ganadas en su historia secreta. El equipo
+ * «libre» admite personajes de las cuatro estirpes a la vez.
  */
 window.Game = window.Game || {};
 
@@ -36,12 +38,15 @@ window.Game.Team = {
       errores.push('No puedes repetir acciones: son reutilizables.');
     }
 
+    const elegibles = new Set(window.Game.personajesDeRaza(razaId).map((c) => c.id));
     for (const id of personajesIds) {
       const p = window.Game.CHARACTERS_BY_ID[id];
       if (!p) {
         errores.push(`Personaje desconocido: ${id}`);
-      } else if (p.raza !== razaId && p.raza !== 'mercenario') {
-        errores.push(`«${p.nombre}» no es de tu raza ni mercenario.`);
+      } else if (!elegibles.has(id)) {
+        errores.push(p.raza === 'mascota'
+          ? `«${p.nombre}» se gana terminando su historia secreta.`
+          : `«${p.nombre}» no es de tu raza ni mercenario.`);
       }
     }
 
@@ -69,9 +74,11 @@ window.Game.Team = {
     }
 
     // Acciones bloqueadas por una raza que no es la tuya: legales, pero inertes.
+    // En un equipo libre, solo si no llevas a nadie de esa estirpe.
+    const razasEquipo = new Set(personajesIds.map((id) => window.Game.CHARACTERS_BY_ID[id]?.raza));
     for (const id of accionesIds) {
       const a = window.Game.ACTIONS_BY_ID[id];
-      if (a?.razaRequerida && a.razaRequerida !== razaId) {
+      if (a?.razaRequerida && a.razaRequerida !== razaId && !razasEquipo.has(a.razaRequerida)) {
         const nombreRaza = window.Game.RACES[a.razaRequerida]?.nombre || a.razaRequerida;
         avisos.push(
           `«${a.nombre}» exige un personaje ${nombreRaza}: no te servirá con esta raza.`
@@ -121,7 +128,8 @@ window.Game.Team = {
 
   /** Equipo por defecto: el mazo de la estirpe; si no tiene, los 5 más baratos + 8 acciones. */
   equipoPredeterminado(razaId) {
-    const base = this.MAZOS_BASE[razaId];
+    // Libre no tiene mazo propio: arranca con el de los Desterrados.
+    const base = this.MAZOS_BASE[razaId === 'libre' ? 'desterrado' : razaId];
     if (base) return { personajes: [...base.personajes], acciones: [...base.acciones] };
     const personajes = window.Game.CHARACTERS.filter((c) => c.raza === razaId)
       .slice()

@@ -45,12 +45,27 @@ window.Game.Combat = {
     return { tipo: inst.tilos.tipo, extra: inst.tilos.tipo === 'ofensiva' ? T.ataque : T.defensa };
   },
 
+  /**
+   * Todo lo que tiene equipado: la acción y, además, Tilos. Solo Chispa puede
+   * llevar las dos a la vez (las demás: una u otra, y vale `_accion`).
+   */
+  _equipo(inst) {
+    const out = [];
+    const real = window.Game.ACTIONS_BY_ID[inst.accion];
+    if (real) out.push({ tipo: real.tipo, extra: 0 });
+    if (inst.tilos && (!real || inst.personaje === 'mas_chispa')) {
+      const T = window.Game.CHARACTERS_BY_ID.mer_tilos;
+      out.push({ tipo: inst.tilos.tipo, extra: inst.tilos.tipo === 'ofensiva' ? T.ataque : T.defensa });
+    }
+    return out;
+  },
+
   /** Ataque efectivo: 0 salvo que tenga una acción ofensiva equipada. */
   ataqueEfectivo(inst) {
     if (!inst) return 0;
-    const accion = this._accion(inst);
-    if (!accion || accion.tipo !== 'ofensiva') return 0;
-    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque + accion.extra;
+    const of = this._equipo(inst).filter((a) => a.tipo === 'ofensiva');
+    if (!of.length) return 0;
+    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].ataque + of.reduce((s, a) => s + a.extra, 0);
     // `pasivo`: los efectos que se recalculan solos (efectosPersonaje).
     return Math.max(0, base + (inst.modificadores?.ataque || 0) + (inst.pasivo?.ataque || 0));
   },
@@ -58,9 +73,9 @@ window.Game.Combat = {
   /** Defensa efectiva: 0 salvo que tenga una acción defensiva equipada. */
   defensaEfectiva(inst) {
     if (!inst) return 0;
-    const accion = this._accion(inst);
-    if (!accion || accion.tipo !== 'defensiva') return 0;
-    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].defensa + accion.extra;
+    const de = this._equipo(inst).filter((a) => a.tipo === 'defensiva');
+    if (!de.length) return 0;
+    const base = window.Game.CHARACTERS_BY_ID[inst.personaje].defensa + de.reduce((s, a) => s + a.extra, 0);
     return Math.max(0, base + (inst.modificadores?.defensa || 0) + (inst.pasivo?.defensa || 0));
   },
 

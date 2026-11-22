@@ -91,7 +91,7 @@ window.Game.Screens.mainMenu = {
       // bloquea, porque no depende del progreso de la campaña. Lleva el
       // reverso oficial: es el de las partidas contra jugadores.
       carta({
-        destino: 'online', titulo: 'Juega online', sub: 'TCG Arena · aeternumtcgchile.fun ↗',
+        destino: 'online', titulo: 'Visitar web', sub: 'aeternumtcgchile.fun ↗',
         fondo: 'assets/cartas/reverso.webp', clase: 'menu-carta-externa'
       })
     ];

@@ -94,7 +94,7 @@ window.Game.Screens.modoSolo = {
     const r = window.Game.RACES[razaId];
     const selector = conSelector
       ? `<div class="solo-selector">
-           ${window.Game.RACE_ORDER.map(
+           ${window.Game.RAZAS_EQUIPO.map(
              (id) => `
              <button data-raza="${id}" class="${id === razaId ? 'activa' : ''}"
                      style="--raza-primario:${window.Game.RACES[id].colorPrimario}"

@@ -112,31 +112,11 @@ window.Game.Screens.seleccionRaza = {
       window.Game.Router.ir('mainMenu');
     });
 
-    // La ventana de la recompensa: se cierra con «Entendido», con Esc o
-    // tocando fuera, y no vuelve (marcarRecompensaAnunciada).
-    const ventana = contenedor.querySelector('#recompensa-final');
-    if (ventana) {
-      const cerrar = () => {
-        window.Game.State.marcarRecompensaAnunciada();
-        ventana.classList.add('cerrando');
-        setTimeout(() => ventana.remove(), 260);
-        document.removeEventListener('keydown', alTeclear, true);
-      };
-      // En captura, para ver la lupa ANTES de que su propio Esc la cierre:
-      // con una carta ampliada, Esc cierra solo la carta.
-      const alTeclear = (e) => {
-        const lupa = document.getElementById('lupa-grande');
-        if (e.key === 'Escape' && !(lupa && !lupa.classList.contains('oculto'))) cerrar();
-      };
-      document.addEventListener('keydown', alTeclear, true);
-      // Tocar una carta la amplía para leerla entera.
-      ventana.querySelectorAll('.rf-carta').forEach((f) => f.addEventListener('click', () => {
-        const img = f.querySelector('img');
-        window.Game.Lupa.ampliar(img.getAttribute('src'), img.alt);
-      }));
-      ventana.querySelector('#btn-recompensa-vista').addEventListener('click', cerrar);
-      ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
-    }
+    // La ventana de la recompensa: la primera vez sale sola; después se
+    // vuelve a abrir siempre con «Ver cartas» (Oscar).
+    this.conectarRecompensa(contenedor.querySelector('#recompensa-final'));
+    contenedor.querySelector('#btn-ver-cartas')?.addEventListener('click', () => this.abrirCartas(contenedor));
+    contenedor.querySelector('#btn-historias')?.addEventListener('click', () => this.abrirHistorias(contenedor));
 
     this.conectarHistoriaFinal(contenedor, params);
 
@@ -218,6 +198,10 @@ window.Game.Screens.seleccionRaza = {
                  <button class="btn-primario" id="btn-historia-final" type="button">
                    ${S.historiaFinalVista() ? 'Leerla de nuevo' : 'Leer la historia secreta'}
                  </button>
+                 ${S.historiaFinalVista()
+                   ? '<button class="btn-secundario" id="btn-ver-cartas" type="button">Ver cartas</button>' +
+                     '<button class="btn-secundario" id="btn-historias" type="button">Historias secretas</button>'
+                   : ''}
                </div>`
             : `<p class="nota gemas-pie">
                  Cada Eternal derribado deja el suyo. Los cuatro juntos abren
@@ -258,9 +242,11 @@ window.Game.Screens.seleccionRaza = {
         <span class="gemas-sigilos">${sigilos}</span>
         <strong>Cristales ${todas.length} de ${todas.length}</strong>
         <span class="nota">· ${window.Game.HISTORIA_FINAL.titulo}</span>
-        <button class="gemas-releer" id="btn-historia-final" type="button">
-          Leerla de nuevo
-        </button>
+        <span class="gemas-botones">
+          <button class="gemas-releer" id="btn-historias" type="button">Historias secretas</button>
+          <button class="gemas-releer" id="btn-ver-cartas" type="button">Ver cartas</button>
+          <button class="gemas-releer" id="btn-historia-final" type="button">Leerla de nuevo</button>
+        </span>
       </section>`;
   },
 
@@ -273,9 +259,9 @@ window.Game.Screens.seleccionRaza = {
    * tanto que hundía la ficha de la estirpe fuera de la pantalla, y esa ficha
    * es para lo que se entra aquí.
    */
-  bloqueRecompensaFinal() {
+  bloqueRecompensaFinal({ reabierta = false } = {}) {
     const S = window.Game.State;
-    if (!S.recompensaPorAnunciar()) return '';
+    if (!reabierta && !S.recompensaPorAnunciar()) return '';
 
     const mercenarios = window.Game.HISTORIA_FINAL.desbloquea.personajes
       .map((id) => window.Game.CHARACTERS_BY_ID[id])
@@ -291,13 +277,15 @@ window.Game.Screens.seleccionRaza = {
       <div class="rf-velo" id="recompensa-final" role="dialog" aria-modal="true" aria-labelledby="rf-titulo">
         <div class="rf-caja">
           <div class="rf-gemas">${gemas}</div>
-          <h2 class="rf-titulo" id="rf-titulo">Recompensa recibida</h2>
-          <p class="rf-sub">Los cuatro cristales están reunidos. Los mercenarios se unen a tu causa y pueden acompañar a cualquier estirpe. Toca una carta para leerla entera.</p>
+          <h2 class="rf-titulo" id="rf-titulo">${reabierta ? 'Cartas desbloqueadas' : 'Recompensa recibida'}</h2>
+          <p class="rf-sub">${reabierta
+            ? 'Los mercenarios que se unieron a tu causa: acompañan a cualquier estirpe. Toca una carta para leerla entera.'
+            : 'Los cuatro cristales están reunidos. Los mercenarios se unen a tu causa y pueden acompañar a cualquier estirpe. Toca una carta para leerla entera.'}</p>
           <div class="rf-cartas">
             ${mercenarios
               .map(
                 (c, i) => `
-              <figure class="rf-carta" style="--i:${i}">
+              <figure class="rf-carta" style="--i:${i}" data-personaje="${c.id}">
                 <img src="${c.imagen}" alt="${c.nombre}" draggable="false">
                 <figcaption>${c.nombre}</figcaption>
               </figure>`
@@ -308,9 +296,110 @@ window.Game.Screens.seleccionRaza = {
             <div class="rf-modo"><span class="rf-modo-ico">⚔</span><div><strong>Modo solo</strong><span>Duelos rápidos contra la máquina con cualquier estirpe.</span></div></div>
             <div class="rf-modo"><span class="rf-modo-ico">🃏</span><div><strong>Constructor de equipos</strong><span>Arma tus propios mazos de 5 personajes y 8 acciones.</span></div></div>
           </div>
-          <button class="btn-primario rf-ok" id="btn-recompensa-vista" type="button">Entendido</button>
+          <button class="btn-primario rf-ok" id="btn-recompensa-vista" type="button">${reabierta ? 'Cerrar' : 'Entendido'}</button>
         </div>
       </div>`;
+  },
+
+  /**
+   * Engancha la ventana de las cartas desbloqueadas: se cierra con su botón,
+   * con Esc o tocando fuera. Cerrarla la marca como anunciada (la primera vez
+   * es la que sale sola). Tocar una carta la amplía.
+   */
+  conectarRecompensa(ventana) {
+    if (!ventana) return;
+    const cerrar = () => {
+      window.Game.State.marcarRecompensaAnunciada();
+      ventana.classList.add('cerrando');
+      setTimeout(() => ventana.remove(), 260);
+      document.removeEventListener('keydown', alTeclear, true);
+    };
+    // En captura, para ver la lupa ANTES de que su propio Esc la cierre:
+    // con una carta ampliada, Esc cierra solo la carta.
+    const alTeclear = (e) => {
+      const lupa = document.getElementById('lupa-grande');
+      if (e.key === 'Escape' && !(lupa && !lupa.classList.contains('oculto'))) cerrar();
+    };
+    document.addEventListener('keydown', alTeclear, true);
+    ventana.querySelectorAll('.rf-carta').forEach((f) => f.addEventListener('click', () => {
+      const img = f.querySelector('img');
+      window.Game.Lupa.ampliar(img.getAttribute('src'), img.alt);
+    }));
+    ventana.querySelector('#btn-recompensa-vista').addEventListener('click', cerrar);
+    ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
+  },
+
+  /**
+   * «Ver cartas»: vuelve a abrir la ventana de las cartas desbloqueadas,
+   * siempre que se quiera (Oscar). Cada carta lleva `data-personaje`: el
+   * sitio donde colgar su historia jugable cuando exista.
+   */
+  abrirCartas(contenedor) {
+    if (contenedor.querySelector('#recompensa-final')) return;
+    const raiz = contenedor.querySelector('.pantalla') || contenedor;
+    raiz.insertAdjacentHTML('beforeend', this.bloqueRecompensaFinal({ reabierta: true }));
+    this.conectarRecompensa(contenedor.querySelector('#recompensa-final'));
+  },
+
+  /**
+   * Historias secretas (data/historiasSecretas.js): la recompensa de terminar
+   * la campaña. Una tarjeta por historia con el mercenario y su mascota, su
+   * avance y «Jugar»; las aún no escritas, como «Próximamente».
+   */
+  abrirHistorias(contenedor) {
+    if (contenedor.querySelector('#historias-secretas')) return;
+    const G = window.Game;
+    const C = G.CHARACTERS_BY_ID;
+    const S = G.State;
+    const tarjeta = ({ protagonista, mascota, nombre, id = null, total = 0 }) => {
+      const p = C[protagonista], m = C[mascota];
+      const hechas = id ? S.progresoDe(id) : 0;
+      return `
+        <article class="hs-tarjeta ${id ? '' : 'proxima'}">
+          <div class="hs-cartas">
+            ${[p, m].filter(Boolean).map((c) => `<img src="${c.imagen}" alt="${c.nombre}" data-lupa="${c.imagen}" data-lupa-nombre="${c.nombre}" draggable="false">`).join('')}
+          </div>
+          <strong class="hs-nombre">${nombre}</strong>
+          <span class="nota">${id ? (hechas >= total ? 'Completada' : `${hechas} de ${total} etapas`) : 'Próximamente'}</span>
+          ${id ? `<button class="btn-primario hs-jugar" data-historia="${id}" type="button">${hechas >= total ? 'Volver a jugar' : hechas ? 'Continuar' : 'Jugar'}</button>` : ''}
+        </article>`;
+    };
+    const lista = [
+      ...Object.values(G.HISTORIAS_SECRETAS || {}).map((h) => tarjeta({ ...h, total: h.etapas.length })),
+      ...(G.HISTORIAS_PROXIMAS || []).map((h) => tarjeta(h))
+    ].join('');
+    const raiz = contenedor.querySelector('.pantalla') || contenedor;
+    raiz.insertAdjacentHTML('beforeend', `
+      <div class="rf-velo" id="historias-secretas" role="dialog" aria-modal="true" aria-labelledby="hs-titulo">
+        <div class="rf-caja">
+          <h2 class="rf-titulo" id="hs-titulo">Historias secretas</h2>
+          <p class="rf-sub">Después de la campaña, cada mercenario guarda su propio relato. Lo juegas solo, con su compañero. Mantén pulsada una carta para verla en grande.</p>
+          <div class="hs-lista">${lista}</div>
+          <button class="btn-primario rf-ok" id="btn-historias-cerrar" type="button">Cerrar</button>
+        </div>
+      </div>`);
+    const ventana = contenedor.querySelector('#historias-secretas');
+    const cerrar = () => {
+      ventana.classList.add('cerrando');
+      setTimeout(() => ventana.remove(), 260);
+      document.removeEventListener('keydown', alTeclear, true);
+    };
+    const alTeclear = (e) => {
+      const lupa = document.getElementById('lupa-grande');
+      if (e.key === 'Escape' && !(lupa && !lupa.classList.contains('oculto'))) cerrar();
+    };
+    document.addEventListener('keydown', alTeclear, true);
+    ventana.querySelector('#btn-historias-cerrar').addEventListener('click', cerrar);
+    ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
+    ventana.querySelectorAll('[data-historia]').forEach((b) => b.addEventListener('click', () => {
+      if (this.entrando) return;
+      this.entrando = true;
+      const id = b.dataset.historia;
+      const Cg = G.Carga;
+      const ir = () => { this.entrando = false; G.Router.ir('historia', { raza: id }); };
+      if (Cg) Cg.mostrar({ raza: id, recursos: Cg.recursosDeCalabozo(id), minMs: 2200 }).then(ir);
+      else ir();
+    }));
   },
 
   seleccionar(contenedor, razaId, disponible = true) {

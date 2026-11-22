@@ -55,13 +55,26 @@ window.Game.Screens.historia = {
       : this.puntoDePartida(nodos, ancho, alto);
   },
 
+  /**
+   * El equipo con el protagonista delante: en las historias secretas camina el
+   * mercenario, no su mascota (Tilos empieza el equipo con Chispa).
+   */
+  protagonistaPrimero(razaId, ids) {
+    const cal = window.Game.calabozoDe(razaId);
+    const pro = cal && cal.protagonista;
+    return pro && ids.includes(pro) ? [pro, ...ids.filter((id) => id !== pro)] : ids;
+  },
+
   /** Retrato flotante del personaje que encabeza el equipo de la etapa. */
   figuraDelEquipo(razaId, etapasSuperadas) {
     const eq = window.Game.equipoDeHistoria(razaId, etapasSuperadas);
-    const p = (eq ? eq.personajes : [])
+    const p = this.protagonistaPrimero(razaId, eq ? eq.personajes : [])
       .map((id) => window.Game.CHARACTERS_BY_ID[id])
       .find((c) => c && c.imagenFlotante);
-    return p ? p.imagenFlotante : null;
+    if (p) return p.imagenFlotante;
+    // Sin retrato flotante (mercenarios de las historias secretas): camina su carta.
+    const primero = eq && window.Game.CHARACTERS_BY_ID[eq.personajes[0]];
+    return primero ? primero.imagen : null;
   },
 
   mapaDeAvance(cal, progreso, razaId) {
@@ -402,7 +415,7 @@ window.Game.Screens.historia = {
     if (E2 && E2.tiene(cal.escenario2d)) {
       const raza = window.Game.RACES[razaId];
       const C = window.Game.CHARACTERS_BY_ID;
-      const equipo = window.Game.equipoDeHistoria(razaId, n - 1).personajes;
+      const equipo = this.protagonistaPrimero(razaId, window.Game.equipoDeHistoria(razaId, n - 1).personajes);
       const liderId = equipo.find((id) => C[id] && C[id].imagenFlotante);
       const actor = (id) => id && C[id] && C[id].imagenFlotante
         ? { id, imagen: C[id].imagenFlotante, voltear: E2.MIRAN_A_LA_IZQUIERDA.has(id) }
@@ -412,8 +425,10 @@ window.Game.Screens.historia = {
       const dialogo = (etapa.dialogo || [])
         .filter((d) => C[d.quien] && d.texto)
         .map((d) => ({ ...d, nombre: C[d.quien].nombre.split(',')[0] }));
-      const compId = dialogo.map((d) => d.quien)
-        .find((id) => id !== liderId && equipo.includes(id) && C[id].imagenFlotante);
+      // En las historias secretas la mascota va siempre al lado, hable o no.
+      const conRetrato = (id) => id && id !== liderId && equipo.includes(id) && C[id] && C[id].imagenFlotante;
+      const compId = dialogo.map((d) => d.quien).find(conRetrato)
+        || (conRetrato(cal.mascota) ? cal.mascota : undefined);
       await E2.recorrer({
         tema: cal.escenario2d,
         fondo: raza && raza.fondo,

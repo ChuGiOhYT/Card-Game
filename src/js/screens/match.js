@@ -770,6 +770,9 @@ window.Game.Screens.partida = {
       if (!humano.activos.length) return true;
       const C = window.Game.Combat;
       if (!humano.activos.every((i) => C._accion(i))) return false;
+      // Chispa con Tilos y sin acción todavía: le cabe una segunda carta.
+      if (humano.activos.some((i) => i.personaje === 'mas_chispa' && i.tilos && !i.accion)
+        && this.motor.accionesDisponibles(humano).length) return false;
       // Solo si la acción se puso EN esta fase; la que venía puesta se mantiene a mano.
       return this.firmaAccionAlEntrar !== undefined && this.firmaAcciones(humano) !== this.firmaAccionAlEntrar;
     }
@@ -1133,9 +1136,12 @@ window.Game.Screens.partida = {
   },
 
   /** El tapete de la mesa: el suelo de la estirpe de quien juega en casa. */
-  TAPETES: ['desterrado', 'lunaria', 'oxitron', 'reanimado'],
+  TAPETES: ['desterrado', 'lunaria', 'oxitron', 'reanimado', 'libre'],
 
   estiloTapete(raza) {
+    // Una historia secreta usa el tapete de su campaña de aspecto.
+    const r = window.Game.RACES[raza];
+    if (r && r.aspecto) raza = r.aspecto;
     if (!this.TAPETES.includes(raza)) return '';
     // url() en línea y no en una variable CSS: en una variable se resolvería
     // contra la hoja de estilos y no cargaría (ver CLAUDE.md).
@@ -2920,7 +2926,9 @@ window.Game.Screens.partida = {
       .accionesDisponibles(humano)
       .map((id) => window.Game.ACTIONS_BY_ID[id])
       .map((a) => {
-        const inerte = a.razaRequerida && a.razaRequerida !== humano.raza;
+        const inerte = a.razaRequerida && a.razaRequerida !== humano.raza &&
+          ![...humano.reserva, ...humano.activos, ...humano.hades]
+            .some((i) => window.Game.CHARACTERS_BY_ID[i.personaje]?.raza === a.razaRequerida);
         return `
         <button class="opcion-carta accion tipo-${a.tipo} ${inerte ? 'inerte' : ''} ${eligeAccion ? '' : 'pasiva'}"
                 data-accion="${a.id}"

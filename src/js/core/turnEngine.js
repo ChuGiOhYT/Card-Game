@@ -458,8 +458,11 @@ window.Game.TurnEngine = class TurnEngine {
    * sustituye (Zhin se destruye en lugar de tu personaje en posición).
    */
   destruir(jugador, inst, motivo = 'destruido', { yaDecidido = false } = {}) {
-    // yaDecidido: el dueño ya contestó a Zhin en el golpe; no se vuelve a ofrecer.
-    const evitado = !yaDecidido && window.Game.EfectosPersonaje?.antesDeDestruir(this, jugador, inst, motivo);
+    // yaDecidido: el dueño ya contestó a Zhin en el golpe; no se vuelve a
+    // ofrecer. Pero las protecciones que no preguntan (Ceniza) valen siempre.
+    const E = window.Game.EfectosPersonaje;
+    const evitado = (E?.protegido && E.protegido(this, jugador, inst, motivo))
+      || (!yaDecidido && E?.antesDeDestruir(this, jugador, inst, motivo));
     if (evitado) return false;
     return this.enviarAlHades(jugador, inst, motivo);
   }
@@ -634,7 +637,9 @@ window.Game.TurnEngine = class TurnEngine {
     if (destino.accion) this.revelar(j, destino.accion);
     destino.accion = accionId;
     this.revelar(j, accionId);
-    if (destino.tilos) {
+    // Chispa (mascota de Tilos): con Tilos equipado admite una segunda carta,
+    // así que Tilos se queda. A cualquier otro, acoplar una acción lo devuelve.
+    if (destino.tilos && destino.personaje !== 'mas_chispa') {
       j.reserva.push(destino.tilos.carta);
       destino.tilos = null;
       this.log('Tilos vuelve a la zona de equipo: su puesto lo ocupa la acción.');

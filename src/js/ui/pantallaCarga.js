@@ -9,7 +9,7 @@
  * (`maxMs`) evita que un archivo lento deje a nadie atascado.
  *
  * Tres sitios:
- *   - al abrir el juego (app.js, estirpe al azar),
+ *   - al abrir el juego (app.js): los cuatro Eternos o la Gran Lluvia,
  *   - al entrar a un calabozo (raceSelect «Comenzar historia»),
  *   - al ir a un duelo (Router.ir('partida'), cualquier modo).
  *
@@ -20,6 +20,12 @@ window.Game = window.Game || {};
 
 window.Game.Carga = {
   MS_FUNDIDO: 380,
+
+  /**
+   * Ilustraciones que no son de una estirpe (arte de Oscar): los cuatro Eternos
+   * y la Gran Lluvia. Salen al azar al abrir el juego y en los duelos libres.
+   */
+  DEL_MUNDO: ['eternos', 'lluvia'],
 
   /** Raza con ilustración (las cuatro jugables); otra cosa → al azar. */
   razaValida(raza) {
@@ -32,8 +38,16 @@ window.Game.Carga = {
    * promesa que se cumple cuando ya se ha ido.
    */
   mostrar({ raza = null, recursos = [], minMs = 1800, maxMs = 8000 } = {}) {
-    const r = this.razaValida(raza);
-    const frases = (window.Game.FRASES_CARGA && window.Game.FRASES_CARGA[r]) || [];
+    // Al abrir el juego (sin raza) y en los duelos de un equipo libre, que no
+    // es de ninguna estirpe y es de todas: una ilustración del mundo.
+    if (!raza || raza === 'libre') raza = this.DEL_MUNDO[Math.floor(Math.random() * this.DEL_MUNDO.length)];
+    const delMundo = this.DEL_MUNDO.includes(raza);
+    // Una historia secreta: la ilustración de su campaña de aspecto, pero sus
+    // propias frases si las tiene.
+    const propia = window.Game.FRASES_CARGA && window.Game.FRASES_CARGA[raza];
+    const aspecto = window.Game.RACES[raza] && window.Game.RACES[raza].aspecto;
+    const r = delMundo ? raza : this.razaValida(aspecto || raza);
+    const frases = propia || (window.Game.FRASES_CARGA && window.Game.FRASES_CARGA[r]) || [];
     const frase = frases[Math.floor(Math.random() * frases.length)] || '';
     const color = (window.Game.RACES[r] || {}).colorPrimario || '#c9a959';
     const lista = [...new Set(recursos.filter(Boolean))];
@@ -45,7 +59,9 @@ window.Game.Carga = {
       <div class="carga-fondo" style="background-image:url('assets/carga/${r}.webp')"></div>
       <div class="carga-velo"></div>
       <div class="carga-pie" style="--raza-primario:${color}">
-        <span class="carga-emblema">${window.Game.emblema ? window.Game.emblema(r, 44) : ''}</span>
+        <span class="carga-emblema">${delMundo
+          ? '<img class="emblema" src="assets/marca/aeternum-logo.webp" alt="" style="width:auto;height:44px">'
+          : (window.Game.emblema ? window.Game.emblema(r, 44) : '')}</span>
         <p class="carga-frase">${frase}</p>
         <div class="carga-barra"><div class="carga-relleno"></div></div>
       </div>`;

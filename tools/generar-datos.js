@@ -80,10 +80,18 @@ const jsPersonajes =
   '\n];\n\n' +
   'window.Game.CHARACTERS_BY_ID = window.Game.CHARACTERS.reduce((a, c) => {\n' +
   '  a[c.id] = c;\n  return a;\n}, {});\n\n' +
-  '/** Personajes elegibles por una raza: los suyos más los mercenarios. */\n' +
+  '/**\n' +
+  ' * Personajes elegibles por una raza: los suyos, los mercenarios y las mascotas\n' +
+  ' * ya ganadas en las historias secretas. Con «libre», los de las cuatro estirpes.\n' +
+  ' */\n' +
   'window.Game.personajesDeRaza = function (razaId) {\n' +
-  '  return window.Game.CHARACTERS.filter(\n' +
-  "    (c) => c.raza === razaId || c.raza === 'mercenario'\n" +
+  '  const G = window.Game;\n' +
+  "  const libre = razaId === 'libre';\n" +
+  '  const mascotas = G.mascotasDesbloqueadas ? G.mascotasDesbloqueadas() : [];\n' +
+  '  return G.CHARACTERS.filter(\n' +
+  "    (c) => c.raza === razaId || c.raza === 'mercenario' ||\n" +
+  '      (libre && (G.RACE_ORDER || []).includes(c.raza)) ||\n' +
+  "      (c.raza === 'mascota' && mascotas.includes(c.id))\n" +
   '  );\n};\n';
 
 /* ------------------------------ Acciones ------------------------------ */

@@ -6,6 +6,48 @@ window.Game = window.Game || {};
 
 window.Game.CHARACTERS = [
   {
+    id: "mas_ceniza",
+    nombre: "Ceniza, Domabestias honorífico",
+    raza: "mascota",
+    coste: 0,
+    ataque: 2,
+    defensa: 2,
+    timing: "Revelado",
+    texto: "Revelado: Yrving no puede ser destruido en batalla.",
+    cita: "Fiel a su amo Yrving, lo acompañó incluso en la muerte, y en su nueva vida",
+    imagen: "assets/cartas/mascota-ceniza.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mas_ceniza-flotante.png",
+    mecanicas: ["pasivo_revelado","proteger_aliado"]
+  },
+  {
+    id: "mas_chispa",
+    nombre: "Chispa, acompañante del último Engranagenio",
+    raza: "mascota",
+    coste: 0,
+    ataque: 2,
+    defensa: 2,
+    timing: "En posición",
+    texto: "En posición: Si Tilos está equipado a esta carta, puedes equiparle una segunda carta de equipo.",
+    cita: "La primera creación de Tilos, lo acompaña a todo lugar sin falta",
+    imagen: "assets/cartas/mascota-chispa.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mas_chispa-flotante.png",
+    mecanicas: ["doble_equipo"]
+  },
+  {
+    id: "mas_lis",
+    nombre: "Lis, la verdadera vida",
+    raza: "mascota",
+    coste: 0,
+    ataque: 2,
+    defensa: 2,
+    timing: "Revelado",
+    texto: "Revelado: Disminuye el ataque y defensa del personaje oponente en 2.",
+    cita: "La gran magia de la vida es asombrosa. Ahora se le ve siempre junto a Lyla",
+    imagen: "assets/cartas/mascota-lis.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mas_lis-flotante.png",
+    mecanicas: ["pasivo_revelado","debilitar_rival"]
+  },
+  {
     id: "des_annia",
     nombre: "Annia, aprendiz de los desterrados",
     raza: "desterrado",
@@ -352,6 +394,7 @@ window.Game.CHARACTERS = [
     texto: "Acción ofensiva equipada: Selecciona un personaje en el Hades y muévelo al vacío. Acción defensiva equipada: Selecciona un personaje en el vacío y muévelo al Hades. Acción neutra equipada: Devuelve una de tus sangres derramadas a la pila de sangre.",
     cita: "Nadie sabe de dónde proviene, pero siempre atiende a las solicitudes de quienes lo recompensan generosamente",
     imagen: "assets/cartas/mercenario-5.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_errante-flotante.png",
     mecanicas: ["condicional_tipo_accion","modal","enviar_al_vacio","recuperar_sangre"]
   },
   {
@@ -365,6 +408,7 @@ window.Game.CHARACTERS = [
     texto: "En posición: Recupera un personaje con coste 5 o menor desde el hades a la zona de equipo pagando sangres iguales a su coste original.",
     cita: "Pocas veces es posible observar a una de su especie, pero ella tiene una vocación imparable por sanar a los caídos",
     imagen: "assets/cartas/mercenario-3.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_lyla-flotante.png",
     mecanicas: ["revivir_desde_hades","pagar_sangre"]
   },
   {
@@ -378,6 +422,7 @@ window.Game.CHARACTERS = [
     texto: "Revelado: Durante la fase de acción puedes equipar este personaje como una acción ofensiva o defensiva sumando su ataque o defensa al del personaje en posición. Pero destruye este personaje en el final de turno oponente.",
     cita: "Recogido por su maestro luego de la primera caída, fue adiestrado desde pequeño en las ciencias de los ingenios",
     imagen: "assets/cartas/mercenario-2.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_tilos-flotante.png",
     mecanicas: ["equipar_personaje","sumar_stats","modal","autodestruccion"]
   },
   {
@@ -391,6 +436,7 @@ window.Game.CHARACTERS = [
     texto: "En posición: Declaras un tipo de acción (Ofensiva, defensiva o neutra), tu oponente debe equipar al personaje activo una acción del tipo declarado.",
     cita: "Legendario es aquel que comparte una cerveza o hace sonreír al el domador de bestias, arrastra consigo un doloroso pasado",
     imagen: "assets/cartas/mercenario-1.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_yrving-flotante.png",
     mecanicas: ["declarar_tipo_accion","forzar_equipo_rival"]
   },
   {
@@ -404,6 +450,7 @@ window.Game.CHARACTERS = [
     texto: "Revelado o en Posición: Si utilizas una acción que incluya el lanzamiento de un dado puedes aplicar +1 o -1 al resultado obtenido.",
     cita: "Sigiloso y veloz, se oculta entre las sombras en el campo de batalla junto a sus aliados. Nunca falla su misión",
     imagen: "assets/cartas/mercenario-4.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_yun-flotante.png",
     mecanicas: ["modificar_dado"]
   },
   {
@@ -417,6 +464,7 @@ window.Game.CHARACTERS = [
     texto: "Revelado: Si tu personaje en posición fuera a ser destruido, destruye este personaje en su lugar.",
     cita: "Nunca los mires a los ojos, o te atacarán furiosamente",
     imagen: "assets/cartas/mercenario-6.jpg",
+    imagenFlotante: "assets/personajes-flotantes/mer_zhin-flotante.png",
     mecanicas: ["autosacrificio"]
   }
 ];
@@ -426,9 +474,17 @@ window.Game.CHARACTERS_BY_ID = window.Game.CHARACTERS.reduce((a, c) => {
   return a;
 }, {});
 
-/** Personajes elegibles por una raza: los suyos más los mercenarios. */
+/**
+ * Personajes elegibles por una raza: los suyos, los mercenarios y las mascotas
+ * ya ganadas en las historias secretas. Con «libre», los de las cuatro estirpes.
+ */
 window.Game.personajesDeRaza = function (razaId) {
-  return window.Game.CHARACTERS.filter(
-    (c) => c.raza === razaId || c.raza === 'mercenario'
+  const G = window.Game;
+  const libre = razaId === 'libre';
+  const mascotas = G.mascotasDesbloqueadas ? G.mascotasDesbloqueadas() : [];
+  return G.CHARACTERS.filter(
+    (c) => c.raza === razaId || c.raza === 'mercenario' ||
+      (libre && (G.RACE_ORDER || []).includes(c.raza)) ||
+      (c.raza === 'mascota' && mascotas.includes(c.id))
   );
 };

@@ -18,7 +18,7 @@ window.Game.Screens.remoto = {
     this.razaRival = null;
     this.equipoRival = null;
     // Se recuerda lo elegido al volver de una partida (revancha / sala).
-    if (!window.Game.RACE_ORDER.includes(this.raza)) {
+    if (!window.Game.RAZAS_EQUIPO.includes(this.raza)) {
       this.raza = window.Game.RACE_ORDER.includes(S.perfil.razaSeleccionada) ? S.perfil.razaSeleccionada : window.Game.RACE_ORDER[0];
     }
 
@@ -197,7 +197,7 @@ window.Game.Screens.remoto = {
   pintarRazas() {
     const caja = this.contenedor && this.contenedor.querySelector('#remoto-razas');
     if (!caja) return;
-    caja.innerHTML = window.Game.RACE_ORDER.map((id) => {
+    caja.innerHTML = window.Game.RAZAS_EQUIPO.map((id) => {
       const r = window.Game.RACES[id];
       return `<button type="button" class="remoto-raza ${id === this.raza ? 'activa' : ''}" data-raza="${id}"
                 style="--raza-primario:${r.colorPrimario}">
@@ -250,7 +250,7 @@ window.Game.Screens.remoto = {
 
   /** Lo que eligió el rival. El anfitrión comprueba que el equipo exista. */
   recibirEleccion(d) {
-    if (!window.Game.RACES[d.raza] || !window.Game.RACE_ORDER.includes(d.raza)) return;
+    if (!window.Game.RACES[d.raza] || !window.Game.RAZAS_EQUIPO.includes(d.raza)) return;
     this.razaRival = d.raza;
     this.equipoRival = this.equipoValido(d.equipo) ? d.equipo : window.Game.Team.equipoPredeterminado(d.raza);
     // Acaba de llegar a la sala y pregunta: se le contesta con lo nuestro.

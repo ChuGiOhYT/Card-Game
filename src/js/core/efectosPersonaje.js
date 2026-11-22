@@ -74,7 +74,11 @@ window.Game.EfectosPersonaje = {
     rea_gurh: { momento: 'pasivo' },
     rea_ejercito: { momento: 'pasivo' },
     rea_thila: { momento: 'pasivo' },
-    rea_zabar: { momento: 'pasivo' }
+    rea_zabar: { momento: 'pasivo' },
+    // Mascotas de las historias secretas (Oscar).
+    mas_lis: { momento: 'pasivo' },          // revelada en la mano: rival −2/−2
+    mas_ceniza: { momento: 'destruccion' },  // revelada: Yrving no cae en batalla
+    mas_chispa: { momento: 'doble-equipo' }  // con Tilos equipado: otra acción más
   },
 
   /* ------------------------------ Pasivos ------------------------------ */
@@ -140,6 +144,11 @@ window.Game.EfectosPersonaje = {
       return rival.activos.map((inst) => ({ j: rival, inst, ataque: -n, defensa: -n, texto: `−${n} (Thila)` }));
     },
     // Él, en posición: si Gurh está en el Hades, duplica su ataque o defensa.
+    // Lis, revelada en tu mano: el personaje del rival en posición −2/−2.
+    mas_lis(m, j) {
+      const rival = m.jugadores[1 - m.jugadores.indexOf(j)];
+      return rival.activos.map((inst) => ({ j: rival, inst, ataque: -2, defensa: -2, texto: '−2 (Lis)' }));
+    },
     rea_zabar(m, j, fuente) {
       const gurh = m.jugadores.some((x) => x.hades.some((i) => i.personaje === 'rea_gurh'));
       if (!gurh) return [];
@@ -152,7 +161,7 @@ window.Game.EfectosPersonaje = {
 
   /** Dónde tiene que estar la carta del pasivo para funcionar. */
   DONDE_PASIVO: {
-    des_lydia: 'mano', lun_acompanantes: 'mano',
+    des_lydia: 'mano', lun_acompanantes: 'mano', mas_lis: 'mano',
     rea_ejercito: 'hades',
     des_auram: 'posicion', lun_falum: 'posicion', rea_gurh: 'posicion',
     rea_thila: 'posicion', rea_zabar: 'posicion'
@@ -624,6 +633,22 @@ window.Game.EfectosPersonaje = {
    * Inmolación…): no pueden esperar una respuesta, así que Zhin se sacrifica
    * solo si está. El golpe normal SÍ pregunta (ver resolverAtaque).
    */
+  /**
+   * Protecciones que NO preguntan y valen siempre, también en el golpe normal
+   * (que destruye con `yaDecidido` y se salta `antesDeDestruir`):
+   * Ceniza revelada en la mano: Yrving no puede ser destruido EN BATALLA (el
+   * daño que pase a la sangre sí llega).
+   */
+  protegido(motor, jugador, inst, motivo) {
+    if (!inst || inst.personaje !== 'mer_yrving' || !/combate/.test(motivo || '')) return false;
+    const ceniza = jugador.reserva.find((i) => i.personaje === 'mas_ceniza'
+      && jugador.revelados.has('mas_ceniza') && !this.negado(motor, i));
+    if (!ceniza) return false;
+    motor.log('🐺 Ceniza no deja caer a Yrving.');
+    motor.anunciar(jugador, inst, 'Ceniza: Yrving sigue en pie');
+    return true;
+  },
+
   antesDeDestruir(motor, jugador, inst, motivo) {
     const zhin = this.zhinDe(motor, jugador, inst);
     if (!zhin) return false;
@@ -691,7 +716,8 @@ window.Game.EfectosPersonaje = {
       ia: () => (motor.accionesDisponibles(j).some((id) => A[id]?.tipo === 'ofensiva') ? '' : 'ofensiva'),
       alElegir: (tipo) => {
         if (!tipo) return;
-        if (host.accion) {
+        // Chispa: Tilos se le equipa ADEMÁS de su acción, no en su lugar.
+        if (host.accion && host.personaje !== 'mas_chispa') {
           motor.revelar(j, host.accion);
           host.accion = null;
         }

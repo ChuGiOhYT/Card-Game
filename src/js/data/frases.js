@@ -289,6 +289,45 @@ window.Game.FRASE_ENTRADA = {
  * para que Oscar las corrija.
  */
 window.Game.FRASES_CARGA = {
+  // La Gran Lluvia (libro, Ep. I; borrador de Claude).
+  lluvia: [
+    'Los Tres derramaron parte de su esencia sobre Aeter’num, y cayó como lluvia.',
+    'Sangre y plata del cielo: cada pueblo bebió la del Eterno al que ya se parecía.',
+    'La lluvia del Orden enseñó a los desterrados a revelar y a ocultar.',
+    'La de la Muerte dio a los lunaria el don del descanso.',
+    'La misma lluvia despertó corrientes prohibidas: en la metrópolis caída, los muertos se alzaron.'
+  ],
+  // Los cuatro Eternos: al abrir el juego y en los duelos libres (borrador de Claude, de la biblia).
+  eternos: [
+    'Vida, Muerte, Orden y Caos: cuatro hijos del Primordial, y un solo peso que sostener.',
+    'Vida amó tanto a sus criaturas que no soportó dejarlas ir.',
+    'Desde la Caída, solo quedan los Tres fieles: Muerte, Orden y Caos.',
+    'Cada Eternal lleva en el pecho una gema con la sangre de su Eterno.',
+    'La diferencia no está en el cristal, sino en lo que se elige hacer con el dolor.',
+    'La Gran Lluvia cayó sobre todos. Cada pueblo bebió la del Eterno al que ya se parecía.'
+  ],
+  // Historias secretas (borrador de Claude).
+  secreto_lyla: [
+    'Lyla no vino a ser salvada. Vino a entender.',
+    'Un pájaro caído aceptó volver. Desde entonces se llama Lis.',
+    '«Estaré aquí para impedirlo, o para llorar contigo si no puedo.»',
+    'La culpa sin acción no salva a nadie.',
+    'Consejo: con Lis revelada en la mano, el rival pierde 2 de ataque y 2 de defensa.'
+  ],
+  secreto_tilos: [
+    'Lo llamaban «el niño»: era el último de su estirpe.',
+    'Chispa fue lo primero que construyó. Nunca se le separa.',
+    '«Construiré lo contrario de lo que mató a mi gente, o nada.»',
+    'Los Vástagos preguntan primero. Los Segadores, nunca.',
+    'Consejo: con Tilos equipado a Chispa, puedes ponerle además una acción.'
+  ],
+  secreto_yrving: [
+    'Ül Dar devolvió la vida tres veces en siglos. La cuarta fue un cazador.',
+    'Lo que se llevan los Segadores deja de existir para cualquier magia.',
+    'Ceniza murió con él en el linde. Y volvió con él.',
+    '«No es venganza. Es la única búsqueda que me queda.»',
+    'Consejo: con Ceniza revelada en la mano, Yrving no cae en batalla.'
+  ],
   desterrado: [
     'Annia fue desterrada por despertar el Orden. Su luz no ilumina: oculta.',
     'Los conspiradores no tienen don, pero tienen la paciencia de los envidiosos.',

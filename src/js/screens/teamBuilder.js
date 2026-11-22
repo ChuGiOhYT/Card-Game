@@ -17,8 +17,8 @@ window.Game.Screens.constructor = {
           <button class="btn-volver" id="btn-volver" aria-label="Volver"><svg class="volver-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="volver-txt">Volver</span></button>
           <h2 class="pantalla-titulo">Crea tu equipo</h2>
           <p class="pantalla-sub">
-            5 personajes de tu raza y 8 acciones. Las acciones son reutilizables
-            durante todo el duelo.
+            5 personajes de tu raza (o de varias, con «Libre») y 8 acciones. Las
+            acciones son reutilizables durante todo el duelo.
           </p>
           <div class="constructor-razas" id="constructor-razas"></div>
         </header>
@@ -77,7 +77,7 @@ window.Game.Screens.constructor = {
 
   pintarSelectorRazas(contenedor) {
     const cont = contenedor.querySelector('#constructor-razas');
-    cont.innerHTML = window.Game.RACE_ORDER.map((id) => {
+    cont.innerHTML = window.Game.RAZAS_EQUIPO.map((id) => {
       const r = window.Game.RACES[id];
       return `<button data-raza="${id}" class="${id === this.raza ? 'activa' : ''}"
                       style="--raza-primario:${r.colorPrimario}">
@@ -178,6 +178,7 @@ window.Game.Screens.constructor = {
           <span class="mini-stats">⚔${p.ataque} 🛡${p.defensa}</span>
           ${elegido ? '<span class="mini-check">✓</span>' : ''}
           ${p.raza === 'mercenario' ? `<span class="mini-merc" title="Mercenario">${window.Game.emblema('mercenario', 22)}</span>` : ''}
+          ${p.raza === 'mascota' ? '<span class="mini-merc mini-mascota" title="Mascota">🐾</span>' : ''}
         </article>`;
       })
       .join('');
@@ -198,7 +199,8 @@ window.Game.Screens.constructor = {
       (a) => {
         const elegida = this.acciones.includes(a.id);
         // Las acciones atadas a otra raza se pueden elegir, pero no harán nada.
-        const inerte = a.razaRequerida && a.razaRequerida !== this.raza;
+        const inerte = a.razaRequerida && a.razaRequerida !== this.raza &&
+          !this.personajes.some((id) => window.Game.CHARACTERS_BY_ID[id]?.raza === a.razaRequerida);
         return `
         <article class="carta-mini accion tipo-${a.tipo} ${elegida ? 'elegida' : ''} ${
           inerte ? 'inerte' : ''

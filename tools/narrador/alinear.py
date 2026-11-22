@@ -99,9 +99,11 @@ def main(ruta: str) -> None:
         # («Volví. Ella no.»: 2 de 3 = 67 %): se tolera UNA por debajo de 6.
         elif cobertura < (0.85 if len(idx) > 5 else (len(idx) - 1) / len(idx) - 0.01):
             motivo = f"solo se oye el {cobertura:.0%}"
-        elif sobra > 1.25:
+        # Frases cortas: un respiro o una palabra de más pesa mucho (3 → 4 es
+        # +33 %), y una frase corta dicha con calma dramática dura más por letra.
+        elif sobra > (1.25 if len(idx) > 5 else (len(idx) + 1) / len(idx) + 0.01):
             motivo = "repite o añade palabras"
-        elif lento > 0.16:
+        elif lento > (0.16 if len(idx) > 5 else 0.24):
             motivo = "demasiado largo para su texto"
         cortes.append({"i": i, "ok": not motivo, "inicio": ini, "fin": fin,
                        "cobertura": round(cobertura, 3), "motivo": motivo})
